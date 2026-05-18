@@ -4,9 +4,15 @@
 //! Tenant A's data is allocated in Tenant A's arena, which is mapped to memory
 //! pages with different protection bits than Tenant B's arena.
 
+use aes_gcm::{
+    aead::{Aead, AeadCore, KeyInit},
+    Aes256Gcm, Key, Nonce,
+};
+use aes_gcm::aead::OsRng;
 use bumpalo::Bump;
 use chrono::{DateTime, Utc};
-use ground_core::{CustomerId, Result};
+use ground_core::{CustomerId, GroundStationError, Result};
+use rand::RngCore;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -60,32 +66,71 @@ impl ProtectedMemoryRegion {
 /// Cryptographic context for tenant data
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TenantCrypto {
-    /// Tenant-specific encryption key (would be actual key in production)
+    /// Logical key identifier (for audit / key-rotation tracking)
     pub key_id: String,
     /// Key rotation timestamp
     pub key_rotation: DateTime<Utc>,
+    /// Raw AES-256 key bytes. Skipped from serde so key material is never
+    /// accidentally serialised into logs or persistent state.
+    #[serde(skip, default)]
+    key_bytes: Vec<u8>,
 }
 
 impl TenantCrypto {
     pub fn new(key_id: String) -> Self {
+        let mut key_bytes = vec![0u8; 32];
+        OsRng.fill_bytes(&mut key_bytes);
         Self {
             key_id,
             key_rotation: Utc::now(),
+            key_bytes,
         }
     }
 
-    /// In a real implementation, this would encrypt data with tenant-specific key
+    /// AES-256-GCM encryption. Ciphertext layout: [12-byte nonce || encrypted bytes].
     pub fn encrypt(&self, data: &[u8]) -> Result<Vec<u8>> {
-        // In production: use actual encryption (AES-GCM, etc.)
-        tracing::debug!("Encrypting {} bytes with key {}", data.len(), self.key_id);
-        Ok(data.to_vec()) // Placeholder
+        if self.key_bytes.len() != 32 {
+            return Err(GroundStationError::Hardware(
+                "Tenant crypto key not initialized (key_bytes empty after deserialization)"
+                    .to_string(),
+            ));
+        }
+        let key = Key::<Aes256Gcm>::from_slice(&self.key_bytes);
+        let cipher = Aes256Gcm::new(key);
+        let nonce = Aes256Gcm::generate_nonce(&mut OsRng);
+        let ciphertext = cipher
+            .encrypt(&nonce, data)
+            .map_err(|e| GroundStationError::Hardware(format!("AES-GCM encrypt failed: {e}")))?
+;
+        let mut result = Vec::with_capacity(nonce.len() + ciphertext.len());
+        result.extend_from_slice(&nonce);
+        result.extend_from_slice(&ciphertext);
+        tracing::debug!("Encrypted {} bytes for tenant key {}", data.len(), self.key_id);
+        Ok(result)
     }
 
-    /// In a real implementation, this would decrypt data with tenant-specific key
+    /// AES-256-GCM decryption. Expects the nonce-prepended layout produced by `encrypt`.
     pub fn decrypt(&self, data: &[u8]) -> Result<Vec<u8>> {
-        // In production: use actual decryption
-        tracing::debug!("Decrypting {} bytes with key {}", data.len(), self.key_id);
-        Ok(data.to_vec()) // Placeholder
+        if self.key_bytes.len() != 32 {
+            return Err(GroundStationError::Hardware(
+                "Tenant crypto key not initialized (key_bytes empty after deserialization)"
+                    .to_string(),
+            ));
+        }
+        if data.len() < 12 {
+            return Err(GroundStationError::Hardware(
+                "Ciphertext too short to contain a 12-byte nonce".to_string(),
+            ));
+        }
+        let key = Key::<Aes256Gcm>::from_slice(&self.key_bytes);
+        let cipher = Aes256Gcm::new(key);
+        let nonce = Nonce::from_slice(&data[..12]);
+        let plaintext = cipher
+            .decrypt(nonce, &data[12..])
+            .map_err(|e| GroundStationError::Hardware(format!("AES-GCM decrypt failed: {e}")))?
+;
+        tracing::debug!("Decrypted {} bytes for tenant key {}", plaintext.len(), self.key_id);
+        Ok(plaintext)
     }
 }
 
@@ -98,10 +143,12 @@ pub struct TenantShard {
     /// Memory region with protection
     memory_region: ProtectedMemoryRegion,
     /// Page protection
+    #[allow(dead_code)]
     page_permissions: PageProtection,
     /// Cryptographic context
     crypto_context: TenantCrypto,
     /// When this shard was created
+    #[allow(dead_code)]
     created_at: DateTime<Utc>,
 }
 

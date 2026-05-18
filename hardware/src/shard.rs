@@ -24,6 +24,7 @@ pub struct PassShard {
     /// Shard-local bi-temporal log
     bitemporal_log: ShardLocalLog,
     /// When this shard was created
+    #[allow(dead_code)]
     created_at: DateTime<Utc>,
 }
 
@@ -126,6 +127,12 @@ impl PassState {
     }
 }
 
+impl Default for PassState {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 /// Ring buffer for sample storage within a shard
 #[derive(Debug)]
 pub struct RingBuffer {
@@ -141,6 +148,11 @@ pub struct RingBuffer {
 
 impl RingBuffer {
     /// Create a new ring buffer (must be allocated within shard arena)
+    ///
+    /// # Safety
+    ///
+    /// The `buffer` pointer must be valid for at least `capacity` elements
+    /// and must remain valid for the lifetime of the RingBuffer.
     pub unsafe fn new(buffer: *mut f32, capacity: usize) -> Self {
         Self {
             buffer,
@@ -151,13 +163,20 @@ impl RingBuffer {
     }
 
     /// Write samples to the ring buffer
+    ///
+    /// # Safety
+    ///
+    /// The `samples` slice must be valid and the ring buffer must have
+    /// sufficient capacity to hold the data being written.
     pub unsafe fn write(&mut self, samples: &[f32]) -> Result<usize> {
         let available = self.available();
         let count = samples.len().min(available);
 
-        for i in 0..count {
+        for (i, &sample) in samples.iter().enumerate().take(count) {
             let idx = (self.head + i) % self.capacity;
-            *self.buffer.add(idx) = samples[i];
+            unsafe {
+                *self.buffer.add(idx) = sample;
+            }
         }
 
         self.head = (self.head + count) % self.capacity;
@@ -165,13 +184,20 @@ impl RingBuffer {
     }
 
     /// Read samples from the ring buffer
+    ///
+    /// # Safety
+    ///
+    /// The `buffer` slice must be valid and the ring buffer must have
+    /// sufficient data to fill the buffer.
     pub unsafe fn read(&mut self, buffer: &mut [f32]) -> Result<usize> {
         let available = self.used();
         let count = buffer.len().min(available);
 
-        for i in 0..count {
+        for (i, item) in buffer.iter_mut().enumerate().take(count) {
             let idx = (self.tail + i) % self.capacity;
-            buffer[i] = *self.buffer.add(idx);
+            unsafe {
+                *item = *self.buffer.add(idx);
+            }
         }
 
         self.tail = (self.tail + count) % self.capacity;
@@ -224,6 +250,12 @@ impl ShardLocalLog {
     /// Get all entries
     pub fn entries(&self) -> &HashMap<u64, LogEntry> {
         &self.entries
+    }
+}
+
+impl Default for ShardLocalLog {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

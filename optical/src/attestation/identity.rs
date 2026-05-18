@@ -8,7 +8,10 @@
 // certificates to eliminate certificate retrieval latency during handoffs.
 
 use chrono::{DateTime, Utc};
+use ed25519_dalek::{Keypair, SecretKey, Signer};
+use rand::rngs::OsRng;
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 use std::collections::HashMap;
 use uuid::Uuid;
 
@@ -57,18 +60,49 @@ pub struct IdentityCertificate {
     pub issuer: String,
     pub subject: String,
     pub signature: String,
+    /// Hex-encoded Ed25519 public key of the certificate issuer
+    pub signer_public_key: String,
 }
 
 impl IdentityCertificate {
+    /// Create a self-signed certificate using an ephemeral keypair.
+    /// In production, use `signed_by` with the CA's long-term keypair.
     pub fn new(issuer: String, subject: String, validity_days: u64) -> Self {
+        let mut csprng = OsRng;
+        let keypair = Keypair::generate(&mut csprng);
+        Self::signed_by(issuer, subject, validity_days, &keypair)
+    }
+
+    /// Create a certificate signed by a specific keypair (e.g. the CA's key).
+    pub fn signed_by(
+        issuer: String,
+        subject: String,
+        validity_days: u64,
+        keypair: &Keypair,
+    ) -> Self {
         let now = Utc::now();
+        let certificate_id = Uuid::new_v4();
+        let expires_at = now + chrono::Duration::days(validity_days as i64);
+
+        // Hash the certificate fields deterministically
+        let mut hasher = Sha256::new();
+        hasher.update(certificate_id.as_bytes());
+        hasher.update(issuer.as_bytes());
+        hasher.update(subject.as_bytes());
+        hasher.update(now.to_rfc3339().as_bytes());
+        hasher.update(expires_at.to_rfc3339().as_bytes());
+        let hash_bytes = hasher.finalize();
+
+        let sig_bytes = keypair.sign(&hash_bytes).to_bytes();
+
         Self {
-            certificate_id: Uuid::new_v4(),
+            certificate_id,
             issued_at: now,
-            expires_at: now + chrono::Duration::days(validity_days as i64),
+            expires_at,
             issuer,
             subject,
-            signature: "placeholder_signature".to_string(),
+            signature: hex::encode(sig_bytes),
+            signer_public_key: hex::encode(keypair.public.to_bytes()),
         }
     }
 
@@ -179,7 +213,7 @@ impl ControlPlaneCertificateManager {
         self.shared_key_pair = Some(ControlPlaneKeyPair::new(validity_days));
     }
 
-    /// Issue certificate for control node using shared key pair
+    /// Issue certificate for control node signed by the shared CA keypair
     pub fn issue_control_node_certificate(
         &mut self,
         node_id: String,
@@ -195,10 +229,18 @@ impl ControlPlaneCertificateManager {
             return Err(CertificateError::KeyPairExpired);
         }
 
-        let certificate = IdentityCertificate::new(
+        // Reconstruct the CA keypair from stored bytes so we can sign with it
+        let secret = SecretKey::from_bytes(&key_pair.private_key)
+            .map_err(|e| CertificateError::ValidationFailed(e.to_string()))?;
+        let public = ed25519_dalek::PublicKey::from_bytes(&key_pair.public_key)
+            .map_err(|e| CertificateError::ValidationFailed(e.to_string()))?;
+        let keypair = Keypair { secret, public };
+
+        let certificate = IdentityCertificate::signed_by(
             "GroundCore Control Plane".to_string(),
             subject,
             validity_days,
+            &keypair,
         );
 
         self.issued_certificates
@@ -208,7 +250,7 @@ impl ControlPlaneCertificateManager {
 
     /// Get preloaded certificates for satellite
     pub fn get_preloaded_certificates(&self) -> Result<PreloadedCertificates, CertificateError> {
-        let key_pair = self
+        let _key_pair = self
             .shared_key_pair
             .as_ref()
             .ok_or_else(|| CertificateError::KeyPairNotInitialized)?;

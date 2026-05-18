@@ -7,7 +7,10 @@ use crate::attestation::link_proof::{AttestationId, Hash, Signature};
 use crate::pat::AcquisitionResult;
 use crate::{BiTemporal, EventTime, ReceptionTime};
 use chrono::{DateTime, Utc};
+use ed25519_dalek::{Keypair, Signer, Verifier};
+use rand::rngs::OsRng;
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 use uuid::Uuid;
 
 /// PAT attestation
@@ -19,23 +22,70 @@ pub struct PatAttestation {
     pub tracking_proof: Option<TrackingProof>,
     pub hash: Hash,
     pub signature: Signature,
+    /// Hex-encoded Ed25519 public key of the signer; required by verify()
+    pub signer_public_key: String,
 }
 
 impl PatAttestation {
     pub fn new(acquisition_id: Uuid, acquisition_proof: AcquisitionProof) -> Self {
+        // SHA-256 over the canonical proof fields
+        let mut hasher = Sha256::new();
+        hasher.update(acquisition_id.as_bytes());
+        hasher.update(acquisition_proof.plan_id.as_bytes());
+        hasher.update(acquisition_proof.search_pattern_used.as_bytes());
+        let hash_bytes = hasher.finalize();
+        let hash = Hash::new(hex::encode(hash_bytes));
+
+        // Sign the hash with an ephemeral Ed25519 keypair.
+        // In production, replace with the terminal's long-term signing key.
+        let mut csprng = OsRng;
+        let keypair = Keypair::generate(&mut csprng);
+        let sig_bytes = keypair.sign(&hash_bytes).to_bytes();
+        let signer_public_key = hex::encode(keypair.public.to_bytes());
+        let signature = Signature::new(hex::encode(sig_bytes));
+
         Self {
             attestation_id: Uuid::new_v4(),
             acquisition_id,
             acquisition_proof,
             tracking_proof: None,
-            hash: Hash::new("placeholder_hash".to_string()),
-            signature: Signature::new("placeholder_signature".to_string()),
+            hash,
+            signature,
+            signer_public_key,
         }
     }
 
     pub fn with_tracking_proof(mut self, tracking_proof: TrackingProof) -> Self {
         self.tracking_proof = Some(tracking_proof);
         self
+    }
+
+    /// Cryptographically verify the attestation.
+    pub fn verify(&self) -> bool {
+        let pub_bytes = match hex::decode(&self.signer_public_key) {
+            Ok(b) => b,
+            Err(_) => return false,
+        };
+        let sig_bytes = match hex::decode(self.signature.as_str()) {
+            Ok(b) => b,
+            Err(_) => return false,
+        };
+        let public_key = match ed25519_dalek::PublicKey::from_bytes(&pub_bytes) {
+            Ok(k) => k,
+            Err(_) => return false,
+        };
+        let sig = match ed25519_dalek::Signature::try_from(sig_bytes.as_slice()) {
+            Ok(s) => s,
+            Err(_) => return false,
+        };
+
+        let mut hasher = Sha256::new();
+        hasher.update(self.acquisition_id.as_bytes());
+        hasher.update(self.acquisition_proof.plan_id.as_bytes());
+        hasher.update(self.acquisition_proof.search_pattern_used.as_bytes());
+        let hash_bytes = hasher.finalize();
+
+        public_key.verify(&hash_bytes, &sig).is_ok()
     }
 }
 

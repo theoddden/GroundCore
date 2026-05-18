@@ -15,3 +15,8 @@ async-trait = { workspace = true }
 
 # For bump allocator (no-alloc in shards)
 bumpalo = "3.16"
+
+# For tenant-level AES-256-GCM encryption
+aes-gcm = "0.10"
+rand = "0.8"
+hex = "0.4"

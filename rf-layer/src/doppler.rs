@@ -146,6 +146,8 @@ pub fn apply_doppler_schedule(
 pub struct DopplerPredictor {
     /// SGP4 constants for the satellite
     constants: Option<Constants>,
+    /// TLE epoch used when the constants were loaded (required for MinutesSinceEpoch)
+    tle_epoch: Option<DateTime<Utc>>,
     /// Station geodetic coordinates (lat, lon, alt in km)
     station: (f64, f64, f64),
     /// Carrier frequency in Hz (for Doppler conversion)
@@ -161,6 +163,7 @@ impl DopplerPredictor {
     ) -> Self {
         Self {
             constants: None,
+            tle_epoch: None,
             station: (station_lat_deg, station_lon_deg, station_alt_km),
             carrier_frequency,
         }
@@ -174,6 +177,10 @@ impl DopplerPredictor {
             tle_line2.as_bytes(),
         )
         .map_err(|e| ground_core::GroundStationError::Hardware(format!("Invalid TLE: {}", e)))?;
+
+        // Store the TLE epoch before elements is borrowed by Constants::from_elements.
+        // SGP4's MinutesSinceEpoch is relative to this epoch, not the Unix epoch.
+        self.tle_epoch = Some(elements.datetime);
 
         let constants = Constants::from_elements(&elements).map_err(|e| {
             ground_core::GroundStationError::Hardware(format!("SGP4 constants error: {}", e))
@@ -208,8 +215,19 @@ impl DopplerPredictor {
         let steps = (duration_sec * 1000 / step_ms) as usize;
         let step_sec = step_ms as f64 / 1000.0;
 
+        let tle_epoch = match self.tle_epoch {
+            Some(e) => e,
+            None => {
+                tracing::warn!("TLE epoch not available; cannot compute minutes-since-epoch");
+                return vec![];
+            }
+        };
+
         for _ in 0..steps {
-            let minutes_since_epoch = current_time.timestamp() as f64 / 60.0;
+            let minutes_since_epoch = current_time
+                .signed_duration_since(tle_epoch)
+                .num_milliseconds() as f64
+                / 60_000.0;
 
             let position = match constants.propagate(MinutesSinceEpoch(minutes_since_epoch)) {
                 Ok(pos) => pos,
@@ -231,7 +249,10 @@ impl DopplerPredictor {
 
             // Compute range rate by finite difference (look ahead by step_sec)
             let future_time = current_time + chrono::Duration::milliseconds(step_ms as i64);
-            let future_minutes = future_time.timestamp() as f64 / 60.0;
+            let future_minutes = future_time
+                .signed_duration_since(tle_epoch)
+                .num_milliseconds() as f64
+                / 60_000.0;
             let future_position = match constants.propagate(MinutesSinceEpoch(future_minutes)) {
                 Ok(pos) => pos,
                 Err(_) => {
@@ -260,8 +281,8 @@ impl DopplerPredictor {
         predictions
     }
 
-    /// Convert geodetic coordinates (lat, lon in degrees, alt in km) to ECI at a given time
-    /// Simplified approximation: rotates by GMST (Greenwich Mean Sidereal Time)
+    /// Convert geodetic coordinates (lat, lon in degrees, alt in km) to ECI at a given time.
+    /// Uses IAU 1982 GMST and WGS84 prime-vertical-radius formula (matches tracking::ukf).
     fn geodetic_to_eci(
         &self,
         lat_deg: f64,
@@ -272,25 +293,31 @@ impl DopplerPredictor {
         let lat = lat_deg.to_radians();
         let lon = lon_deg.to_radians();
 
-        // Earth radius in km (WGS84 approximation)
-        const RE: f64 = 6378.137;
-        const FLATTENING: f64 = 1.0 / 298.257223563;
+        // WGS84 constants (km)
+        const RE: f64 = 6_378.137;
+        const FLATTENING: f64 = 1.0 / 298.257_223_563;
 
-        // Radius of Earth at this latitude
+        // Prime-vertical radius of curvature N(lat)
         let sin_lat = lat.sin();
         let cos_lat = lat.cos();
-        let radius = RE / (1.0 - FLATTENING * sin_lat * sin_lat).sqrt() + alt_km;
+        let n = RE / (1.0 - FLATTENING * (2.0 - FLATTENING) * sin_lat * sin_lat).sqrt();
 
-        // Compute GMST in radians
-        let jd = time.timestamp() as f64 / 86400.0 + 2440587.5; // Julian Date from Unix epoch
-        let gmst = 280.46061837 + 360.98564736629 * (jd - 2451545.0);
-        let gmst_rad = (gmst % 360.0).to_radians();
+        // IAU 1982 GMST — same formula used in tracking/src/ukf.rs
+        // jd: Julian date; t_ut1: Julian centuries from J2000.0
+        let jd = 2_451_545.0 + (time.timestamp() as f64 - 946_727_935.816) / 86_400.0;
+        let t_ut1 = (jd - 2_451_545.0) / 36_525.0;
+        let gmst_sec =
+            67_310.548_41 + (8_640_184.812_866 + (0.093_104 - 6.2e-6 * t_ut1) * t_ut1) * t_ut1;
+        let gmst_rad = (gmst_sec * std::f64::consts::PI / 43_200.0)
+            .rem_euclid(2.0 * std::f64::consts::PI);
 
-        // ECI coordinates (simplified: no nutation/precession)
-        let theta = lon + gmst_rad;
-        let x = radius * cos_lat * theta.cos();
-        let y = radius * cos_lat * theta.sin();
-        let z = radius * sin_lat;
+        // Local Sidereal Time
+        let lst = (gmst_rad + lon).rem_euclid(2.0 * std::f64::consts::PI);
+
+        // ECI position (km) — standard WGS84 geodetic-to-ECEF then rotate by GMST
+        let x = (n + alt_km) * cos_lat * lst.cos();
+        let y = (n + alt_km) * cos_lat * lst.sin();
+        let z = (n * (1.0 - FLATTENING).powi(2) + alt_km) * sin_lat;
 
         [x, y, z]
     }

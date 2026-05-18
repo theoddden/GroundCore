@@ -1,11 +1,10 @@
 //! Bi-temporal log implementation
 
-use crate::timestamp::{BiTemporal, EventTime, ReceptionTime};
-use chrono::{DateTime, Utc};
+use crate::timestamp::{EventTime, ReceptionTime};
 use ground_core::{PassId, Result};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 /// Log entry with bi-temporal timestamps
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -181,12 +180,12 @@ impl BitemporalLog {
         }
 
         // Verify chain integrity
-        if let Some(latest) = &self.latest_hash {
-            if entry.previous_hash.as_ref() != Some(latest) {
-                return Err(ground_core::GroundStationError::Database(
-                    "Log chain integrity broken".to_string(),
-                ));
-            }
+        if let Some(latest) = &self.latest_hash
+            && entry.previous_hash.as_ref() != Some(latest)
+        {
+            return Err(ground_core::GroundStationError::Database(
+                "Log chain integrity broken".to_string(),
+            ));
         }
 
         let entry_id = entry.entry_id.clone();
@@ -196,7 +195,7 @@ impl BitemporalLog {
         self.entries.insert(entry_id.clone(), entry);
         self.pass_entries
             .entry(pass_id)
-            .or_insert_with(Vec::new)
+            .or_default()
             .push(entry_id);
         self.latest_hash = Some(entry_hash);
 
@@ -245,6 +244,12 @@ impl BitemporalLog {
             latest_hash: self.latest_hash.clone(),
             chain_valid: self.verify_chain(),
         }
+    }
+}
+
+impl Default for BitemporalLog {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

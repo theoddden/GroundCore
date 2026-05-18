@@ -1,6 +1,6 @@
 // Vector computation
 
-use caching::generic::{LruCache, TimeBasedCache};
+use caching::generic::LruCache;
 use chrono::{DateTime, Utc};
 use nalgebra::{Unit, Vector3};
 use serde::{Deserialize, Serialize};

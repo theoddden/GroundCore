@@ -46,8 +46,7 @@ impl PassAcquisition {
         shadow: Option<Arc<SdrHandle>>,
         doppler_schedule: DopplerSchedule,
     ) -> Self {
-        let snapshot_interval =
-            doppler_schedule.samples.len() as u64 / doppler_schedule.samples.len() as u64 * 50; // Snapshot every 50 samples
+        let snapshot_interval = 50u64; // Snapshot every 50 samples
         let snapshot_manager = SnapshotManager::new(100, snapshot_interval.max(1));
         let shadow_active = shadow.is_some();
 
@@ -84,14 +83,12 @@ impl PassAcquisition {
         let result = state.process_sample(&sample)?;
         self.last_committed_sample = sample.id;
 
-        // Sync shadow state if shadow is active
+        // Sync shadow state if shadow is active.
+        // Arc::get_mut would silently return None whenever any other clone exists;
+        // write() on the inner RwLock is the correct API for shared interior mutability.
         if self.shadow_active {
-            if let Some(shadow_state) = Arc::get_mut(&mut self.shadow_state) {
-                // In a real implementation, we'd use a more efficient sync mechanism
-                // For now, we clone the state (this would be optimized in production)
-                let mut shadow_lock = shadow_state.write().await;
-                *shadow_lock = state.clone();
-            }
+            let mut shadow_lock = self.shadow_state.write().await;
+            *shadow_lock = state.clone();
         }
 
         Ok(result)

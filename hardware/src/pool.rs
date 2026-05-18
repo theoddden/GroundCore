@@ -3,7 +3,7 @@
 //! Manages the pool of available hardware (SDRs, antennas, rotators)
 //! and allocates them to passes based on scheduling decisions.
 
-use chrono::{DateTime, Duration, Utc};
+use chrono::{DateTime, Utc};
 use ground_core::{PassId, Result};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -84,6 +84,12 @@ impl CircuitBreaker {
                 }
             }
         }
+    }
+}
+
+impl Default for CircuitBreaker {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -358,11 +364,11 @@ impl HardwarePool {
     /// Record a successful allocation for a device, closing its circuit if half-open.
     pub async fn record_success(&self, device_id: &str) {
         let mut breakers = self.circuit_breakers.write().await;
-        if let Some(breaker) = breakers.get_mut(device_id) {
-            if breaker.state == CircuitState::HalfOpen {
-                tracing::info!("Device {} recovered — circuit breaker closed", device_id);
-                breaker.record_success();
-            }
+        if let Some(breaker) = breakers.get_mut(device_id)
+            && breaker.state == CircuitState::HalfOpen
+        {
+            tracing::info!("Device {} recovered — circuit breaker closed", device_id);
+            breaker.record_success();
         }
     }
 
@@ -370,5 +376,11 @@ impl HardwarePool {
     pub async fn circuit_state(&self, device_id: &str) -> Option<CircuitState> {
         let breakers = self.circuit_breakers.read().await;
         breakers.get(device_id).map(|b| b.state.clone())
+    }
+}
+
+impl Default for HardwarePool {
+    fn default() -> Self {
+        Self::new()
     }
 }

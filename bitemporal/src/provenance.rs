@@ -3,9 +3,7 @@
 //! The provenance chain tracks the complete history of data from satellite
 //! emission to final delivery, making the system provably auditable.
 
-use crate::log::LogEntry;
 use crate::timestamp::{EventTime, ReceptionTime};
-use chrono::{DateTime, Utc};
 use ground_core::{PassId, Result};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -101,12 +99,12 @@ impl ProvenanceChain {
     /// Add a link to the chain
     pub fn add_link(&mut self, link: ProvenanceLink) -> Result<()> {
         // Verify chain integrity
-        if let Some(last_link) = self.links.last() {
-            if link.previous_hash.as_ref() != Some(&last_link.hash) {
-                return Err(ground_core::GroundStationError::Database(
-                    "Provenance chain integrity broken".to_string(),
-                ));
-            }
+        if let Some(last_link) = self.links.last()
+            && link.previous_hash.as_ref() != Some(&last_link.hash)
+        {
+            return Err(ground_core::GroundStationError::Database(
+                "Provenance chain integrity broken".to_string(),
+            ));
         }
 
         self.links.push(link);
@@ -196,13 +194,13 @@ impl ProvenanceVerifier {
 
         // Verify signatures on federation handoff links
         for link in &chain.links {
-            if matches!(link.link_type, ProvenanceLinkType::FederationHandoff { .. }) {
-                if let Some(signature) = &link.signature {
-                    // In production, verify the signature with the station's public key
-                    // For now, we just check that a signature exists
-                    if signature.is_empty() {
-                        return Ok(false);
-                    }
+            if matches!(link.link_type, ProvenanceLinkType::FederationHandoff { .. })
+                && let Some(signature) = &link.signature
+            {
+                // In production, verify the signature with the station's public key
+                // For now, we just check that a signature exists
+                if signature.is_empty() {
+                    return Ok(false);
                 }
             }
         }
@@ -265,6 +263,12 @@ impl ProvenanceVerifier {
             bitemporal_consistency,
             details: format!("Matched {} of {} links", matched_links, total_links / 2),
         })
+    }
+}
+
+impl Default for ProvenanceVerifier {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

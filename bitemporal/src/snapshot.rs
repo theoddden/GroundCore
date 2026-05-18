@@ -5,10 +5,7 @@
 
 use crate::log::{LogEntry, LogEntryType};
 use crate::timestamp::ReceptionTime;
-use chrono::{DateTime, Utc};
-use ground_core::Result;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 
 /// Snapshot of the log at a specific point in time
 #[derive(Debug, Clone, Serialize, Deserialize)]

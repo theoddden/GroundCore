@@ -5,8 +5,8 @@
 //! Protocols' deadzone shard, applied to ground stations.
 
 use bumpalo::Bump;
-use chrono::{DateTime, Utc};
-use ground_core::{PassId, Result};
+use chrono::Utc;
+use ground_core::Result;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 
 /// Pre-allocated emergency shard
