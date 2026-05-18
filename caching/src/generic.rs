@@ -82,6 +82,11 @@ where
     pub fn len(&self) -> usize {
         self.entries.len()
     }
+
+    /// Check if cache is empty
+    pub fn is_empty(&self) -> bool {
+        self.entries.is_empty()
+    }
 }
 
 /// Time-based cache with TTL
