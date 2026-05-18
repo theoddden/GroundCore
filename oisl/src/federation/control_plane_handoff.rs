@@ -298,8 +298,6 @@ impl HandoffManager {
             .find(|h| h.satellite_id == *satellite_id)
     }
 
-}
-
     /// Get all active handoffs
     pub fn get_active_handoffs(&self) -> &[ControlPlaneHandoff] {
         &self.active_handoffs

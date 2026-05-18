@@ -132,8 +132,8 @@ impl SimulatedSdr {
             let (i, q) = self.signal_generator.next_sample();
 
             // Apply Doppler shift (simplified as frequency offset)
-            let doppler_phase = 2.0 * std::f64::consts::PI * current_doppler * i as f64
-                / self.config.sample_rate as f64;
+            let doppler_phase =
+                2.0 * std::f64::consts::PI * current_doppler * i as f64 / self.config.sample_rate as f64;
             let cos = doppler_phase.cos();
             let sin = doppler_phase.sin();
             let mut doppler_i = i * cos as f32 - q * sin as f32;

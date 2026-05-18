@@ -46,10 +46,7 @@ pub enum ProposalType {
         new_time: DateTime<Utc>,
     },
     /// Failover initiation
-    FailoverInitiation {
-        pass_id: String,
-        reason: String,
-    },
+    FailoverInitiation { pass_id: String, reason: String },
     /// System configuration change
     ConfigChange {
         component: String,
@@ -57,10 +54,7 @@ pub enum ProposalType {
         new_value: serde_json::Value,
     },
     /// Alert generation
-    AlertGeneration {
-        alert: String,
-        severity: String,
-    },
+    AlertGeneration { alert: String, severity: String },
 }
 
 /// Impact assessment

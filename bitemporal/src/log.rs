@@ -120,9 +120,7 @@ pub enum LogEntryType {
         hardware_type: String,
     },
     /// Hardware release
-    HardwareRelease {
-        device_id: String,
-    },
+    HardwareRelease { device_id: String },
     /// Pass started
     PassStarted {
         satellite_id: String,
@@ -134,9 +132,7 @@ pub enum LogEntryType {
         bytes_decoded: u64,
     },
     /// Pass failed
-    PassFailed {
-        reason: String,
-    },
+    PassFailed { reason: String },
     /// Shadow SDR promoted
     ShadowPromoted {
         from_device: String,
@@ -153,10 +149,7 @@ pub enum LogEntryType {
         event_type: String,
     },
     /// Error occurred
-    Error {
-        error_type: String,
-        message: String,
-    },
+    Error { error_type: String, message: String },
 }
 
 /// Bi-temporal log

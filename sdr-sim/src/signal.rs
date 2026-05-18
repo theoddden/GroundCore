@@ -187,7 +187,8 @@ impl SignalGenerator {
         let fading_rate = doppler_hz as f64 * dt;
 
         // Simplified Rayleigh fading
-        let fade = (self.time * fading_rate * 2.0 * std::f64::consts::PI).sin() as f32 * 0.5 + 0.5;
+        let fade =
+            (self.time * fading_rate * 2.0 * std::f64::consts::PI).sin() as f32 * 0.5 + 0.5;
 
         (i * fade, q * fade)
     }
