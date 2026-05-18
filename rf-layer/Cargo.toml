@@ -1,0 +1,25 @@
+[package]
+name = "rf-layer"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+ground-core = { path = "../core" }
+bitemporal = { path = "../bitemporal" }
+batching = { path = "../batching" }
+hardware = { path = "../hardware" }
+tokio = { workspace = true }
+serde = { workspace = true }
+chrono = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+nalgebra = { workspace = true }
+rustfft = { workspace = true }
+sgp4 = { workspace = true }
+
+# No-alloc for real-time path
+bumpalo = { workspace = true, optional = true }
+
+[features]
+default = []
+no-alloc = ["dep:bumpalo"]

@@ -1,0 +1,17 @@
+[package]
+name = "hardware"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+ground-core = { path = "../core" }
+tokio = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+chrono = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+async-trait = { workspace = true }
+
+# For bump allocator (no-alloc in shards)
+bumpalo = "3.16"

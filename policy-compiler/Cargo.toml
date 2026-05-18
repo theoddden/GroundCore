@@ -1,0 +1,16 @@
+[package]
+name = "policy-compiler"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+ground-core = { path = "../core" }
+tokio = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+chrono = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+quote = "1.0"
+proc-macro2 = "1.0"
+syn = { version = "2.0", features = ["full", "extra-traits"] }

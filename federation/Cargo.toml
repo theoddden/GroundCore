@@ -1,0 +1,20 @@
+[package]
+name = "federation"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+ground-core = { path = "../core" }
+bitemporal = { path = "../bitemporal" }
+tokio = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+chrono = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+ed25519-dalek = { version = "2.0", features = ["rand_core"] }
+sha2 = { workspace = true }
+rand = { workspace = true }
+rand_core = "0.6"
+hex = { workspace = true }
+async-trait = { workspace = true }

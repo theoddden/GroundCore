@@ -1,0 +1,14 @@
+[package]
+name = "sdr-sim"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+ground-core = { path = "../core" }
+rf-layer = { path = "../rf-layer" }
+tokio = { workspace = true }
+serde = { workspace = true }
+chrono = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+rand = "0.8"

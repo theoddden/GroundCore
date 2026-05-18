@@ -1,0 +1,31 @@
+[package]
+name = "optical"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+# Workspace dependencies
+tracking = { path = "../tracking" }
+ground-core = { path = "../core" }
+bitemporal = { path = "../bitemporal" }
+caching = { path = "../caching" }
+hardware = { path = "../hardware" }
+snapshotting = { path = "../snapshotting" }
+
+# External dependencies
+tokio = { workspace = true }
+async-trait = { workspace = true }
+futures = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+chrono = { workspace = true }
+nalgebra = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+uuid = { workspace = true }
+reqwest = { version = "0.12", features = ["json"] }
+bytes = "1.9"
+tokio-stream = "0.1"
+bumpalo = "3.16"
+crossbeam = "0.8"
+parking_lot = "0.12"
