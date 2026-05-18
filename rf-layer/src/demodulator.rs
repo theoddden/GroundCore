@@ -3,12 +3,13 @@
 //! This implements the demodulator state that's shared between primary and shadow SDRs
 //! for lossless failover (Problem 1). Snapshots are taken periodically for recovery.
 
-use crate::sdr::{Sample, SampleId};
 use batching::DemodulatorBatcher;
 use bitemporal::timestamp::{BiTemporal, EventTime, ReceptionTime};
 use chrono::{DateTime, Utc};
 use ground_core::{GroundStationError, Result};
 use serde::{Deserialize, Serialize};
+
+use crate::sdr::{Sample, SampleId};
 
 /// Costas/Gardner loop constants
 const COSTAS_ALPHA: f64 = 0.02; // Proportional gain (phase correction per sample)
