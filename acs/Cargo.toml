@@ -5,7 +5,7 @@ edition = "2021"
 
 [dependencies]
 # Core types
-ground_core = { path = "../core" }
+ground_core = { path = "../core", package = "ground-core" }
 tracking = { path = "../tracking" }
 
 # Async runtime
