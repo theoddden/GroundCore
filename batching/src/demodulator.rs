@@ -1,6 +1,6 @@
 //! Demodulator output batching for Float Protocols
 
-use bitemporal::timestamp::{BiTemporal, EventTime, ReceptionTime};
+use bitemporal::timestamp::BiTemporal;
 use serde::{Deserialize, Serialize};
 
 /// Demodulator batch for output to Float Protocols
