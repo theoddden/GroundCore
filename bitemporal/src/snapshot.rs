@@ -182,7 +182,7 @@ impl SnapshotManager {
     pub fn find_closest(&self, time: DateTime<Utc>) -> Option<&LogSnapshot> {
         self.snapshots.iter().min_by_key(|s| {
             (s.captured_at.as_datetime() - time)
-                .timestamp_millis()
+                .num_milliseconds()
                 .abs()
         })
     }
