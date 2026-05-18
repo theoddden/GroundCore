@@ -1,6 +1,6 @@
 # Ground Core
 
-A 100% Rust implementation of satellite ground station protocols supporting both RF and optical communications with advanced architectural patterns for reliability, security, and performance.
+GroundCore is the open-source alternative to proprietary constellation orchestration platforms. It is Apache 2.0, self-hosted, and the only open-source system that orchestrates both RF and laser optical communications in a single unified Rust binary.
 
 ## Architecture
 
