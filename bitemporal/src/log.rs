@@ -193,10 +193,7 @@ impl BitemporalLog {
         let entry_hash = entry.hash.clone();
 
         self.entries.insert(entry_id.clone(), entry);
-        self.pass_entries
-            .entry(pass_id)
-            .or_default()
-            .push(entry_id);
+        self.pass_entries.entry(pass_id).or_default().push(entry_id);
         self.latest_hash = Some(entry_hash);
 
         Ok(())

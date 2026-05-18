@@ -308,8 +308,8 @@ impl DopplerPredictor {
         let t_ut1 = (jd - 2_451_545.0) / 36_525.0;
         let gmst_sec =
             67_310.548_41 + (8_640_184.812_866 + (0.093_104 - 6.2e-6 * t_ut1) * t_ut1) * t_ut1;
-        let gmst_rad = (gmst_sec * std::f64::consts::PI / 43_200.0)
-            .rem_euclid(2.0 * std::f64::consts::PI);
+        let gmst_rad =
+            (gmst_sec * std::f64::consts::PI / 43_200.0).rem_euclid(2.0 * std::f64::consts::PI);
 
         // Local Sidereal Time
         let lst = (gmst_rad + lon).rem_euclid(2.0 * std::f64::consts::PI);

@@ -5,6 +5,7 @@
 
 use crate::log::{LogEntry, LogEntryType};
 use crate::timestamp::ReceptionTime;
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
 /// Snapshot of the log at a specific point in time
@@ -181,7 +182,7 @@ impl SnapshotManager {
     pub fn find_closest(&self, time: DateTime<Utc>) -> Option<&LogSnapshot> {
         self.snapshots.iter().min_by_key(|s| {
             (s.captured_at.as_datetime() - time)
-                .num_milliseconds()
+                .timestamp_millis()
                 .abs()
         })
     }

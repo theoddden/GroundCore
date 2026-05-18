@@ -5,10 +5,9 @@
 //! pages with different protection bits than Tenant B's arena.
 
 use aes_gcm::{
-    aead::{Aead, AeadCore, KeyInit},
     Aes256Gcm, Key, Nonce,
+    aead::{Aead, AeadCore, KeyInit, OsRng},
 };
-use aes_gcm::aead::OsRng;
 use bumpalo::Bump;
 use chrono::{DateTime, Utc};
 use ground_core::{CustomerId, GroundStationError, Result};
@@ -100,12 +99,15 @@ impl TenantCrypto {
         let nonce = Aes256Gcm::generate_nonce(&mut OsRng);
         let ciphertext = cipher
             .encrypt(&nonce, data)
-            .map_err(|e| GroundStationError::Hardware(format!("AES-GCM encrypt failed: {e}")))?
-;
+            .map_err(|e| GroundStationError::Hardware(format!("AES-GCM encrypt failed: {e}")))?;
         let mut result = Vec::with_capacity(nonce.len() + ciphertext.len());
         result.extend_from_slice(&nonce);
         result.extend_from_slice(&ciphertext);
-        tracing::debug!("Encrypted {} bytes for tenant key {}", data.len(), self.key_id);
+        tracing::debug!(
+            "Encrypted {} bytes for tenant key {}",
+            data.len(),
+            self.key_id
+        );
         Ok(result)
     }
 
@@ -127,9 +129,12 @@ impl TenantCrypto {
         let nonce = Nonce::from_slice(&data[..12]);
         let plaintext = cipher
             .decrypt(nonce, &data[12..])
-            .map_err(|e| GroundStationError::Hardware(format!("AES-GCM decrypt failed: {e}")))?
-;
-        tracing::debug!("Decrypted {} bytes for tenant key {}", plaintext.len(), self.key_id);
+            .map_err(|e| GroundStationError::Hardware(format!("AES-GCM decrypt failed: {e}")))?;
+        tracing::debug!(
+            "Decrypted {} bytes for tenant key {}",
+            plaintext.len(),
+            self.key_id
+        );
         Ok(plaintext)
     }
 }
