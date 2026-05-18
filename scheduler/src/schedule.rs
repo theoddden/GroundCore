@@ -1,7 +1,7 @@
 //! Schedule data structures and management
 
 use chrono::{DateTime, Utc};
-use ground_core::{CustomerId, PassId, SatelliteId, Result};
+use ground_core::{CustomerId, PassId, Result, SatelliteId};
 use serde::{Deserialize, Serialize};
 
 /// Pass request from a customer
@@ -141,12 +141,12 @@ impl Schedule {
             version: 0,
         }
     }
-    
+
     /// Add a pass to the schedule
     pub fn add_pass(&mut self, pass: ScheduledPass) {
         self.passes.push(pass);
     }
-    
+
     /// Get passes for a specific customer
     pub fn get_customer_passes(&self, customer_id: &CustomerId) -> Vec<&ScheduledPass> {
         self.passes
@@ -154,7 +154,7 @@ impl Schedule {
             .filter(|p| &p.customer_id == customer_id)
             .collect()
     }
-    
+
     /// Get passes for a specific satellite
     pub fn get_satellite_passes(&self, satellite_id: &SatelliteId) -> Vec<&ScheduledPass> {
         self.passes
@@ -162,15 +162,19 @@ impl Schedule {
             .filter(|p| &p.satellite_id == satellite_id)
             .collect()
     }
-    
+
     /// Get passes in a time range
-    pub fn get_passes_in_range(&self, start: DateTime<Utc>, end: DateTime<Utc>) -> Vec<&ScheduledPass> {
+    pub fn get_passes_in_range(
+        &self,
+        start: DateTime<Utc>,
+        end: DateTime<Utc>,
+    ) -> Vec<&ScheduledPass> {
         self.passes
             .iter()
             .filter(|p| p.scheduled_window.start >= start && p.scheduled_window.end <= end)
             .collect()
     }
-    
+
     /// Check for conflicts in the schedule.
     ///
     /// Replaces the O(n²) pairwise scan with a hardware-indexed approach:
@@ -225,21 +229,23 @@ impl Schedule {
 
         conflicts
     }
-    
+
     /// Get schedule statistics
     pub fn stats(&self) -> ScheduleStats {
         let total_passes = self.passes.len();
-        let customers: std::collections::HashSet<_> = self.passes.iter().map(|p| &p.customer_id).collect();
-        let satellites: std::collections::HashSet<_> = self.passes.iter().map(|p| &p.satellite_id).collect();
-        
-        let status_counts = self.passes.iter().fold(
-            std::collections::HashMap::new(),
-            |mut acc, pass| {
-                *acc.entry(pass.status).or_insert(0) += 1;
-                acc
-            },
-        );
-        
+        let customers: std::collections::HashSet<_> =
+            self.passes.iter().map(|p| &p.customer_id).collect();
+        let satellites: std::collections::HashSet<_> =
+            self.passes.iter().map(|p| &p.satellite_id).collect();
+
+        let status_counts =
+            self.passes
+                .iter()
+                .fold(std::collections::HashMap::new(), |mut acc, pass| {
+                    *acc.entry(pass.status).or_insert(0) += 1;
+                    acc
+                });
+
         ScheduleStats {
             total_passes,
             unique_customers: customers.len(),
@@ -279,24 +285,24 @@ fn hardware_conflicts(a1: &HardwareAllocation, a2: &HardwareAllocation) -> bool 
             return true;
         }
     }
-    
+
     // Check shadow SDR overlap
     if let (Some(s1), Some(s2)) = (&a1.shadow_sdr, &a2.shadow_sdr) {
         if s1 == s2 {
             return true;
         }
     }
-    
+
     // Check antenna overlap
     if a1.antenna_id == a2.antenna_id {
         return true;
     }
-    
+
     // Check rotator overlap
     if a1.rotator_id == a2.rotator_id {
         return true;
     }
-    
+
     false
 }
 

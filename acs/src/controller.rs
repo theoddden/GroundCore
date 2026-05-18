@@ -1,7 +1,7 @@
 //! Antenna controller abstraction
 
 use chrono::{DateTime, Utc};
-use ground_core::{Result, GroundStationError};
+use ground_core::{GroundStationError, Result};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -50,31 +50,31 @@ pub enum ControllerError {
 pub trait AntennaController: Send + Sync {
     /// Point antenna at specific azimuth/elevation
     async fn point(&mut self, azimuth: f64, elevation: f64) -> Result<()>;
-    
+
     /// Get current antenna position
     async fn get_position(&self) -> Result<(f64, f64)>; // (azimuth, elevation)
-    
+
     /// Slew to target with motion planning
     async fn slew_to(&mut self, target: PointingTarget) -> Result<crate::slew::SlewId>;
-    
+
     /// Abort current slew
     async fn abort_slew(&mut self) -> Result<()>;
-    
+
     /// Stow antenna (safe parking position)
     async fn stow(&mut self) -> Result<()>;
-    
+
     /// Get controller status
     async fn get_status(&self) -> Result<ControllerStatus>;
-    
+
     /// Enable controller
     async fn enable(&mut self) -> Result<()>;
-    
+
     /// Disable controller
     async fn disable(&mut self) -> Result<()>;
-    
+
     /// Emergency stop
     async fn emergency_stop(&mut self) -> Result<()>;
-    
+
     /// Home antenna (find index marks)
     async fn home(&mut self) -> Result<()>;
 }
@@ -91,7 +91,7 @@ pub struct GenericAntennaController {
     azimuth_max: f64,
     elevation_min: f64,
     elevation_max: f64,
-    azimuth_rate_limit: f64, // degrees per second
+    azimuth_rate_limit: f64,   // degrees per second
     elevation_rate_limit: f64, // degrees per second
     enabled: bool,
 }
@@ -128,9 +128,11 @@ impl GenericAntennaController {
 impl AntennaController for GenericAntennaController {
     async fn point(&mut self, azimuth: f64, elevation: f64) -> Result<()> {
         if !self.enabled {
-            return Err(GroundStationError::Hardware("Controller disabled".to_string()));
+            return Err(GroundStationError::Hardware(
+                "Controller disabled".to_string(),
+            ));
         }
-        
+
         // Validate position limits
         if azimuth < self.azimuth_min || azimuth > self.azimuth_max {
             return Err(GroundStationError::Validation(format!(
@@ -138,67 +140,67 @@ impl AntennaController for GenericAntennaController {
                 azimuth, self.azimuth_min, self.azimuth_max
             )));
         }
-        
+
         if elevation < self.elevation_min || elevation > self.elevation_max {
             return Err(GroundStationError::Validation(format!(
                 "Elevation {} out of range [{}, {}]",
                 elevation, self.elevation_min, self.elevation_max
             )));
         }
-        
+
         self.target_azimuth = azimuth;
         self.target_elevation = elevation;
         self.status = ControllerStatus::Slewing;
-        
+
         // Simulate pointing (in real implementation, this would send command to hardware)
         self.current_azimuth = azimuth;
         self.current_elevation = elevation;
         self.status = ControllerStatus::Idle;
-        
+
         Ok(())
     }
-    
+
     async fn get_position(&self) -> Result<(f64, f64)> {
         Ok((self.current_azimuth, self.current_elevation))
     }
-    
+
     async fn slew_to(&mut self, target: PointingTarget) -> Result<crate::slew::SlewId> {
         self.point(target.azimuth, target.elevation).await?;
         Ok(Uuid::new_v4())
     }
-    
+
     async fn abort_slew(&mut self) -> Result<()> {
         self.status = ControllerStatus::Idle;
         Ok(())
     }
-    
+
     async fn stow(&mut self) -> Result<()> {
         // Stow to zenith (elevation 90, azimuth 0)
         self.point(0.0, 90.0).await?;
         self.status = ControllerStatus::Stowed;
         Ok(())
     }
-    
+
     async fn get_status(&self) -> Result<ControllerStatus> {
         Ok(self.status)
     }
-    
+
     async fn enable(&mut self) -> Result<()> {
         self.enabled = true;
         Ok(())
     }
-    
+
     async fn disable(&mut self) -> Result<()> {
         self.enabled = false;
         self.status = ControllerStatus::Idle;
         Ok(())
     }
-    
+
     async fn emergency_stop(&mut self) -> Result<()> {
         self.status = ControllerStatus::EmergencyStopped;
         Ok(())
     }
-    
+
     async fn home(&mut self) -> Result<()> {
         self.status = ControllerStatus::Homing;
         // Simulate homing procedure

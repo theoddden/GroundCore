@@ -2,7 +2,7 @@
 
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use sha2::{Sha256, Digest};
+use sha2::{Digest, Sha256};
 use std::path::PathBuf;
 
 /// Semantic version
@@ -21,7 +21,7 @@ impl Version {
             patch,
         }
     }
-    
+
     pub fn as_string(&self) -> String {
         format!("{}.{}.{}", self.major, self.minor, self.patch)
     }
@@ -58,7 +58,7 @@ impl VersionedBinary {
             schema_version,
         }
     }
-    
+
     /// Compute the SHA-256 checksum of a binary file (lowercase hex).
     /// Returns `None` if the file cannot be read.
     pub fn compute_checksum(path: &PathBuf) -> Option<String> {
@@ -85,12 +85,15 @@ impl VersionedBinary {
                 ok
             }
             None => {
-                tracing::error!("Cannot read binary at {} for verification", self.path.display());
+                tracing::error!(
+                    "Cannot read binary at {} for verification",
+                    self.path.display()
+                );
                 false
             }
         }
     }
-    
+
     /// Check schema compatibility with another version
     pub fn schema_compatible(&self, other: &VersionedBinary) -> bool {
         // Same schema version means compatible

@@ -1,11 +1,11 @@
 //! Vendor-specific RF device adapters
 
-use crate::amplifier::{AmplifierControl, GainStage, AmplifierStatus, GenericAmplifier};
-use crate::filter::{FilterControl, FilterSpec, FilterId, FilterType, FilterBank};
+use crate::amplifier::{AmplifierControl, AmplifierStatus, GainStage, GenericAmplifier};
 use crate::attenuator::{AttenuatorControl, VariableAttenuator};
-use crate::device::{RfDevice, RfDeviceType, RfDeviceState, DeviceCalibration};
+use crate::device::{DeviceCalibration, RfDevice, RfDeviceState, RfDeviceType};
+use crate::filter::{FilterBank, FilterControl, FilterId, FilterSpec, FilterType};
 use async_trait::async_trait;
-use ground_core::{Result, GroundStationError};
+use ground_core::{GroundStationError, Result};
 use std::time::Duration;
 use tokio::time::sleep;
 
@@ -224,7 +224,7 @@ impl CrystekFilterBankAdapter {
                 id: uuid::Uuid::new_v4(),
                 filter_type: FilterType::Bandpass,
                 center_frequency: 1_500_000_000, // 1.5 GHz
-                bandwidth: 50_000_000, // 50 MHz
+                bandwidth: 50_000_000,           // 50 MHz
                 insertion_loss: 2.0,
                 vswr: 1.5,
                 tunable: false,

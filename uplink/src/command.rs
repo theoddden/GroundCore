@@ -1,7 +1,7 @@
 //! Command representation and validation
 
 use chrono::{DateTime, Utc};
-use ground_core::{Result, SatelliteId, GroundStationError};
+use ground_core::{GroundStationError, Result, SatelliteId};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 

@@ -1,12 +1,9 @@
 // Satellite Node Manager - per-satellite resource state
 
-use crate::{
-    SatelliteId, TerminalId, TaskId, TenantId,
-    DataRate, Bytes, TimeWindow, Priority,
-};
-use crate::resource::{ResourceAllocation, ResourceClaim};
 use crate::physical::terminal::TerminalCapability as PhysicalTerminalCapability;
-use chrono::{DateTime, Utc, Duration};
+use crate::resource::{ResourceAllocation, ResourceClaim};
+use crate::{Bytes, DataRate, Priority, SatelliteId, TaskId, TenantId, TerminalId, TimeWindow};
+use chrono::{DateTime, Duration, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, VecDeque};
 
@@ -14,24 +11,24 @@ use std::collections::{HashMap, VecDeque};
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SatelliteNode {
     pub satellite_id: SatelliteId,
-    
+
     // Physical capabilities
     pub optical_terminals: HashMap<TerminalId, TerminalCapability>,
     pub rf_terminals: HashMap<TerminalId, RfCapability>,
     pub sensors: HashMap<String, SensorCapability>,
-    
+
     // Compute resources (next-gen capability)
     pub compute: ComputeResources,
     pub storage: StorageResources,
-    
+
     // Power and thermal
     pub power_budget: PowerBudget,
     pub thermal_state: ThermalState,
-    
+
     // Mission state
     pub current_allocations: Vec<ResourceAllocation>,
     pub pending_tasks: VecDeque<TaskId>,
-    
+
     // Health
     pub health_metrics: HealthMetrics,
     pub degradation_predictions: Vec<DegradationForecast>,
@@ -140,7 +137,8 @@ impl SatelliteNode {
 
     /// Add optical terminal
     pub fn add_optical_terminal(&mut self, capability: TerminalCapability) {
-        self.optical_terminals.insert(capability.terminal_id.clone(), capability);
+        self.optical_terminals
+            .insert(capability.terminal_id.clone(), capability);
     }
 
     /// Check if resource claim can be satisfied
@@ -154,7 +152,7 @@ impl SatelliteNode {
         if let Some(terminal_id) = &claim.optical_terminal {
             let terminal = self.optical_terminals.get(terminal_id);
             match terminal {
-                Some(cap) if cap.available => {},
+                Some(cap) if cap.available => {}
                 _ => return false,
             }
         }
@@ -177,9 +175,14 @@ impl SatelliteNode {
     }
 
     /// Allocate resources for a claim
-    pub fn allocate(&mut self, claim: ResourceClaim, task_id: TaskId, tenant_id: TenantId) -> ResourceAllocation {
+    pub fn allocate(
+        &mut self,
+        claim: ResourceClaim,
+        task_id: TaskId,
+        tenant_id: TenantId,
+    ) -> ResourceAllocation {
         let allocation_id = crate::AllocationId::new_v4();
-        
+
         // Update resource usage
         self.power_budget.allocated_watts += claim.power_watts;
         self.power_budget.available_watts -= claim.power_watts;
@@ -209,9 +212,13 @@ impl SatelliteNode {
 
     /// Release allocated resources
     pub fn release(&mut self, allocation_id: &crate::AllocationId) {
-        if let Some(pos) = self.current_allocations.iter().position(|a| &a.allocation_id == allocation_id) {
+        if let Some(pos) = self
+            .current_allocations
+            .iter()
+            .position(|a| &a.allocation_id == allocation_id)
+        {
             let allocation = self.current_allocations.remove(pos);
-            
+
             // Restore resources
             self.power_budget.allocated_watts -= allocation.resources.power_watts;
             self.power_budget.available_watts += allocation.resources.power_watts;
@@ -229,12 +236,16 @@ impl SatelliteNode {
 
     /// Get available bandwidth
     pub fn available_bandwidth(&self) -> DataRate {
-        let total_capacity: u64 = self.optical_terminals.values()
+        let total_capacity: u64 = self
+            .optical_terminals
+            .values()
             .filter(|t| t.available)
             .map(|t| t.max_data_rate.0)
             .sum();
-        
-        let allocated: u64 = self.current_allocations.iter()
+
+        let allocated: u64 = self
+            .current_allocations
+            .iter()
             .filter_map(|a| a.resources.bandwidth)
             .map(|b| b.0)
             .sum();

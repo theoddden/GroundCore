@@ -9,8 +9,10 @@
 // Two-stage algorithm for optimal ground station selection to minimize
 // maximum satellite-to-ground latency across constellation operation.
 
-use crate::{NodeId, LinkId, TerminalId, DataRate, TimeWindow, GeometryScore, NodeId as CoreNodeId};
-use chrono::{DateTime, Utc, Duration};
+use crate::{
+    DataRate, GeometryScore, LinkId, NodeId, NodeId as CoreNodeId, TerminalId, TimeWindow,
+};
+use chrono::{DateTime, Duration, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, HashMap, HashSet};
 
@@ -114,17 +116,10 @@ pub struct RefinementReport {
 /// Topology forecaster trait
 pub trait TopologyForecaster: Send + Sync {
     /// Generate topology forecast
-    fn forecast(
-        &self,
-        horizon: Duration,
-        resolution: Duration,
-    ) -> TopologyForecast;
+    fn forecast(&self, horizon: Duration, resolution: Duration) -> TopologyForecast;
 
     /// Refine forecast with new observations
-    fn refine(
-        &mut self,
-        new_observations: Vec<LinkObservation>,
-    ) -> RefinementReport;
+    fn refine(&mut self, new_observations: Vec<LinkObservation>) -> RefinementReport;
 
     /// Query topology at specific timestamp
     fn query_at(&self, timestamp: DateTime<Utc>) -> GraphSnapshot;

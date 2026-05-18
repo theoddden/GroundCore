@@ -39,8 +39,16 @@ impl LogEntry {
         previous_hash: Option<String>,
     ) -> Self {
         let entry_id = uuid::Uuid::new_v4().to_string();
-        let hash = Self::compute_hash(&entry_id, &pass_id, &entry_type, &event_time, &reception_time, &data, &previous_hash);
-        
+        let hash = Self::compute_hash(
+            &entry_id,
+            &pass_id,
+            &entry_type,
+            &event_time,
+            &reception_time,
+            &data,
+            &previous_hash,
+        );
+
         Self {
             entry_id,
             pass_id,
@@ -52,7 +60,7 @@ impl LogEntry {
             previous_hash,
         }
     }
-    
+
     /// Compute hash of log entry
     fn compute_hash(
         entry_id: &str,
@@ -75,7 +83,7 @@ impl LogEntry {
         }
         format!("{:x}", hasher.finalize())
     }
-    
+
     /// Verify the integrity of this log entry
     pub fn verify(&self) -> bool {
         let computed_hash = Self::compute_hash(
@@ -169,7 +177,7 @@ impl BitemporalLog {
             latest_hash: None,
         }
     }
-    
+
     /// Append a log entry
     pub fn append(&mut self, entry: LogEntry) -> Result<()> {
         // Verify entry integrity
@@ -178,7 +186,7 @@ impl BitemporalLog {
                 "Log entry verification failed".to_string(),
             ));
         }
-        
+
         // Verify chain integrity
         if let Some(latest) = &self.latest_hash {
             if entry.previous_hash.as_ref() != Some(latest) {
@@ -187,26 +195,26 @@ impl BitemporalLog {
                 ));
             }
         }
-        
+
         let entry_id = entry.entry_id.clone();
         let pass_id = entry.pass_id.clone();
         let entry_hash = entry.hash.clone();
-        
+
         self.entries.insert(entry_id.clone(), entry);
         self.pass_entries
             .entry(pass_id)
             .or_insert_with(Vec::new)
             .push(entry_id);
         self.latest_hash = Some(entry_hash);
-        
+
         Ok(())
     }
-    
+
     /// Get a log entry by ID
     pub fn get(&self, entry_id: &str) -> Option<&LogEntry> {
         self.entries.get(entry_id)
     }
-    
+
     /// Get all entries for a pass
     pub fn get_pass_entries(&self, pass_id: &PassId) -> Vec<&LogEntry> {
         self.pass_entries
@@ -214,15 +222,15 @@ impl BitemporalLog {
             .map(|ids| ids.iter().filter_map(|id| self.entries.get(id)).collect())
             .unwrap_or_default()
     }
-    
+
     /// Verify the integrity of the entire log chain
     pub fn verify_chain(&self) -> bool {
         let mut previous_hash: Option<String> = None;
-        
+
         // Sort entries by reception time for chain verification
         let mut sorted_entries: Vec<_> = self.entries.values().collect();
         sorted_entries.sort_by_key(|e| e.reception_time.as_datetime());
-        
+
         for entry in sorted_entries {
             if entry.previous_hash != previous_hash {
                 return false;
@@ -232,10 +240,10 @@ impl BitemporalLog {
             }
             previous_hash = Some(entry.hash.clone());
         }
-        
+
         true
     }
-    
+
     /// Get log statistics
     pub fn stats(&self) -> LogStats {
         LogStats {

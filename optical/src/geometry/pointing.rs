@@ -1,10 +1,10 @@
 // Vector computation
 
 use caching::generic::{LruCache, TimeBasedCache};
-use serde::{Deserialize, Serialize};
-use nalgebra::{Vector3, Unit};
-use std::hash::{Hash, Hasher};
 use chrono::{DateTime, Utc};
+use nalgebra::{Unit, Vector3};
+use serde::{Deserialize, Serialize};
+use std::hash::{Hash, Hasher};
 
 /// Pointing vector
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
@@ -74,11 +74,7 @@ impl PointingCache {
         }
     }
 
-    pub fn get_or_compute<F>(
-        &mut self,
-        key: PointingCacheKey,
-        compute_fn: F,
-    ) -> PointingVector
+    pub fn get_or_compute<F>(&mut self, key: PointingCacheKey, compute_fn: F) -> PointingVector
     where
         F: FnOnce() -> PointingVector,
     {
@@ -118,14 +114,7 @@ impl SatellitePosition {
         }
     }
 
-    pub fn with_velocity(
-        x_km: f64,
-        y_km: f64,
-        z_km: f64,
-        vx: f64,
-        vy: f64,
-        vz: f64,
-    ) -> Self {
+    pub fn with_velocity(x_km: f64, y_km: f64, z_km: f64, vx: f64, vy: f64, vz: f64) -> Self {
         Self {
             x_km,
             y_km,
@@ -141,7 +130,11 @@ impl SatellitePosition {
     }
 
     pub fn velocity_vector(&self) -> Vector3<f64> {
-        Vector3::new(self.velocity_x_km_s, self.velocity_y_km_s, self.velocity_z_km_s)
+        Vector3::new(
+            self.velocity_x_km_s,
+            self.velocity_y_km_s,
+            self.velocity_z_km_s,
+        )
     }
 }
 
@@ -170,7 +163,7 @@ pub fn compute_pointing_vector_cached(
         target_id,
         timestamp,
     };
-    
+
     cache.get_or_compute(key, || compute_pointing_vector(observer, target))
 }
 
@@ -183,10 +176,7 @@ pub fn compute_relative_velocity(
 }
 
 /// Compute range rate (rate of change of distance)
-pub fn compute_range_rate(
-    observer: &SatellitePosition,
-    target: &SatellitePosition,
-) -> f64 {
+pub fn compute_range_rate(observer: &SatellitePosition, target: &SatellitePosition) -> f64 {
     let pointing = compute_pointing_vector(observer, target);
     let rel_vel = compute_relative_velocity(observer, target);
     let unit_pointing = Unit::new_normalize(pointing.to_cartesian());

@@ -81,7 +81,7 @@ impl HomingProcedure {
         // 1. Move antenna to mechanical stops
         // 2. Read encoder values at index marks
         // 3. Store offsets
-        
+
         // Simulate homing
         self.azimuth_offset = 0.0;
         self.elevation_offset = 0.0;
@@ -190,10 +190,10 @@ impl SunAvoidance {
 
         // Dot product
         let dot = x1 * x2 + y1 * y2 + z1 * z2;
-        
+
         // Clamp to [-1, 1] to handle floating point errors
         let dot = dot.clamp(-1.0, 1.0);
-        
+
         // Angular separation
         dot.acos().to_degrees()
     }

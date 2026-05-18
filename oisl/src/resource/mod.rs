@@ -7,23 +7,20 @@
 // Extended with Control Node Assignment Algorithm (CNAA) for satellite-side
 // dynamic control node selection using TLE orbital data prediction.
 
-pub mod manager;
 pub mod allocator;
-pub mod scheduler;
 pub mod control_node_assignment;
+pub mod manager;
+pub mod scheduler;
 
-pub use manager::{SatelliteNode, StorageResources, HealthMetrics, DegradationForecast};
-pub use allocator::{ResourceAllocator, ResourceClaim, ResourceAllocation};
-pub use scheduler::{SatelliteScheduler, AllocationId, PreemptionReason, RebalanceReport};
+pub use allocator::{ResourceAllocation, ResourceAllocator, ResourceClaim};
 pub use control_node_assignment::{
-    ControlNodeAssignmentAlgorithm, AssignmentPrediction, HandoffEvent,
-    TleData, ControlNodeLocation, AssignmentError,
+    AssignmentError, AssignmentPrediction, ControlNodeAssignmentAlgorithm, ControlNodeLocation,
+    HandoffEvent, TleData,
 };
+pub use manager::{DegradationForecast, HealthMetrics, SatelliteNode, StorageResources};
+pub use scheduler::{AllocationId, PreemptionReason, RebalanceReport, SatelliteScheduler};
 
-use crate::{
-    SatelliteId, TerminalId, TaskId, TenantId, Priority, TimeWindow,
-    DataRate, Bytes,
-};
-use chrono::{DateTime, Utc, Duration};
+use crate::{Bytes, DataRate, Priority, SatelliteId, TaskId, TenantId, TerminalId, TimeWindow};
+use chrono::{DateTime, Duration, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, VecDeque};

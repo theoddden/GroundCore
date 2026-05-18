@@ -8,12 +8,12 @@
 //! All code in the real-time path uses no-alloc guarantees to prevent
 //! memory allocation pauses that would lose samples.
 
-pub mod sdr;
-pub mod doppler;
 pub mod demodulator;
+pub mod doppler;
+pub mod sdr;
 pub mod shadow;
 
-pub use sdr::{SdrHandle, SampleId, Sample};
-pub use doppler::{DopplerSchedule, NcoController};
 pub use demodulator::{DemodState, DemodulatorSnapshot};
+pub use doppler::{DopplerSchedule, NcoController};
+pub use sdr::{Sample, SampleId, SdrHandle};
 pub use shadow::{PassAcquisition, ShadowTracker};

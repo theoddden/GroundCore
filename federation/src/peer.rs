@@ -2,7 +2,7 @@
 
 use crate::verification::ChallengeSchedule;
 use chrono::{DateTime, Utc};
-use ed25519_dalek::{SigningKey, Signer, VerifyingKey};
+use ed25519_dalek::{Signer, SigningKey, VerifyingKey};
 use ground_core::{PassId, StationId};
 use rand::rngs::OsRng;
 use serde::{Deserialize, Serialize};
@@ -98,11 +98,11 @@ impl PeerTrustScore {
             total: 0,
         }
     }
-    
+
     /// Update trust score based on verification result
     pub fn update(&mut self, passed: bool, match_rate: f64) {
         self.total += 1;
-        
+
         if passed {
             self.successes += 1;
             // Increase trust, more for higher match rates
@@ -115,7 +115,7 @@ impl PeerTrustScore {
             self.score = (self.score - decrease).max(0.0);
         }
     }
-    
+
     /// Get peer status based on trust score
     pub fn status(&self) -> PeerStatus {
         if self.score >= 0.8 {
@@ -158,8 +158,16 @@ impl FederationPeer {
         if let Some(latest) = self.attestation_history.back() {
             let mut trust = PeerTrustScore {
                 score: self.trust_score,
-                successes: self.attestation_history.iter().filter(|r| r.verification.passed).count() as u64,
-                failures: self.attestation_history.iter().filter(|r| !r.verification.passed).count() as u64,
+                successes: self
+                    .attestation_history
+                    .iter()
+                    .filter(|r| r.verification.passed)
+                    .count() as u64,
+                failures: self
+                    .attestation_history
+                    .iter()
+                    .filter(|r| !r.verification.passed)
+                    .count() as u64,
                 total: self.total_attestations,
             };
             trust.update(latest.verification.passed, latest.verification.match_rate);
@@ -167,12 +175,12 @@ impl FederationPeer {
             self.status = trust.status();
         }
     }
-    
+
     /// Check if peer is currently trusted
     pub fn is_trusted(&self) -> bool {
         matches!(self.status, PeerStatus::Trusted)
     }
-    
+
     /// Check if peer can be used without verification
     pub fn can_skip_verification(&self) -> bool {
         self.is_trusted() && self.attestation_history.len() >= 5
@@ -189,13 +197,13 @@ impl PeerManager {
     pub fn new() -> Self {
         let mut rng = OsRng;
         let secret_key = SigningKey::generate(&mut rng);
-        
+
         Self {
             peers: HashMap::new(),
             secret_key,
         }
     }
-    
+
     /// Create with existing key (for testing)
     pub fn with_key(secret_key: SigningKey) -> Self {
         Self {
@@ -203,53 +211,58 @@ impl PeerManager {
             secret_key,
         }
     }
-    
+
     /// Get our public key
     pub fn public_key(&self) -> String {
         hex::encode(self.secret_key.verifying_key().as_bytes())
     }
-    
+
     /// Sign data
     pub fn sign(&self, data: &[u8]) -> String {
         let signature = self.secret_key.sign(data);
         hex::encode(signature.to_bytes())
     }
-    
+
     /// Add a peer
     pub fn add_peer(&mut self, peer: FederationPeer) {
         self.peers.insert(peer.station_id.clone(), peer);
     }
-    
+
     /// Get a peer
     pub fn get_peer(&self, peer_id: &PeerId) -> Option<&FederationPeer> {
         self.peers.get(peer_id)
     }
-    
+
     /// Get all peers
     pub fn all_peers(&self) -> Vec<&FederationPeer> {
         self.peers.values().collect()
     }
-    
+
     /// Get trusted peers
     pub fn trusted_peers(&self) -> Vec<&FederationPeer> {
-        self.peers
-            .values()
-            .filter(|p| p.is_trusted())
-            .collect()
+        self.peers.values().filter(|p| p.is_trusted()).collect()
     }
-    
+
     /// Remove a peer
     pub fn remove_peer(&mut self, peer_id: &PeerId) {
         self.peers.remove(peer_id);
     }
-    
+
     /// Update peer trust score
     pub fn update_trust(&mut self, peer_id: &PeerId, passed: bool, match_rate: f64) {
         if let Some(peer) = self.peers.get_mut(peer_id) {
             let mut trust = PeerTrustScore {
                 score: peer.trust_score,
-                successes: peer.attestation_history.iter().filter(|r| r.verification.passed).count() as u64,
-                failures: peer.attestation_history.iter().filter(|r| !r.verification.passed).count() as u64,
+                successes: peer
+                    .attestation_history
+                    .iter()
+                    .filter(|r| r.verification.passed)
+                    .count() as u64,
+                failures: peer
+                    .attestation_history
+                    .iter()
+                    .filter(|r| !r.verification.passed)
+                    .count() as u64,
                 total: peer.total_attestations,
             };
             trust.update(passed, match_rate);

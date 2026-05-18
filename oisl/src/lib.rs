@@ -8,50 +8,46 @@
 // - PAT Coordination: Hard real-time synchronized acquisition
 // - Federation Plane: Cross-operator OISL coordination
 
-pub mod mission;
-pub mod topology;
-pub mod resource;
-pub mod physical;
-pub mod pat;
 pub mod federation;
+pub mod mission;
+pub mod pat;
+pub mod physical;
+pub mod resource;
+pub mod topology;
 
 // Re-export common types
 pub use mission::{
-    IntentCompiler, MissionIntent, TaskingPlan, ObjectiveType, 
-    IntentConstraints, ServiceLevelAgreement, PlanExplanation,
-    CompilationError, ValidationWarning,
+    CompilationError, IntentCompiler, IntentConstraints, MissionIntent, ObjectiveType,
+    PlanExplanation, ServiceLevelAgreement, TaskingPlan, ValidationWarning,
 };
 
 pub use topology::{
-    TopologyForecast, GraphSnapshot, PotentialEdge, ActiveLink,
-    TopologyForecaster, SpatiotemporalRouter, Route, RoutedHop,
-    CostModel, LinkPhase, LinkMetrics,
+    ActiveLink, CostModel, GraphSnapshot, LinkMetrics, LinkPhase, PotentialEdge, Route, RoutedHop,
+    SpatiotemporalRouter, TopologyForecast, TopologyForecaster,
 };
 
-pub use resource::{
-    SatelliteNode, ResourceAllocation, ResourceClaim, SatelliteScheduler,
-    DegradationForecast,
-};
 pub use resource::manager::{
-    TerminalCapability, ComputeResources, StorageResources,
-    PowerBudget, ThermalState,
+    ComputeResources, PowerBudget, StorageResources, TerminalCapability, ThermalState,
+};
+pub use resource::{
+    DegradationForecast, ResourceAllocation, ResourceClaim, SatelliteNode, SatelliteScheduler,
 };
 
 pub use physical::{
-    OpticalTerminal, OctConfiguration, Modulation, FecConfiguration,
-    FecCode, LinkType,
-    CondorMk3, Scot80, TelemetryStream,
+    CondorMk3, FecCode, FecConfiguration, LinkType, Modulation, OctConfiguration, OpticalTerminal,
+    Scot80, TelemetryStream,
 };
+
 pub use physical::terminal::TerminalCapability as PhysicalCapability;
 
 pub use pat::{
-    PatCoordinator, ScheduledAcquisition, PrecisionClock,
-    PrecisionTimestamp, ClockConfidence, PatEventType,
+    ClockConfidence, PatCoordinator, PatEventType, PrecisionClock, PrecisionTimestamp,
+    ScheduledAcquisition,
 };
 
 pub use federation::{
-    FederationPlane, FederationPeer, CrossOperatorLink,
-    AttestationEngine, FederationPolicy, RevenueAgreement,
+    AttestationEngine, CrossOperatorLink, FederationPeer, FederationPlane, FederationPolicy,
+    RevenueAgreement,
 };
 
 // Common type aliases
@@ -71,15 +67,21 @@ pub type SerialNumber = String;
 
 // Common newtypes for type safety
 /// Data rate in bits per second
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, serde::Serialize, serde::Deserialize)]
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, serde::Serialize, serde::Deserialize,
+)]
 pub struct DataRate(pub u64);
 
 /// Frequency in Hz
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, serde::Serialize, serde::Deserialize)]
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, serde::Serialize, serde::Deserialize,
+)]
 pub struct Frequency(pub u64);
 
 /// Bytes
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, serde::Serialize, serde::Deserialize)]
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, serde::Serialize, serde::Deserialize,
+)]
 pub struct Bytes(pub u64);
 
 /// Confidence score (0.0 to 1.0)
@@ -90,11 +92,11 @@ impl ConfidenceScore {
     pub fn new(value: f64) -> Self {
         Self(value.clamp(0.0, 1.0))
     }
-    
+
     pub fn is_high(&self) -> bool {
         self.0 >= 0.8
     }
-    
+
     pub fn is_low(&self) -> bool {
         self.0 < 0.5
     }
@@ -111,15 +113,15 @@ impl TimeWindow {
     pub fn new(start: chrono::DateTime<chrono::Utc>, end: chrono::DateTime<chrono::Utc>) -> Self {
         Self { start, end }
     }
-    
+
     pub fn duration(&self) -> chrono::Duration {
         self.end - self.start
     }
-    
+
     pub fn contains(&self, timestamp: chrono::DateTime<chrono::Utc>) -> bool {
         timestamp >= self.start && timestamp <= self.end
     }
-    
+
     pub fn overlaps(&self, other: &TimeWindow) -> bool {
         self.start < other.end && self.end > other.start
     }
@@ -142,7 +144,9 @@ pub enum SensorType {
 }
 
 /// Priority levels
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, serde::Serialize, serde::Deserialize)]
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, serde::Serialize, serde::Deserialize,
+)]
 pub enum Priority {
     Critical = 0,
     High = 1,

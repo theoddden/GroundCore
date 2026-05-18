@@ -4,8 +4,8 @@
 // Satellites maintain visibility to control plane at all times during handoff,
 // ensuring uninterrupted management without container migration or Pod eviction.
 
-use crate::{NodeId, SatelliteId, BiTemporal};
-use chrono::{DateTime, Utc, Duration};
+use crate::{BiTemporal, NodeId, SatelliteId};
+use chrono::{DateTime, Duration, Utc};
 use serde::{Deserialize, Serialize};
 
 /// Control plane handoff state machine
@@ -55,7 +55,10 @@ impl ControlPlaneHandoff {
 
     /// Check if handoff is in progress
     pub fn is_in_progress(&self) -> bool {
-        matches!(self.state, HandoffState::Initiated | HandoffState::Processing)
+        matches!(
+            self.state,
+            HandoffState::Initiated | HandoffState::Processing
+        )
     }
 
     /// Check if handoff is complete
@@ -179,26 +182,44 @@ impl HandoffManager {
         target_node: NodeId,
     ) -> Result<&mut ControlPlaneHandoff, HandoffError> {
         // Check if handoff already in progress for this satellite
-        if self.active_handoffs.iter().any(|h| h.satellite_id == satellite_id && h.is_in_progress()) {
+        if self
+            .active_handoffs
+            .iter()
+            .any(|h| h.satellite_id == satellite_id && h.is_in_progress())
+        {
             return Err(HandoffError::HandoffAlreadyInProgress { satellite_id });
         }
 
         let mut handoff = ControlPlaneHandoff::new(satellite_id, source_node, target_node);
-        handoff.transition_to(HandoffState::Initiated { initiated_at: BiTemporal::new(Utc::now(), Utc::now()) }, HandoffTrigger::SatelliteInitiated);
-        
+        handoff.transition_to(
+            HandoffState::Initiated {
+                initiated_at: BiTemporal::new(Utc::now(), Utc::now()),
+            },
+            HandoffTrigger::SatelliteInitiated,
+        );
+
         self.active_handoffs.push(handoff);
         Ok(self.active_handoffs.last_mut().unwrap())
     }
 
     /// Advance handoff to next step
-    pub fn advance_handoff(&mut self, satellite_id: &SatelliteId, next_step: HandoffStep) -> Result<(), HandoffError> {
-        let handoff = self.active_handoffs
+    pub fn advance_handoff(
+        &mut self,
+        satellite_id: &SatelliteId,
+        next_step: HandoffStep,
+    ) -> Result<(), HandoffError> {
+        let handoff = self
+            .active_handoffs
             .iter_mut()
             .find(|h| h.satellite_id == *satellite_id)
-            .ok_or_else(|| HandoffError::HandoffNotFound { satellite_id: satellite_id.clone() })?;
+            .ok_or_else(|| HandoffError::HandoffNotFound {
+                satellite_id: satellite_id.clone(),
+            })?;
 
         if !handoff.is_in_progress() {
-            return Err(HandoffError::InvalidHandoffState { satellite_id: satellite_id.clone() });
+            return Err(HandoffError::InvalidHandoffState {
+                satellite_id: satellite_id.clone(),
+            });
         }
 
         let new_state = HandoffState::Processing {
@@ -209,41 +230,75 @@ impl HandoffManager {
         handoff.transition_to(new_state, HandoffTrigger::SatelliteInitiated);
 
         if next_step == HandoffStep::HandoffComplete {
-            handoff.transition_to(HandoffState::Complete { completed_at: BiTemporal::new(Utc::now(), Utc::now()) }, HandoffTrigger::SatelliteInitiated);
+            handoff.transition_to(
+                HandoffState::Complete {
+                    completed_at: BiTemporal::new(Utc::now(), Utc::now()),
+                },
+                HandoffTrigger::SatelliteInitiated,
+            );
         }
 
         Ok(())
     }
 
     /// Complete handoff with metrics
-    pub fn complete_handoff(&mut self, satellite_id: &SatelliteId, metrics: HandoffMetrics) -> Result<(), HandoffError> {
-        let handoff = self.active_handoffs
+    pub fn complete_handoff(
+        &mut self,
+        satellite_id: &SatelliteId,
+        metrics: HandoffMetrics,
+    ) -> Result<(), HandoffError> {
+        let handoff = self
+            .active_handoffs
             .iter_mut()
             .find(|h| h.satellite_id == *satellite_id)
-            .ok_or_else(|| HandoffError::HandoffNotFound { satellite_id: satellite_id.clone() })?;
+            .ok_or_else(|| HandoffError::HandoffNotFound {
+                satellite_id: satellite_id.clone(),
+            })?;
 
         handoff.update_metrics(metrics);
-        handoff.transition_to(HandoffState::Complete { completed_at: BiTemporal::new(Utc::now(), Utc::now()) }, HandoffTrigger::SatelliteInitiated);
+        handoff.transition_to(
+            HandoffState::Complete {
+                completed_at: BiTemporal::new(Utc::now(), Utc::now()),
+            },
+            HandoffTrigger::SatelliteInitiated,
+        );
 
         Ok(())
     }
 
     /// Fail handoff
-    pub fn fail_handoff(&mut self, satellite_id: &SatelliteId, reason: String) -> Result<(), HandoffError> {
-        let handoff = self.active_handoffs
+    pub fn fail_handoff(
+        &mut self,
+        satellite_id: &SatelliteId,
+        reason: String,
+    ) -> Result<(), HandoffError> {
+        let handoff = self
+            .active_handoffs
             .iter_mut()
             .find(|h| h.satellite_id == *satellite_id)
-            .ok_or_else(|| HandoffError::HandoffNotFound { satellite_id: satellite_id.clone() })?;
+            .ok_or_else(|| HandoffError::HandoffNotFound {
+                satellite_id: satellite_id.clone(),
+            })?;
 
-        handoff.transition_to(HandoffState::Failed { reason: reason.clone(), failed_at: BiTemporal::new(Utc::now(), Utc::now()) }, HandoffTrigger::Error(reason));
+        handoff.transition_to(
+            HandoffState::Failed {
+                reason: reason.clone(),
+                failed_at: BiTemporal::new(Utc::now(), Utc::now()),
+            },
+            HandoffTrigger::Error(reason),
+        );
 
         Ok(())
     }
 
     /// Get handoff for satellite
     pub fn get_handoff(&self, satellite_id: &SatelliteId) -> Option<&ControlPlaneHandoff> {
-        self.active_handoffs.iter().find(|h| h.satellite_id == *satellite_id)
+        self.active_handoffs
+            .iter()
+            .find(|h| h.satellite_id == *satellite_id)
     }
+
+}
 
     /// Get all active handoffs
     pub fn get_active_handoffs(&self) -> &[ControlPlaneHandoff] {

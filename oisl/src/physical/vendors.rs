@@ -3,13 +3,10 @@
 // Mynaric CONDOR Mk3, Tesat SCOT80, and other terminal implementations
 // of the OpticalTerminal trait.
 
-use crate::{
-    TerminalId, OctConfiguration, OctStandardVersion,
-    DataRate,
-};
-use crate::physical::terminal::{TelemetryFrame, TerminalCapability, TerminalError};
 use crate::physical::OpticalTerminal;
+use crate::physical::terminal::{TelemetryFrame, TerminalCapability, TerminalError};
 use crate::topology::link_state::LinkPhase;
+use crate::{DataRate, OctConfiguration, OctStandardVersion, TerminalId};
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use std::pin::Pin;
@@ -87,7 +84,7 @@ impl OpticalTerminal for CondorMk3 {
     fn capabilities(&self) -> TerminalCapability {
         TerminalCapability {
             max_data_rate: DataRate(10_000_000_000), // 10 Gbps
-            max_pointing_accuracy_rad: 10e-6, // 10 microrad
+            max_pointing_accuracy_rad: 10e-6,        // 10 microrad
             supported_standards: vec![OctStandardVersion::V4_0_0],
             beam_divergence_mrad: 0.1,
             max_range_km: 5000.0,
@@ -98,14 +95,15 @@ impl OpticalTerminal for CondorMk3 {
         let config_json = serde_json::to_string(&config)
             .map_err(|e| TerminalError::ConfigurationError(e.to_string()))?;
 
-        self.send_command(&format!("configure {}", config_json)).await?;
+        self.send_command(&format!("configure {}", config_json))
+            .await?;
         self.config = Some(config);
         Ok(())
     }
 
     async fn calibrate(&mut self) -> Result<CalibrationReport, TerminalError> {
         let response = self.send_command("calibrate").await?;
-        
+
         // Parse response (simplified)
         Ok(CalibrationReport {
             calibrated_at: Utc::now(),
@@ -115,24 +113,32 @@ impl OpticalTerminal for CondorMk3 {
         })
     }
 
-    async fn schedule_acquisition(&mut self, schedule: AcquisitionSchedule) -> Result<(), TerminalError> {
-        let schedule_json = serde_json::to_string(&schedule)
-            .map_err(|e| TerminalError::PatError(e.to_string()))?;
+    async fn schedule_acquisition(
+        &mut self,
+        schedule: AcquisitionSchedule,
+    ) -> Result<(), TerminalError> {
+        let schedule_json =
+            serde_json::to_string(&schedule).map_err(|e| TerminalError::PatError(e.to_string()))?;
 
-        self.send_command(&format!("schedule_acquisition {}", schedule_json)).await
+        self.send_command(&format!("schedule_acquisition {}", schedule_json))
+            .await
     }
 
     async fn begin_pat(&mut self) -> Result<PatHandle, TerminalError> {
         let response = self.send_command("begin_pat").await?;
-        
+
         Ok(PatHandle {
             acquisition_id: crate::AcquisitionId::new_v4(),
             started_at: Utc::now(),
         })
     }
 
-    async fn cancel_pat(&mut self, acquisition_id: crate::AcquisitionId) -> Result<(), TerminalError> {
-        self.send_command(&format!("cancel_pat {}", acquisition_id)).await
+    async fn cancel_pat(
+        &mut self,
+        acquisition_id: crate::AcquisitionId,
+    ) -> Result<(), TerminalError> {
+        self.send_command(&format!("cancel_pat {}", acquisition_id))
+            .await
     }
 
     async fn data_path(&self) -> Result<EthernetEndpoint, TerminalError> {
@@ -145,7 +151,7 @@ impl OpticalTerminal for CondorMk3 {
 
     async fn telemetry_stream(&self) -> Result<TelemetryStream, TerminalError> {
         let (tx, rx) = mpsc::channel(100);
-        
+
         // Simulate telemetry stream
         tokio::spawn(async move {
             loop {
@@ -165,7 +171,7 @@ impl OpticalTerminal for CondorMk3 {
 
     async fn health_check(&self) -> Result<HealthReport, TerminalError> {
         let response = self.send_command("health_check").await?;
-        
+
         Ok(HealthReport {
             overall_health: crate::HealthMetrics(crate::ConfidenceScore::new(0.95)),
             component_health: vec![
@@ -189,7 +195,7 @@ impl OpticalTerminal for CondorMk3 {
 
     async fn get_status(&self) -> Result<TerminalStatus, TerminalError> {
         let response = self.send_command("status").await?;
-        
+
         Ok(TerminalStatus {
             operational: true,
             current_phase: LinkPhase::Idle,
@@ -247,7 +253,7 @@ impl OpticalTerminal for Scot80 {
     fn capabilities(&self) -> TerminalCapability {
         TerminalCapability {
             max_data_rate: DataRate(2_500_000_000), // 2.5 Gbps
-            max_pointing_accuracy_rad: 15e-6, // 15 microrad
+            max_pointing_accuracy_rad: 15e-6,       // 15 microrad
             supported_standards: vec![OctStandardVersion::V3_1, OctStandardVersion::V3_2],
             beam_divergence_mrad: 0.15,
             max_range_km: 3000.0,
@@ -265,7 +271,7 @@ impl OpticalTerminal for Scot80 {
 
     async fn calibrate(&mut self) -> Result<CalibrationReport, TerminalError> {
         self.send_command(b"CALIBRATE").await?;
-        
+
         Ok(CalibrationReport {
             calibrated_at: Utc::now(),
             pointing_accuracy_rad: 8e-6,
@@ -274,23 +280,29 @@ impl OpticalTerminal for Scot80 {
         })
     }
 
-    async fn schedule_acquisition(&mut self, schedule: AcquisitionSchedule) -> Result<(), TerminalError> {
-        let schedule_bytes = serde_json::to_vec(&schedule)
-            .map_err(|e| TerminalError::PatError(e.to_string()))?;
+    async fn schedule_acquisition(
+        &mut self,
+        schedule: AcquisitionSchedule,
+    ) -> Result<(), TerminalError> {
+        let schedule_bytes =
+            serde_json::to_vec(&schedule).map_err(|e| TerminalError::PatError(e.to_string()))?;
 
         self.send_command(&schedule_bytes).await
     }
 
     async fn begin_pat(&mut self) -> Result<PatHandle, TerminalError> {
         self.send_command(b"BEGIN_PAT").await?;
-        
+
         Ok(PatHandle {
             acquisition_id: crate::AcquisitionId::new_v4(),
             started_at: Utc::now(),
         })
     }
 
-    async fn cancel_pat(&mut self, acquisition_id: crate::AcquisitionId) -> Result<(), TerminalError> {
+    async fn cancel_pat(
+        &mut self,
+        acquisition_id: crate::AcquisitionId,
+    ) -> Result<(), TerminalError> {
         let cmd = format!("CANCEL_PAT:{}", acquisition_id);
         self.send_command(cmd.as_bytes()).await
     }
@@ -305,7 +317,7 @@ impl OpticalTerminal for Scot80 {
 
     async fn telemetry_stream(&self) -> Result<TelemetryStream, TerminalError> {
         let (tx, rx) = mpsc::channel(100);
-        
+
         tokio::spawn(async move {
             loop {
                 tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
@@ -324,7 +336,7 @@ impl OpticalTerminal for Scot80 {
 
     async fn health_check(&self) -> Result<HealthReport, TerminalError> {
         self.send_command(b"HEALTH_CHECK").await?;
-        
+
         Ok(HealthReport {
             overall_health: crate::HealthMetrics(crate::ConfidenceScore::new(0.92)),
             component_health: vec![
@@ -349,7 +361,7 @@ impl OpticalTerminal for Scot80 {
 
     async fn get_status(&self) -> Result<TerminalStatus, TerminalError> {
         self.send_command(b"STATUS").await?;
-        
+
         Ok(TerminalStatus {
             operational: true,
             current_phase: LinkPhase::Idle,

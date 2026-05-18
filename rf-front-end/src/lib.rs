@@ -8,17 +8,17 @@
 //! - Attenuator control
 //! - AGC controller with automatic gain adjustment
 
-pub mod device;
+pub mod agc;
 pub mod amplifier;
+pub mod attenuator;
+pub mod device;
 pub mod filter;
 pub mod switch;
-pub mod attenuator;
-pub mod agc;
 pub mod vendor;
 
-pub use device::{RfDevice, RfDeviceType, RfDeviceState};
-pub use amplifier::{AmplifierControl, GainStage, AmplifierStatus};
-pub use filter::{FilterControl, FilterSpec, FilterId, FilterType};
-pub use switch::{SwitchControl, SwitchState, SwitchPosition};
-pub use attenuator::{AttenuatorControl, AttenuationLevel};
-pub use agc::{AgcController, AgcMode, AgcConfig};
+pub use agc::{AgcConfig, AgcController, AgcMode};
+pub use amplifier::{AmplifierControl, AmplifierStatus, GainStage};
+pub use attenuator::{AttenuationLevel, AttenuatorControl};
+pub use device::{RfDevice, RfDeviceState, RfDeviceType};
+pub use filter::{FilterControl, FilterId, FilterSpec, FilterType};
+pub use switch::{SwitchControl, SwitchPosition, SwitchState};

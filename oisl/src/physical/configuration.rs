@@ -97,7 +97,9 @@ impl OctConfiguration {
             modulation: Modulation::ManchesterBm12,
             fec_config: FecConfiguration {
                 enabled: true,
-                code: FecCode::Ldpc5gNr { variant: LdpcVariant::BaseGraph1 },
+                code: FecCode::Ldpc5gNr {
+                    variant: LdpcVariant::BaseGraph1,
+                },
                 code_rate: CodeRate::R2_3,
             },
             arq_config: ArqConfiguration {
@@ -118,7 +120,9 @@ impl OctConfiguration {
             modulation: Modulation::Manchester,
             fec_config: FecConfiguration {
                 enabled: true,
-                code: FecCode::Ldpc5gNr { variant: LdpcVariant::BaseGraph1 },
+                code: FecCode::Ldpc5gNr {
+                    variant: LdpcVariant::BaseGraph1,
+                },
                 code_rate: CodeRate::R1_2, // Lower rate for S2T
             },
             arq_config: ArqConfiguration {

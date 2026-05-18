@@ -9,8 +9,8 @@
 
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use uuid::Uuid;
 use std::collections::HashMap;
+use uuid::Uuid;
 
 /// Terminal identity
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -60,11 +60,7 @@ pub struct IdentityCertificate {
 }
 
 impl IdentityCertificate {
-    pub fn new(
-        issuer: String,
-        subject: String,
-        validity_days: u64,
-    ) -> Self {
+    pub fn new(issuer: String, subject: String, validity_days: u64) -> Self {
         let now = Utc::now();
         Self {
             certificate_id: Uuid::new_v4(),
@@ -100,7 +96,7 @@ impl ControlPlaneKeyPair {
     pub fn new(validity_days: u64) -> Self {
         let mut csprng = rand::rngs::OsRng;
         let keypair = ed25519_dalek::Keypair::generate(&mut csprng);
-        
+
         let now = Utc::now();
         Self {
             key_pair_id: Uuid::new_v4(),
@@ -134,7 +130,11 @@ impl PreloadedCertificates {
     }
 
     /// Add control node certificate to preload cache
-    pub fn add_control_node_certificate(&mut self, node_id: String, certificate: IdentityCertificate) {
+    pub fn add_control_node_certificate(
+        &mut self,
+        node_id: String,
+        certificate: IdentityCertificate,
+    ) {
         self.control_node_certificates.insert(node_id, certificate);
     }
 
@@ -149,7 +149,9 @@ impl PreloadedCertificates {
             return false;
         }
 
-        self.control_node_certificates.values().all(|cert| cert.is_valid())
+        self.control_node_certificates
+            .values()
+            .all(|cert| cert.is_valid())
     }
 
     /// Check if preload cache is stale (older than 24 hours)
@@ -184,7 +186,8 @@ impl ControlPlaneCertificateManager {
         subject: String,
         validity_days: u64,
     ) -> Result<IdentityCertificate, CertificateError> {
-        let key_pair = self.shared_key_pair
+        let key_pair = self
+            .shared_key_pair
             .as_ref()
             .ok_or_else(|| CertificateError::KeyPairNotInitialized)?;
 
@@ -198,13 +201,15 @@ impl ControlPlaneCertificateManager {
             validity_days,
         );
 
-        self.issued_certificates.insert(node_id.clone(), certificate.clone());
+        self.issued_certificates
+            .insert(node_id.clone(), certificate.clone());
         Ok(certificate)
     }
 
     /// Get preloaded certificates for satellite
     pub fn get_preloaded_certificates(&self) -> Result<PreloadedCertificates, CertificateError> {
-        let key_pair = self.shared_key_pair
+        let key_pair = self
+            .shared_key_pair
             .as_ref()
             .ok_or_else(|| CertificateError::KeyPairNotInitialized)?;
 
@@ -225,11 +230,11 @@ impl ControlPlaneCertificateManager {
 
     /// Revoke certificate for control node
     pub fn revoke_certificate(&mut self, node_id: &str) -> Result<(), CertificateError> {
-        self.issued_certificates
-            .remove(node_id)
-            .ok_or_else(|| CertificateError::CertificateNotFound {
+        self.issued_certificates.remove(node_id).ok_or_else(|| {
+            CertificateError::CertificateNotFound {
                 node_id: node_id.to_string(),
-            })?;
+            }
+        })?;
         Ok(())
     }
 }

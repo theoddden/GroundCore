@@ -4,13 +4,13 @@
 // Optical links can carry control plane traffic with priority routing,
 // enabling lower latency than RF for satellite management.
 
-use snapshotting::manager::SnapshotManager;
-use crate::pat::AcquisitionPlan;
-use crate::oct::OctConfiguration;
 use crate::BiTemporal;
+use crate::oct::OctConfiguration;
+use crate::pat::AcquisitionPlan;
 use bitemporal::{EventTime, ReceptionTime};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use snapshotting::manager::SnapshotManager;
 use uuid::Uuid;
 
 pub type LinkId = Uuid;
@@ -18,13 +18,30 @@ pub type LinkId = Uuid;
 /// Link phase
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum LinkPhase {
-    Scheduled { acquisition_plan: AcquisitionPlan },
-    Acquiring { since: DateTime<Utc>, search_state: String },
-    Established { since: DateTime<Utc>, quality: LinkQuality },
-    Degrading { reason: DegradationReason, action: DegradationAction },
-    Recovering { strategy: RecoveryStrategy },
-    Terminating { reason: TerminationReason },
-    Failed { cause: FailureCause },
+    Scheduled {
+        acquisition_plan: AcquisitionPlan,
+    },
+    Acquiring {
+        since: DateTime<Utc>,
+        search_state: String,
+    },
+    Established {
+        since: DateTime<Utc>,
+        quality: LinkQuality,
+    },
+    Degrading {
+        reason: DegradationReason,
+        action: DegradationAction,
+    },
+    Recovering {
+        strategy: RecoveryStrategy,
+    },
+    Terminating {
+        reason: TerminationReason,
+    },
+    Failed {
+        cause: FailureCause,
+    },
 }
 
 /// Link quality
@@ -124,11 +141,7 @@ pub struct OpticalLink {
 }
 
 impl OpticalLink {
-    pub fn new(
-        link_id: LinkId,
-        endpoints: (String, String),
-        config: OctConfiguration,
-    ) -> Self {
+    pub fn new(link_id: LinkId, endpoints: (String, String), config: OctConfiguration) -> Self {
         Self {
             link_id,
             endpoints,
@@ -160,10 +173,17 @@ impl OpticalLink {
             EventTime::new(now),
             ReceptionTime::new(now),
         ));
-        self.phase = LinkPhase::Established { since: now, quality };
+        self.phase = LinkPhase::Established {
+            since: now,
+            quality,
+        };
     }
 
-    pub fn transition_to_degrading(&mut self, reason: DegradationReason, action: DegradationAction) {
+    pub fn transition_to_degrading(
+        &mut self,
+        reason: DegradationReason,
+        action: DegradationAction,
+    ) {
         self.phase = LinkPhase::Degrading { reason, action };
     }
 
@@ -297,7 +317,12 @@ impl LinkMetrics {
     }
 
     /// Update control plane traffic metrics
-    pub fn update_control_plane_metrics(&mut self, data_rate: u64, latency_ms: f64, packets_per_sec: u64) {
+    pub fn update_control_plane_metrics(
+        &mut self,
+        data_rate: u64,
+        latency_ms: f64,
+        packets_per_sec: u64,
+    ) {
         self.control_plane_traffic.data_rate_actual = data_rate;
         self.control_plane_traffic.latency_ms = latency_ms;
         self.control_plane_traffic.packets_per_second = packets_per_sec;

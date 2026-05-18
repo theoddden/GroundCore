@@ -1,7 +1,7 @@
 //! Filter control with switching and tuning
 
-use crate::device::{RfDevice, RfDeviceType, RfDeviceState, DeviceCalibration};
-use ground_core::{Result, GroundStationError};
+use crate::device::{DeviceCalibration, RfDevice, RfDeviceState, RfDeviceType};
+use ground_core::{GroundStationError, Result};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use tokio::sync::RwLock;
@@ -51,19 +51,19 @@ pub struct FilterSpec {
 pub trait FilterControl: RfDevice {
     /// Select a filter
     async fn select_filter(&mut self, filter_id: FilterId) -> Result<()>;
-    
+
     /// Tune filter to specific frequency (for tunable filters)
     async fn tune_filter(&mut self, frequency: u64) -> Result<()>;
-    
+
     /// Get current filter
     async fn get_current_filter(&self) -> Result<FilterSpec>;
-    
+
     /// Get available filters
     async fn get_available_filters(&self) -> Result<Vec<FilterSpec>>;
-    
+
     /// Add a filter to the bank
     async fn add_filter(&mut self, filter: FilterSpec) -> Result<()>;
-    
+
     /// Remove a filter from the bank
     async fn remove_filter(&mut self, filter_id: FilterId) -> Result<()>;
 }
@@ -103,7 +103,7 @@ impl RfDevice for FilterBank {
     async fn get_state(&self) -> Result<RfDeviceState> {
         let current = self.current_filter.read().await;
         let filters = self.filters.read().await;
-        
+
         Ok(RfDeviceState {
             device_id: self.id,
             device_type: RfDeviceType::FilterBank,
@@ -151,43 +151,57 @@ impl RfDevice for FilterBank {
 impl FilterControl for FilterBank {
     async fn select_filter(&mut self, filter_id: FilterId) -> Result<()> {
         if !self.enabled {
-            return Err(GroundStationError::Hardware("Filter bank disabled".to_string()));
+            return Err(GroundStationError::Hardware(
+                "Filter bank disabled".to_string(),
+            ));
         }
 
         let filters = self.filters.read().await;
         if !filters.contains_key(&filter_id) {
-            return Err(GroundStationError::NotFound(format!("Filter {}", filter_id)));
+            return Err(GroundStationError::NotFound(format!(
+                "Filter {}",
+                filter_id
+            )));
         }
         drop(filters);
 
         let mut current = self.current_filter.write().await;
         *current = Some(filter_id);
-        
+
         tracing::info!("Selected filter {}", filter_id);
         Ok(())
     }
 
     async fn tune_filter(&mut self, frequency: u64) -> Result<()> {
         let current = self.current_filter.read().await;
-        let filter_id = current.ok_or_else(|| GroundStationError::Hardware("No filter selected".to_string()))?;
+        let filter_id = current
+            .ok_or_else(|| GroundStationError::Hardware("No filter selected".to_string()))?;
         drop(current);
 
         let filters = self.filters.read().await;
-        let filter = filters.get(&filter_id).ok_or_else(|| GroundStationError::NotFound(format!("Filter {}", filter_id)))?;
-        
+        let filter = filters
+            .get(&filter_id)
+            .ok_or_else(|| GroundStationError::NotFound(format!("Filter {}", filter_id)))?;
+
         if !filter.tunable {
-            return Err(GroundStationError::Hardware("Filter is not tunable".to_string()));
+            return Err(GroundStationError::Hardware(
+                "Filter is not tunable".to_string(),
+            ));
         }
 
         if let Some(min) = filter.min_frequency {
             if frequency < min {
-                return Err(GroundStationError::Validation("Frequency below minimum".to_string()));
+                return Err(GroundStationError::Validation(
+                    "Frequency below minimum".to_string(),
+                ));
             }
         }
 
         if let Some(max) = filter.max_frequency {
             if frequency > max {
-                return Err(GroundStationError::Validation("Frequency above maximum".to_string()));
+                return Err(GroundStationError::Validation(
+                    "Frequency above maximum".to_string(),
+                ));
             }
         }
 
@@ -198,11 +212,13 @@ impl FilterControl for FilterBank {
 
     async fn get_current_filter(&self) -> Result<FilterSpec> {
         let current = self.current_filter.read().await;
-        let filter_id = current.ok_or_else(|| GroundStationError::Hardware("No filter selected".to_string()))?;
+        let filter_id = current
+            .ok_or_else(|| GroundStationError::Hardware("No filter selected".to_string()))?;
         drop(current);
 
         let filters = self.filters.read().await;
-        filters.get(&filter_id)
+        filters
+            .get(&filter_id)
             .cloned()
             .ok_or_else(|| GroundStationError::NotFound(format!("Filter {}", filter_id)))
     }
@@ -221,13 +237,13 @@ impl FilterControl for FilterBank {
     async fn remove_filter(&mut self, filter_id: FilterId) -> Result<()> {
         let mut filters = self.filters.write().await;
         filters.remove(&filter_id);
-        
+
         // Clear current if it was the removed filter
         let mut current = self.current_filter.write().await;
         if *current == Some(filter_id) {
             *current = None;
         }
-        
+
         Ok(())
     }
 }
@@ -265,7 +281,7 @@ impl RfDevice for YigTunedFilter {
     async fn get_state(&self) -> Result<RfDeviceState> {
         let current_frequency = self.current_frequency.read().await;
         let tuning_voltage = self.tuning_voltage.read().await;
-        
+
         Ok(RfDeviceState {
             device_id: self.id,
             device_type: RfDeviceType::BandpassFilter,
@@ -313,7 +329,9 @@ impl RfDevice for YigTunedFilter {
 impl FilterControl for YigTunedFilter {
     async fn select_filter(&mut self, _filter_id: FilterId) -> Result<()> {
         // YIG filters don't have selectable filters - they're continuously tunable
-        Err(GroundStationError::Hardware("YIG filter is continuously tunable, not switchable".to_string()))
+        Err(GroundStationError::Hardware(
+            "YIG filter is continuously tunable, not switchable".to_string(),
+        ))
     }
 
     async fn tune_filter(&mut self, frequency: u64) -> Result<()> {
@@ -329,15 +347,21 @@ impl FilterControl for YigTunedFilter {
         }
 
         // Calculate tuning voltage (simplified linear relationship)
-        let voltage = ((frequency - self.min_frequency) as f64 / (self.max_frequency - self.min_frequency) as f64) * 10.0;
-        
+        let voltage = ((frequency - self.min_frequency) as f64
+            / (self.max_frequency - self.min_frequency) as f64)
+            * 10.0;
+
         let mut current_frequency = self.current_frequency.write().await;
         *current_frequency = frequency;
-        
+
         let mut tuning_voltage = self.tuning_voltage.write().await;
         *tuning_voltage = voltage;
-        
-        tracing::info!("YIG filter tuned to {} Hz (voltage: {} V)", frequency, voltage);
+
+        tracing::info!(
+            "YIG filter tuned to {} Hz (voltage: {} V)",
+            frequency,
+            voltage
+        );
         Ok(())
     }
 
@@ -362,10 +386,14 @@ impl FilterControl for YigTunedFilter {
     }
 
     async fn add_filter(&mut self, _filter: FilterSpec) -> Result<()> {
-        Err(GroundStationError::Hardware("YIG filter is continuously tunable, cannot add filters".to_string()))
+        Err(GroundStationError::Hardware(
+            "YIG filter is continuously tunable, cannot add filters".to_string(),
+        ))
     }
 
     async fn remove_filter(&mut self, _filter_id: FilterId) -> Result<()> {
-        Err(GroundStationError::Hardware("YIG filter is continuously tunable, cannot remove filters".to_string()))
+        Err(GroundStationError::Hardware(
+            "YIG filter is continuously tunable, cannot remove filters".to_string(),
+        ))
     }
 }

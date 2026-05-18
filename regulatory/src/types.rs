@@ -34,7 +34,7 @@ impl<B: Band> Frequency<B> {
             None
         }
     }
-    
+
     /// Get the frequency in Hz
     pub fn hz(&self) -> u64 {
         self.hz
@@ -51,12 +51,12 @@ impl Power {
     pub fn new(dbm: f64) -> Self {
         Self { dbm }
     }
-    
+
     /// Convert to watts
     pub fn to_watts(&self) -> f64 {
         10.0_f64.powf((self.dbm - 30.0) / 10.0)
     }
-    
+
     /// Create from watts
     pub fn from_watts(watts: f64) -> Self {
         Self {
@@ -119,21 +119,21 @@ impl Band for CBand {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_frequency_construction() {
         let valid = Frequency::<LBand>::new(1_500_000_000);
         assert!(valid.is_some());
-        
+
         let invalid = Frequency::<LBand>::new(3_000_000_000); // Outside L-band
         assert!(invalid.is_none());
     }
-    
+
     #[test]
     fn test_power_conversion() {
         let power = Power::new(30.0); // 1 watt
         assert!((power.to_watts() - 1.0).abs() < 0.01);
-        
+
         let power = Power::from_watts(1.0);
         assert!((power.dbm - 30.0).abs() < 0.01);
     }

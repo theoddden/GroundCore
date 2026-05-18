@@ -4,7 +4,7 @@
 // environments), satellite clocks drift. The PAT coordinator needs to know
 // clock confidence and reduce acquisition attempts when clocks are degraded.
 
-use chrono::{DateTime, Utc, Duration};
+use chrono::{DateTime, Duration, Utc};
 use serde::{Deserialize, Serialize};
 
 /// Precision timestamp with nanosecond precision
@@ -16,7 +16,10 @@ pub struct PrecisionTimestamp {
 
 impl PrecisionTimestamp {
     pub fn new(seconds: i64, nanoseconds: u32) -> Self {
-        Self { seconds, nanoseconds }
+        Self {
+            seconds,
+            nanoseconds,
+        }
     }
 
     pub fn from_datetime(dt: DateTime<Utc>) -> Self {
@@ -83,7 +86,6 @@ impl Default for ClockConfidence {
         Self::gps_disciplined()
     }
 }
-
 
 /// Precision clock trait
 pub trait PrecisionClock: Send + Sync {

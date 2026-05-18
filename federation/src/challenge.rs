@@ -17,7 +17,7 @@ impl ChallengePassManager {
             challenges: Vec::new(),
         }
     }
-    
+
     /// Schedule a challenge pass
     pub fn schedule_challenge(
         &mut self,
@@ -34,10 +34,10 @@ impl ChallengePassManager {
             completed: false,
             results: Vec::new(),
         };
-        
+
         self.challenges.push(challenge);
     }
-    
+
     /// Get pending challenges
     pub fn pending_challenges(&self) -> Vec<&ChallengePass> {
         self.challenges
@@ -45,7 +45,7 @@ impl ChallengePassManager {
             .filter(|c| !c.completed && c.scheduled_time > Utc::now())
             .collect()
     }
-    
+
     /// Get challenges due now
     pub fn due_challenges(&mut self) -> Vec<&mut ChallengePass> {
         self.challenges
@@ -53,20 +53,25 @@ impl ChallengePassManager {
             .filter(|c| !c.completed && c.scheduled_time <= Utc::now())
             .collect()
     }
-    
+
     /// Complete a challenge with results
-    pub fn complete_challenge(&mut self, pass_id: &PassId, results: Vec<ChallengeResult>) -> Result<()> {
+    pub fn complete_challenge(
+        &mut self,
+        pass_id: &PassId,
+        results: Vec<ChallengeResult>,
+    ) -> Result<()> {
         if let Some(challenge) = self.challenges.iter_mut().find(|c| &c.pass_id == pass_id) {
             challenge.results = results;
             challenge.completed = true;
             Ok(())
         } else {
-            Err(ground_core::GroundStationError::Federation(
-                format!("Challenge {} not found", pass_id),
-            ))
+            Err(ground_core::GroundStationError::Federation(format!(
+                "Challenge {} not found",
+                pass_id
+            )))
         }
     }
-    
+
     /// Get challenge results for a peer
     pub fn get_peer_results(&self, peer_id: &PeerId) -> Vec<&ChallengeResult> {
         self.challenges

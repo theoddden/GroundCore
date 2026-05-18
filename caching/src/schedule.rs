@@ -26,7 +26,7 @@ impl ScheduleFragment {
     pub fn new(pass_ids: Vec<PassId>, immutable_duration_sec: i64) -> Self {
         let now = Utc::now();
         let hash = Self::compute_hash(&pass_ids);
-        
+
         Self {
             pass_ids,
             committed_at: now,
@@ -34,17 +34,17 @@ impl ScheduleFragment {
             hash,
         }
     }
-    
+
     /// Check if this fragment is currently immutable
     pub fn is_immutable(&self) -> bool {
         Utc::now() < self.immutable_until
     }
-    
+
     /// Check if a pass is in this fragment
     pub fn contains(&self, pass_id: &PassId) -> bool {
         self.pass_ids.contains(pass_id)
     }
-    
+
     /// Compute hash of pass IDs
     fn compute_hash(pass_ids: &[PassId]) -> String {
         use sha2::{Digest, Sha256};
@@ -69,46 +69,42 @@ impl ScheduleFragmentCache {
             max_fragments,
         }
     }
-    
+
     /// Add a fragment
     pub fn add_fragment(&mut self, fragment: ScheduleFragment) {
         self.fragments.insert(fragment.hash.clone(), fragment);
-        
+
         // Prune old fragments
         while self.fragments.len() > self.max_fragments {
             // Remove oldest fragment
-            if let Some(oldest) = self.fragments
-                .values()
-                .min_by_key(|f| f.committed_at)
-            {
+            if let Some(oldest) = self.fragments.values().min_by_key(|f| f.committed_at) {
                 self.fragments.remove(&oldest.hash.clone());
             }
         }
     }
-    
+
     /// Get a fragment by hash
     pub fn get_fragment(&self, hash: &str) -> Option<&ScheduleFragment> {
         self.fragments.get(hash)
     }
-    
+
     /// Get fragment containing a specific pass
     pub fn get_fragment_for_pass(&self, pass_id: &PassId) -> Option<&ScheduleFragment> {
         self.fragments
             .values()
             .find(|f| f.contains(pass_id) && f.is_immutable())
     }
-    
+
     /// Invalidate expired fragments
     pub fn invalidate_expired(&mut self) {
-        self.fragments
-            .retain(|_, f| f.is_immutable());
+        self.fragments.retain(|_, f| f.is_immutable());
     }
-    
+
     /// Get cache statistics
     pub fn stats(&self) -> ScheduleCacheStats {
         let total = self.fragments.len();
         let immutable = self.fragments.values().filter(|f| f.is_immutable()).count();
-        
+
         ScheduleCacheStats {
             total_fragments: total,
             immutable_fragments: immutable,
@@ -128,25 +124,25 @@ pub struct ScheduleCacheStats {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_fragment_creation() {
         let pass_ids = vec!["pass1".to_string(), "pass2".to_string()];
         let fragment = ScheduleFragment::new(pass_ids, 300);
-        
+
         assert!(fragment.is_immutable());
         assert!(fragment.contains(&"pass1".to_string()));
     }
-    
+
     #[test]
     fn test_fragment_cache() {
         let mut cache = ScheduleFragmentCache::new(10);
         let pass_ids = vec!["pass1".to_string()];
         let fragment = ScheduleFragment::new(pass_ids, 300);
-        
+
         cache.add_fragment(fragment.clone());
         assert_eq!(cache.stats().total_fragments, 1);
-        
+
         let retrieved = cache.get_fragment(&fragment.hash);
         assert!(retrieved.is_some());
     }

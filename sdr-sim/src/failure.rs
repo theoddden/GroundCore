@@ -47,7 +47,7 @@ impl FailureInjector {
             current_state: FailureState::Normal,
         }
     }
-    
+
     /// Schedule a failure
     pub fn schedule_failure(&mut self, failure_type: FailureType, delay: Duration) {
         self.enabled = true;
@@ -56,7 +56,7 @@ impl FailureInjector {
         self.recovery_time = None;
         self.current_state = FailureState::Normal;
     }
-    
+
     /// Schedule a failure with automatic recovery
     pub fn schedule_failure_with_recovery(
         &mut self,
@@ -67,47 +67,48 @@ impl FailureInjector {
         self.enabled = true;
         self.failure_type = Some(failure_type);
         self.failure_time = Some(Utc::now() + chrono::Duration::from_std(delay).unwrap());
-        self.recovery_time = Some(Utc::now() + chrono::Duration::from_std(delay + recovery_after).unwrap());
+        self.recovery_time =
+            Some(Utc::now() + chrono::Duration::from_std(delay + recovery_after).unwrap());
         self.current_state = FailureState::Normal;
     }
-    
+
     /// Check if a failure is currently active
     pub fn is_failing(&self) -> bool {
         if !self.enabled {
             return false;
         }
-        
+
         let now = Utc::now();
-        
+
         match (self.failure_time, self.recovery_time) {
             (Some(failure), None) => now >= failure,
             (Some(failure), Some(recovery)) => now >= failure && now < recovery,
             _ => false,
         }
     }
-    
+
     /// Check if recovery has occurred
     pub fn has_recovered(&self) -> bool {
         if !self.enabled {
             return false;
         }
-        
+
         match self.recovery_time {
             Some(recovery) => Utc::now() >= recovery,
             None => false,
         }
     }
-    
+
     /// Apply failure effect to sample data
     pub fn apply_failure(&mut self, i: &mut f32, q: &mut f32) -> bool {
         if !self.is_failing() {
             return false;
         }
-        
+
         if self.failure_time.is_none() {
             self.failure_time = Some(Utc::now());
         }
-        
+
         if let Some(failure_type) = self.failure_type {
             match failure_type {
                 FailureType::SdrUnresponsive => {
@@ -147,10 +148,10 @@ impl FailureInjector {
                 }
             }
         }
-        
+
         false
     }
-    
+
     /// Reset the failure injector
     pub fn reset(&mut self) {
         self.enabled = false;
@@ -165,33 +166,33 @@ impl FailureInjector {
 mod tests {
     use super::*;
     use std::thread;
-    
+
     #[test]
     fn test_failure_scheduling() {
         let mut injector = FailureInjector::new();
-        
+
         injector.schedule_failure(FailureType::SdrGarbageData, Duration::from_millis(100));
-        
+
         assert!(!injector.is_failing());
-        
+
         thread::sleep(Duration::from_millis(150));
-        
+
         assert!(injector.is_failing());
     }
-    
+
     #[test]
     fn test_failure_with_recovery() {
         let mut injector = FailureInjector::new();
-        
+
         injector.schedule_failure_with_recovery(
             FailureType::SdrGarbageData,
             Duration::from_millis(100),
             Duration::from_millis(200),
         );
-        
+
         thread::sleep(Duration::from_millis(150));
         assert!(injector.is_failing());
-        
+
         thread::sleep(Duration::from_millis(250));
         assert!(injector.has_recovered());
         assert!(!injector.is_failing());

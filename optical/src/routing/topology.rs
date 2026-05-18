@@ -4,7 +4,7 @@
 // other's fields-of-regard. The topology forecast predicts when links will be
 // available.
 
-use crate::geometry::{VisibilityWindow, PointingVector};
+use crate::geometry::{PointingVector, VisibilityWindow};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
@@ -40,13 +40,15 @@ impl OpticalTopology {
     }
 
     pub fn find_edges_from(&self, node_id: &str) -> Vec<&TopologyEdge> {
-        self.edges.iter()
+        self.edges
+            .iter()
             .filter(|e| e.endpoints.0 == node_id)
             .collect()
     }
 
     pub fn find_edges_to(&self, node_id: &str) -> Vec<&TopologyEdge> {
-        self.edges.iter()
+        self.edges
+            .iter()
             .filter(|e| e.endpoints.1 == node_id)
             .collect()
     }
@@ -115,11 +117,12 @@ impl TopologyEdge {
     }
 
     pub fn is_visible_at(&self, timestamp: DateTime<Utc>) -> bool {
-        self.visibility_windows.iter().any(|w| w.contains(timestamp))
+        self.visibility_windows
+            .iter()
+            .any(|w| w.contains(timestamp))
     }
 
     pub fn next_visibility(&self, after: DateTime<Utc>) -> Option<&VisibilityWindow> {
-        self.visibility_windows.iter()
-            .find(|w| w.start > after)
+        self.visibility_windows.iter().find(|w| w.start > after)
     }
 }

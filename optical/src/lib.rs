@@ -14,52 +14,50 @@
 // - routing: Optical-aware routing
 // - attestation: Bi-temporal proof primitives
 
-pub mod oct;
-pub mod pat;
+pub mod attestation;
 pub mod geometry;
 pub mod link;
-pub mod terminal;
+pub mod oct;
+pub mod pat;
 pub mod routing;
-pub mod attestation;
+pub mod terminal;
 
 // Re-export core types
 pub use oct::{
-    OctStandardVersion, OctConfiguration, LinkType, Modulation,
-    FecConfiguration, FecCode, ArqConfiguration, TrackingTone,
-    negotiate_version, NegotiationError,
+    ArqConfiguration, FecCode, FecConfiguration, LinkType, Modulation, NegotiationError,
+    OctConfiguration, OctStandardVersion, TrackingTone, negotiate_version,
 };
 
 pub use pat::{
-    AcquisitionPlan, PatPhase, PatCoordinator, SearchPattern,
-    PrecisionClock, PrecisionTimestamp, ClockConfidence, TimeReference,
-    AcquisitionId, AcquisitionResult, TrackingHandle, RecoveryStrategy,
+    AcquisitionId, AcquisitionPlan, AcquisitionResult, ClockConfidence, PatCoordinator, PatPhase,
+    PrecisionClock, PrecisionTimestamp, RecoveryStrategy, SearchPattern, TimeReference,
+    TrackingHandle,
 };
 
 pub use geometry::{
-    PointingVector, VisibilityWindow, VisibilityConstraints,
-    compute_pointing_vector, predict_visibility_window,
-    compute_optical_doppler, compute_atmospheric_attenuation,
+    PointingVector, VisibilityConstraints, VisibilityWindow, compute_atmospheric_attenuation,
+    compute_optical_doppler, compute_pointing_vector, predict_visibility_window,
 };
 
 pub use link::state_machine::{
-    LinkPhase, LinkQuality, DegradationReason, DegradationAction, RecoveryStrategy as LinkRecoveryStrategy,
-    TerminationReason, FailureCause, OpticalLink, LinkMetrics,
+    DegradationAction, DegradationReason, FailureCause, LinkMetrics, LinkPhase, LinkQuality,
+    OpticalLink, RecoveryStrategy as LinkRecoveryStrategy, TerminationReason,
 };
-pub use link::metrics::{MetricSnapshot, BoundedHistory};
+
 pub use link::degradation::DegradationDetector;
-pub use link::failover::{FailoverStrategy as HandoffStrategy, FailoverManager};
+pub use link::failover::{FailoverManager, FailoverStrategy as HandoffStrategy};
+pub use link::metrics::{BoundedHistory, MetricSnapshot};
 
 pub use terminal::capability::{TerminalCapability, Vendor};
-pub use terminal::trait_def::{CalibrationReport, EthernetEndpoint};
-pub use terminal::telemetry::{TelemetryStream, HealthReport, ResetLevel};
 
-pub use routing::{
-    OpticalTopology, PathFinder, OpticalRoute,
-};
+pub use terminal::telemetry::{HealthReport, ResetLevel, TelemetryStream};
+pub use terminal::trait_def::{CalibrationReport, EthernetEndpoint};
+
+pub use routing::{OpticalRoute, OpticalTopology, PathFinder};
 
 pub use attestation::{
-    LinkAttestation, AttestationId, AttestableEvent, Hash, Signature,
-    TerminalIdentity, PatAttestation,
+    AttestableEvent, AttestationId, Hash, LinkAttestation, PatAttestation, Signature,
+    TerminalIdentity,
 };
 
 // Common type aliases

@@ -4,10 +4,10 @@
 // timestamps (event time and system observation time). This enables audit trails
 // and forensic recovery.
 
+pub mod identity;
 pub mod link_proof;
 pub mod pat_proof;
-pub mod identity;
 
-pub use link_proof::{LinkAttestation, AttestationId, AttestableEvent, Hash, Signature};
-pub use pat_proof::{PatAttestation, AcquisitionProof, TrackingProof};
-pub use identity::{TerminalIdentity, IdentityCertificate};
+pub use identity::{IdentityCertificate, TerminalIdentity};
+pub use link_proof::{AttestableEvent, AttestationId, Hash, LinkAttestation, Signature};
+pub use pat_proof::{AcquisitionProof, PatAttestation, TrackingProof};

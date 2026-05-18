@@ -3,17 +3,17 @@
 //! This implements the demodulator state that's shared between primary and shadow SDRs
 //! for lossless failover (Problem 1). Snapshots are taken periodically for recovery.
 
+use crate::sdr::{Sample, SampleId};
 use batching::DemodulatorBatcher;
 use bitemporal::timestamp::{BiTemporal, EventTime, ReceptionTime};
-use crate::sdr::{Sample, SampleId};
 use chrono::{DateTime, Utc};
 use ground_core::{GroundStationError, Result};
 use serde::{Deserialize, Serialize};
 
 /// Costas/Gardner loop constants
-const COSTAS_ALPHA: f64 = 0.02;   // Proportional gain (phase correction per sample)
-const COSTAS_BETA: f64 = 4e-4;    // Integral gain (frequency correction per sample)
-const GARDNER_GAIN: f64 = 0.02;   // Symbol-timing correction gain
+const COSTAS_ALPHA: f64 = 0.02; // Proportional gain (phase correction per sample)
+const COSTAS_BETA: f64 = 4e-4; // Integral gain (frequency correction per sample)
+const GARDNER_GAIN: f64 = 0.02; // Symbol-timing correction gain
 const DEFAULT_SAMPLES_PER_SYMBOL: f64 = 8.0; // 8 samples per symbol at default baud rate
 
 /// Demodulator state that can be snapshotted and restored
@@ -130,13 +130,11 @@ impl DemodState {
             self.symbol_phase -= 1.0;
 
             // Gardner timing error: e = I_{midpoint} * (I_now - I_prev)
-            let timing_error = self.midpoint_i as f64
-                * (i_b - self.prev_decision_i as f64);
+            let timing_error = self.midpoint_i as f64 * (i_b - self.prev_decision_i as f64);
 
             // Adjust symbol clock phase (fractional correction)
             let correction = GARDNER_GAIN * timing_error;
-            self.symbol_phase =
-                (self.symbol_phase - correction).clamp(-0.5, 0.5).abs();
+            self.symbol_phase = (self.symbol_phase - correction).clamp(-0.5, 0.5).abs();
 
             // Update sync state for monitoring/logging
             self.symbol_sync.timing_offset = timing_error;
@@ -150,7 +148,8 @@ impl DemodState {
 
             // ── 4. Byte assembly ─────────────────────────────────────────────
             if self.bit_buffer.len() >= 8 {
-                let byte = self.bit_buffer
+                let byte = self
+                    .bit_buffer
                     .drain(..8)
                     .fold(0u8, |acc, b| (acc << 1) | b);
                 return Ok(Some(byte));
@@ -201,7 +200,7 @@ impl DemodulatorSnapshot {
     /// Create a snapshot from current demodulator state
     pub fn capture(state: &DemodState, sample: &Sample) -> Self {
         let checksum = Self::compute_checksum(state);
-        
+
         Self {
             sample_id: sample.id,
             state: state.clone(),
@@ -210,12 +209,12 @@ impl DemodulatorSnapshot {
             checksum,
         }
     }
-    
+
     /// Verify the integrity of a snapshot
     pub fn verify(&self) -> bool {
         Self::compute_checksum(&self.state) == self.checksum
     }
-    
+
     /// Compute checksum of demodulator state
     fn compute_checksum(state: &DemodState) -> u64 {
         let mut hash: u64 = 0;
@@ -225,7 +224,7 @@ impl DemodulatorSnapshot {
         hash = hash.wrapping_add(state.last_sample_id.as_u64());
         hash
     }
-    
+
     /// Restore demodulator state from this snapshot
     pub fn restore(&self) -> DemodState {
         if !self.verify() {
@@ -252,12 +251,16 @@ impl SnapshotManager {
             last_snapshot_sample: SampleId::new(0),
         }
     }
-    
+
     pub fn should_snapshot(&self, sample_id: SampleId) -> bool {
         sample_id.as_u64() - self.last_snapshot_sample.as_u64() >= self.snapshot_interval_samples
     }
-    
-    pub fn capture_if_needed(&mut self, state: &DemodState, sample: &Sample) -> Option<DemodulatorSnapshot> {
+
+    pub fn capture_if_needed(
+        &mut self,
+        state: &DemodState,
+        sample: &Sample,
+    ) -> Option<DemodulatorSnapshot> {
         if self.should_snapshot(sample.id) {
             let snapshot = DemodulatorSnapshot::capture(state, sample);
             self.add_snapshot(snapshot.clone());
@@ -267,24 +270,24 @@ impl SnapshotManager {
             None
         }
     }
-    
+
     fn add_snapshot(&mut self, snapshot: DemodulatorSnapshot) {
         self.snapshots.push(snapshot);
         if self.snapshots.len() > self.max_snapshots {
             self.snapshots.remove(0);
         }
     }
-    
+
     pub fn latest(&self) -> Option<&DemodulatorSnapshot> {
         self.snapshots.last()
     }
-    
+
     pub fn find_closest(&self, sample_id: SampleId) -> Option<&DemodulatorSnapshot> {
         self.snapshots
             .iter()
             .min_by_key(|s| (s.sample_id.as_u64() as i64 - sample_id.as_u64() as i64).abs())
     }
-    
+
     pub fn snapshot_count(&self) -> usize {
         self.snapshots.len()
     }
@@ -302,7 +305,7 @@ impl DemodulatorOutput {
             batcher: DemodulatorBatcher::new(batch_size),
         }
     }
-    
+
     /// Add a decoded symbol with bi-temporal timestamps
     pub fn add_symbol(&mut self, symbol: u8, sample: &Sample) {
         let bi_temporal = BiTemporal::new(
@@ -312,17 +315,17 @@ impl DemodulatorOutput {
         );
         self.batcher.add_symbol(bi_temporal);
     }
-    
+
     /// Check if batch is ready to flush
     pub fn is_ready(&self) -> bool {
         self.batcher.is_ready()
     }
-    
+
     /// Flush the current batch
     pub fn flush(&mut self) -> Option<batching::DemodulatorBatch> {
         self.batcher.flush()
     }
-    
+
     /// Force flush regardless of batch size
     pub fn force_flush(&mut self) -> Option<batching::DemodulatorBatch> {
         self.batcher.force_flush()

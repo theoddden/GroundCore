@@ -1,7 +1,7 @@
 // OCT Configuration
 
-use serde::{Deserialize, Serialize};
 use crate::oct::standard::OctStandardVersion;
+use serde::{Deserialize, Serialize};
 
 /// OCT Configuration
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -74,7 +74,7 @@ impl Modulation {
         match self {
             Self::OokNrz { baud_rate } => *baud_rate,
             Self::Manchester { baud_rate } => *baud_rate / 2,
-            Self::ManchesterBm12 => 5_000_000_000, // 5 Gbps
+            Self::ManchesterBm12 => 5_000_000_000,  // 5 Gbps
             Self::ManchesterBm16 => 10_000_000_000, // 10 Gbps
         }
     }
@@ -102,7 +102,9 @@ impl FecConfiguration {
     pub fn default_ldpc() -> Self {
         Self {
             enabled: true,
-            code: FecCode::Ldpc5gNr { variant: LdpcVariant::BaseGraph1 },
+            code: FecCode::Ldpc5gNr {
+                variant: LdpcVariant::BaseGraph1,
+            },
             code_rate: CodeRate::R5_6,
             block_size: 8448,
         }

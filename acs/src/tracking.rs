@@ -1,7 +1,7 @@
 //! Tracking algorithms (open-loop, closed-loop, predictive)
 
-use crate::controller::{PointingTarget, AntennaController};
-use ground_core::{Result, GroundStationError};
+use crate::controller::{AntennaController, PointingTarget};
+use ground_core::{GroundStationError, Result};
 use serde::{Deserialize, Serialize};
 use tracking::{OrbitalState, Station};
 
@@ -48,14 +48,15 @@ pub struct TrackingCorrection {
 #[async_trait::async_trait]
 pub trait TrackingAlgorithm: Send + Sync {
     /// Compute pointing target for satellite
-    fn compute_pointing(&self, satellite_state: &OrbitalState, station: &Station) -> PointingTarget;
-    
+    fn compute_pointing(&self, satellite_state: &OrbitalState, station: &Station)
+        -> PointingTarget;
+
     /// Update with feedback (for closed-loop tracking)
     fn update(&mut self, feedback: &TrackingFeedback) -> TrackingCorrection;
-    
+
     /// Get current tracking mode
     fn get_mode(&self) -> TrackingMode;
-    
+
     /// Reset tracking state
     fn reset(&mut self);
 }
@@ -74,7 +75,11 @@ impl OpenLoopTracking {
 }
 
 impl TrackingAlgorithm for OpenLoopTracking {
-    fn compute_pointing(&self, satellite_state: &OrbitalState, station: &Station) -> PointingTarget {
+    fn compute_pointing(
+        &self,
+        satellite_state: &OrbitalState,
+        station: &Station,
+    ) -> PointingTarget {
         // Convert satellite ECI position to station-relative azimuth/elevation
         // This is a simplified implementation
         let (azimuth, elevation) = self.eci_to_az_el(
@@ -83,14 +88,14 @@ impl TrackingAlgorithm for OpenLoopTracking {
             station.longitude,
             station.altitude,
         );
-        
+
         PointingTarget {
             azimuth,
             elevation,
             timestamp: chrono::Utc::now(),
         }
     }
-    
+
     fn update(&mut self, _feedback: &TrackingFeedback) -> TrackingCorrection {
         // Open-loop doesn't use feedback
         TrackingCorrection {
@@ -99,11 +104,11 @@ impl TrackingAlgorithm for OpenLoopTracking {
             confidence: 1.0,
         }
     }
-    
+
     fn get_mode(&self) -> TrackingMode {
         self.mode
     }
-    
+
     fn reset(&mut self) {
         // No state to reset
     }
@@ -116,13 +121,17 @@ impl OpenLoopTracking {
         let x = position[0];
         let y = position[1];
         let z = position[2];
-        
+
         let range = (x * x + y * y + z * z).sqrt();
         let elevation = (z / range).asin().to_degrees();
         let azimuth = y.atan2(x).to_degrees();
-        
-        let azimuth = if azimuth < 0.0 { azimuth + 360.0 } else { azimuth };
-        
+
+        let azimuth = if azimuth < 0.0 {
+            azimuth + 360.0
+        } else {
+            azimuth
+        };
+
         (azimuth, elevation)
     }
 }
@@ -149,53 +158,57 @@ impl ClosedLoopTracking {
 }
 
 impl TrackingAlgorithm for ClosedLoopTracking {
-    fn compute_pointing(&self, satellite_state: &OrbitalState, station: &Station) -> PointingTarget {
+    fn compute_pointing(
+        &self,
+        satellite_state: &OrbitalState,
+        station: &Station,
+    ) -> PointingTarget {
         // Start with open-loop prediction
         let open_loop = OpenLoopTracking::new();
         let mut target = open_loop.compute_pointing(satellite_state, station);
-        
+
         // Apply closed-loop corrections
         target.azimuth += self.current_az_offset;
         target.elevation += self.current_el_offset;
-        
+
         target
     }
-    
+
     fn update(&mut self, feedback: &TrackingFeedback) -> TrackingCorrection {
         // PID controller for fine pointing
         let kp = 0.5; // Proportional gain
         let ki = 0.1; // Integral gain
-        
+
         // Update integral terms
         self.integral_az += feedback.azimuth_error;
         self.integral_el += feedback.elevation_error;
-        
+
         // Clamp integral terms
         self.integral_az = self.integral_az.clamp(-10.0, 10.0);
         self.integral_el = self.integral_el.clamp(-10.0, 10.0);
-        
+
         // Compute corrections
         let az_correction = kp * feedback.azimuth_error + ki * self.integral_az;
         let el_correction = kp * feedback.elevation_error + ki * self.integral_el;
-        
+
         // Update offsets
         self.current_az_offset += az_correction;
         self.current_el_offset += el_correction;
-        
+
         // Confidence based on SNR
         let confidence = (feedback.snr / 50.0).clamp(0.0, 1.0);
-        
+
         TrackingCorrection {
             azimuth_correction: az_correction,
             elevation_correction: el_correction,
             confidence,
         }
     }
-    
+
     fn get_mode(&self) -> TrackingMode {
         self.mode
     }
-    
+
     fn reset(&mut self) {
         self.current_az_offset = 0.0;
         self.current_el_offset = 0.0;
@@ -226,50 +239,54 @@ impl PredictiveTracking {
 }
 
 impl TrackingAlgorithm for PredictiveTracking {
-    fn compute_pointing(&self, satellite_state: &OrbitalState, station: &Station) -> PointingTarget {
+    fn compute_pointing(
+        &self,
+        satellite_state: &OrbitalState,
+        station: &Station,
+    ) -> PointingTarget {
         // Start with open-loop prediction
         let open_loop = OpenLoopTracking::new();
         let mut target = open_loop.compute_pointing(satellite_state, station);
-        
+
         // Apply predictive correction (lead the target based on velocity)
         let lead_time = 0.5; // 500ms lead
         target.azimuth += self.state[2] * lead_time;
         target.elevation += self.state[3] * lead_time;
-        
+
         target
     }
-    
+
     fn update(&mut self, feedback: &TrackingFeedback) -> TrackingCorrection {
         // Simplified Kalman filter update
         let dt = 0.1; // 100ms time step
-        
+
         // Predict step
         self.state[0] += self.state[2] * dt;
         self.state[1] += self.state[3] * dt;
-        
+
         // Update step (measurement)
         let measurement_az = feedback.azimuth_error;
         let measurement_el = feedback.elevation_error;
-        
+
         let kalman_gain_az = 0.1;
         let kalman_gain_el = 0.1;
-        
+
         self.state[0] += kalman_gain_az * measurement_az;
         self.state[1] += kalman_gain_el * measurement_el;
         self.state[2] += kalman_gain_az * measurement_az / dt;
         self.state[3] += kalman_gain_el * measurement_el / dt;
-        
+
         TrackingCorrection {
             azimuth_correction: self.state[2] * dt,
             elevation_correction: self.state[3] * dt,
             confidence: (feedback.snr / 50.0).clamp(0.0, 1.0),
         }
     }
-    
+
     fn get_mode(&self) -> TrackingMode {
         self.mode
     }
-    
+
     fn reset(&mut self) {
         self.state = [0.0; 6];
         self.covariance = [[0.0; 6]; 6];

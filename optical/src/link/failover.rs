@@ -14,13 +14,13 @@ pub type LinkId = Uuid;
 pub enum FailoverStrategy {
     /// Switch to backup terminal on same satellite
     SwitchTerminal { backup_terminal_id: String },
-    
+
     /// Re-route through different path
     Reroute { alternative_path: Vec<String> },
-    
+
     /// Drop and re-establish from scratch
     Reacquire,
-    
+
     /// Abort and report failure
     Abort,
 }
@@ -30,13 +30,13 @@ pub enum FailoverStrategy {
 pub enum HandoffStrategy {
     /// Seamless handoff with zero packet loss
     Seamless { overlap_ms: u64 },
-    
+
     /// Make-before-break handoff
     MakeBeforeBreak { overlap_ms: u64 },
-    
+
     /// Break-before-make handoff
     BreakBeforeMake { gap_ms: u64 },
-    
+
     /// No handoff - let link fail naturally
     NoHandoff,
 }
@@ -91,7 +91,8 @@ impl HandoffExecution {
     }
 
     pub fn duration_ms(&self) -> Option<u64> {
-        self.completed_at.map(|t| (t - self.initiated_at).num_milliseconds() as u64)
+        self.completed_at
+            .map(|t| (t - self.initiated_at).num_milliseconds() as u64)
     }
 }
 
@@ -107,14 +108,27 @@ impl FailoverManager {
         }
     }
 
-    pub fn initiate_handoff(&mut self, link_id: LinkId, strategy: HandoffStrategy) -> HandoffExecution {
+    pub fn initiate_handoff(
+        &mut self,
+        link_id: LinkId,
+        strategy: HandoffStrategy,
+    ) -> HandoffExecution {
         let execution = HandoffExecution::new(link_id, strategy);
         self.active_handoffs.push(execution.clone());
         execution
     }
 
-    pub fn complete_handoff(&mut self, handoff_id: Uuid, success: bool, packets_lost: u64) -> Result<(), FailoverError> {
-        if let Some(execution) = self.active_handoffs.iter_mut().find(|h| h.handoff_id == handoff_id) {
+    pub fn complete_handoff(
+        &mut self,
+        handoff_id: Uuid,
+        success: bool,
+        packets_lost: u64,
+    ) -> Result<(), FailoverError> {
+        if let Some(execution) = self
+            .active_handoffs
+            .iter_mut()
+            .find(|h| h.handoff_id == handoff_id)
+        {
             execution.complete(success, packets_lost);
             Ok(())
         } else {
@@ -123,7 +137,9 @@ impl FailoverManager {
     }
 
     pub fn get_handoff(&self, handoff_id: Uuid) -> Option<&HandoffExecution> {
-        self.active_handoffs.iter().find(|h| h.handoff_id == handoff_id)
+        self.active_handoffs
+            .iter()
+            .find(|h| h.handoff_id == handoff_id)
     }
 
     pub fn cleanup_completed(&mut self) {

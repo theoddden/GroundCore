@@ -13,7 +13,7 @@ impl SampleId {
     pub fn new(id: u64) -> Self {
         SampleId(id)
     }
-    
+
     pub fn as_u64(self) -> u64 {
         self.0
     }
@@ -50,11 +50,11 @@ impl SdrHandle {
             sample_counter: AtomicU64::new(0),
         }
     }
-    
+
     pub fn device_id(&self) -> &str {
         &self.device_id
     }
-    
+
     /// Read a batch of samples from the SDR
     /// This is a no-alloc operation - samples are written into a pre-allocated buffer
     pub fn read_samples(&self, buffer: &mut [Sample]) -> Result<usize> {
@@ -74,20 +74,20 @@ impl SdrHandle {
         }
         Ok(count)
     }
-    
+
     /// Tune the SDR to a specific frequency
     pub fn tune(&self, frequency_hz: u64) -> Result<()> {
         // In a real implementation, this would configure the SDR's local oscillator
         tracing::debug!("Tuning SDR {} to {} Hz", self.device_id, frequency_hz);
         Ok(())
     }
-    
+
     /// Set the sample rate
     pub fn set_sample_rate(&self, rate_hz: u64) -> Result<()> {
         tracing::debug!("Setting sample rate to {} Hz", rate_hz);
         Ok(())
     }
-    
+
     /// Enable or disable the SDR
     pub fn set_enabled(&self, enabled: bool) -> Result<()> {
         tracing::debug!("SDR {} enabled: {}", self.device_id, enabled);
@@ -106,48 +106,62 @@ pub struct SampleRingBuffer {
 impl SampleRingBuffer {
     pub fn new(capacity: usize) -> Self {
         Self {
-            buffer: vec![Sample { i: 0.0, q: 0.0, event_time: Utc::now(), reception_time: Utc::now(), id: SampleId(0) }; capacity],
+            buffer: vec![
+                Sample {
+                    i: 0.0,
+                    q: 0.0,
+                    event_time: Utc::now(),
+                    reception_time: Utc::now(),
+                    id: SampleId(0)
+                };
+                capacity
+            ],
             head: AtomicU64::new(0),
             tail: AtomicU64::new(0),
             capacity: capacity as u64,
         }
     }
-    
+
     /// Write samples to the ring buffer (no-alloc)
     pub fn write(&mut self, samples: &[Sample]) -> Result<usize> {
         let head = self.head.load(Ordering::Acquire);
         let tail = self.tail.load(Ordering::Acquire);
         let available = self.capacity - (head - tail);
-        
+
         if samples.len() as u64 > available {
-            return Err(GroundStationError::RfProcessing("Ring buffer overflow".to_string()));
+            return Err(GroundStationError::RfProcessing(
+                "Ring buffer overflow".to_string(),
+            ));
         }
-        
+
         let count = samples.len().min(available as usize);
         for (i, sample) in samples.iter().take(count).enumerate() {
             let idx = ((head + i as u64) % self.capacity) as usize;
             unsafe {
                 // Safe because we're writing to initialized memory
-                std::ptr::write(&mut self.buffer[idx] as *const Sample as *mut Sample, *sample);
+                std::ptr::write(
+                    &mut self.buffer[idx] as *const Sample as *mut Sample,
+                    *sample,
+                );
             }
         }
-        
+
         self.head.fetch_add(count as u64, Ordering::Release);
         Ok(count)
     }
-    
+
     /// Read samples from the ring buffer (no-alloc)
     pub fn read(&self, buffer: &mut [Sample]) -> Result<usize> {
         let head = self.head.load(Ordering::Acquire);
         let tail = self.tail.load(Ordering::Acquire);
         let available = head - tail;
-        
+
         let count = buffer.len().min(available as usize);
         for i in 0..count {
             let idx = ((tail + i as u64) % self.capacity) as usize;
             buffer[i] = self.buffer[idx];
         }
-        
+
         self.tail.fetch_add(count as u64, Ordering::Release);
         Ok(count)
     }

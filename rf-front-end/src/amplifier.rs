@@ -1,7 +1,7 @@
 //! Amplifier control with gain staging and thermal protection
 
-use crate::device::{RfDevice, RfDeviceType, RfDeviceState, DeviceCalibration};
-use ground_core::{Result, GroundStationError};
+use crate::device::{DeviceCalibration, RfDevice, RfDeviceState, RfDeviceType};
+use ground_core::{GroundStationError, Result};
 use serde::{Deserialize, Serialize};
 use std::sync::atomic::{AtomicBool, AtomicF64, AtomicU64, Ordering};
 use tokio::sync::RwLock;
@@ -37,28 +37,28 @@ pub enum AmplifierStatus {
 pub trait AmplifierControl: RfDevice {
     /// Set gain in dB
     async fn set_gain(&mut self, gain_db: f64) -> Result<()>;
-    
+
     /// Get current gain in dB
     async fn get_gain(&self) -> Result<f64>;
-    
+
     /// Enable amplifier
     async fn enable(&mut self) -> Result<()>;
-    
+
     /// Disable amplifier
     async fn disable(&mut self) -> Result<()>;
-    
+
     /// Get temperature in Celsius
     async fn get_temperature(&self) -> Result<f64>;
-    
+
     /// Get noise figure in dB
     async fn get_noise_figure(&self) -> Result<f64>;
-    
+
     /// Get amplifier status
     async fn get_amplifier_status(&self) -> Result<AmplifierStatus>;
-    
+
     /// Configure gain stages
     async fn configure_gain_stages(&mut self, stages: Vec<GainStage>) -> Result<()>;
-    
+
     /// Get gain stages
     async fn get_gain_stages(&self) -> Result<Vec<GainStage>>;
 }
@@ -150,7 +150,9 @@ impl RfDevice for GenericAmplifier {
 
     async fn enable(&mut self) -> Result<()> {
         if self.fault.load(Ordering::Relaxed) {
-            return Err(GroundStationError::Hardware("Amplifier fault - cannot enable".to_string()));
+            return Err(GroundStationError::Hardware(
+                "Amplifier fault - cannot enable".to_string(),
+            ));
         }
         self.enabled.store(true, Ordering::Relaxed);
         let mut status = self.amplifier_status.write().await;
@@ -183,7 +185,9 @@ impl RfDevice for GenericAmplifier {
 impl AmplifierControl for GenericAmplifier {
     async fn set_gain(&mut self, gain_db: f64) -> Result<()> {
         if !self.enabled.load(Ordering::Relaxed) {
-            return Err(GroundStationError::Hardware("Amplifier disabled".to_string()));
+            return Err(GroundStationError::Hardware(
+                "Amplifier disabled".to_string(),
+            ));
         }
 
         if self.fault.load(Ordering::Relaxed) {
@@ -192,7 +196,9 @@ impl AmplifierControl for GenericAmplifier {
 
         // Validate gain range (example: -20 to +60 dB)
         if gain_db < -20.0 || gain_db > 60.0 {
-            return Err(GroundStationError::Validation("Gain out of range".to_string()));
+            return Err(GroundStationError::Validation(
+                "Gain out of range".to_string(),
+            ));
         }
 
         self.current_gain.store(gain_db, Ordering::Relaxed);
@@ -205,7 +211,9 @@ impl AmplifierControl for GenericAmplifier {
 
     async fn enable(&mut self) -> Result<()> {
         if self.fault.load(Ordering::Relaxed) {
-            return Err(GroundStationError::Hardware("Amplifier fault - cannot enable".to_string()));
+            return Err(GroundStationError::Hardware(
+                "Amplifier fault - cannot enable".to_string(),
+            ));
         }
         self.enabled.store(true, Ordering::Relaxed);
         let mut status = self.amplifier_status.write().await;

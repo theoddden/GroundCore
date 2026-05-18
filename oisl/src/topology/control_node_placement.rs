@@ -6,10 +6,10 @@
 //
 // This minimizes maximum satellite-to-ground latency across constellation operation.
 
-use crate::{NodeId, Position3D, NodeType};
 use crate::topology::forecast::{GraphSnapshot, TopologyForecast};
-use std::collections::{HashSet, HashMap};
+use crate::{NodeId, NodeType, Position3D};
 use serde::{Deserialize, Serialize};
+use std::collections::{HashMap, HashSet};
 
 /// Control Node Placement Algorithm
 pub struct ControlNodePlacementAlgorithm {
@@ -57,7 +57,10 @@ impl ControlNodePlacementAlgorithm {
     }
 
     /// Select representative topologies via clustering
-    fn select_representatives(&self, forecast: &TopologyForecast) -> Result<Vec<GraphSnapshot>, PlacementError> {
+    fn select_representatives(
+        &self,
+        forecast: &TopologyForecast,
+    ) -> Result<Vec<GraphSnapshot>, PlacementError> {
         let snapshots: Vec<_> = forecast.snapshots.values().cloned().collect();
 
         if snapshots.is_empty() {
@@ -89,7 +92,11 @@ impl ControlNodePlacementAlgorithm {
             // Select snapshot closest to cluster centroid
             let cluster_snapshots = &snapshots[start..end];
             let centroid = self.compute_centroid(&feature_vectors[start..end]);
-            let representative = self.find_closest_to_centroid(cluster_snapshots, &feature_vectors[start..end], &centroid);
+            let representative = self.find_closest_to_centroid(
+                cluster_snapshots,
+                &feature_vectors[start..end],
+                &centroid,
+            );
             representatives.push(representative);
         }
 
@@ -108,17 +115,20 @@ impl ControlNodePlacementAlgorithm {
 
         // Average geometric quality
         if !snapshot.potential_edges.is_empty() {
-            let avg_quality: f64 = snapshot.potential_edges
+            let avg_quality: f64 = snapshot
+                .potential_edges
                 .iter()
                 .map(|e| e.geometric_quality.overall_quality())
-                .sum::<f64>() / snapshot.potential_edges.len() as f64;
+                .sum::<f64>()
+                / snapshot.potential_edges.len() as f64;
             features.push(avg_quality);
         } else {
             features.push(0.0);
         }
 
         // Total expected capacity
-        let total_capacity: f64 = snapshot.potential_edges
+        let total_capacity: f64 = snapshot
+            .potential_edges
             .iter()
             .map(|e| e.expected_capacity.0 as f64)
             .sum();
@@ -197,7 +207,8 @@ impl ControlNodePlacementAlgorithm {
 
         // Select remaining k-1 stations
         while selected.len() < k && !candidates_vec.is_empty() {
-            let best_station = self.select_best_station(topologies, &selected, candidates, &candidates_vec);
+            let best_station =
+                self.select_best_station(topologies, &selected, candidates, &candidates_vec);
             if let Some(best) = best_station {
                 selected.insert(best);
                 candidates_vec.retain(|s| s != &best);
@@ -245,7 +256,8 @@ impl ControlNodePlacementAlgorithm {
         for topology in topologies {
             for (node_id, node_state) in &topology.nodes {
                 if matches!(node_state.node_type, NodeType::Satellite { .. }) {
-                    let min_distance = self.min_distance_to_control_nodes(node_state.position, topology, selected);
+                    let min_distance =
+                        self.min_distance_to_control_nodes(node_state.position, topology, selected);
                     max_distance = max_distance.max(min_distance);
                 }
             }

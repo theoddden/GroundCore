@@ -4,14 +4,14 @@
 // independently arrive at the same acquisition state at the same time without
 // communicating.
 
-use hardware::PassShard;
-use crate::pat::{
-    AcquisitionId, PrecisionClock, ClockConfidence,
-    SearchPattern, SearchState, FallbackAction, LossReason,
-};
-use crate::oct::OctConfiguration;
 use crate::geometry::PointingVector;
+use crate::oct::OctConfiguration;
+use crate::pat::{
+    AcquisitionId, ClockConfidence, FallbackAction, LossReason, PrecisionClock, SearchPattern,
+    SearchState,
+};
 use chrono::{DateTime, Duration, Utc};
+use hardware::PassShard;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use thiserror::Error;
@@ -90,11 +90,23 @@ impl AcquisitionPlan {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum PatPhase {
     Idle,
-    Scheduled { acquisition_id: AcquisitionId, starts_at: DateTime<Utc> },
-    CoarseAcquisition { search_state: SearchState },
-    FineAcquisition { tracking_quality: f64 },
-    Tracking { metrics: TrackingMetrics },
-    Lost { reason: LossReason, since: DateTime<Utc> },
+    Scheduled {
+        acquisition_id: AcquisitionId,
+        starts_at: DateTime<Utc>,
+    },
+    CoarseAcquisition {
+        search_state: SearchState,
+    },
+    FineAcquisition {
+        tracking_quality: f64,
+    },
+    Tracking {
+        metrics: TrackingMetrics,
+    },
+    Lost {
+        reason: LossReason,
+        since: DateTime<Utc>,
+    },
 }
 
 /// Tracking metrics
@@ -145,7 +157,7 @@ impl PatCoordinator {
     pub fn new(clock: Box<dyn PrecisionClock>) -> Self {
         // Create per-acquisition shard with 8MB arena for no-heap allocations
         let shard = PassShard::new("pat-coordinator".to_string(), 8 * 1024 * 1024);
-        
+
         Self {
             clock_source: clock,
             acquisition_schedules: BTreeMap::new(),
@@ -170,20 +182,23 @@ impl PatCoordinator {
     /// Execute acquisition
     pub async fn execute(&mut self, plan_id: AcquisitionId) -> Result<AcquisitionResult, PatError> {
         let plan = self.find_plan(plan_id)?.clone();
-        
+
         // Wait until synchronized start moment
         let now = Utc::now();
         if now < plan.target_t0 {
-            let delay = (plan.target_t0 - now).to_std().unwrap_or(std::time::Duration::from_secs(0));
+            let delay = (plan.target_t0 - now)
+                .to_std()
+                .unwrap_or(std::time::Duration::from_secs(0));
             tokio::time::sleep(delay).await;
         }
 
         // Check clock confidence
         let confidence = self.clock_source.confidence();
         if !confidence.is_acceptable_for_pat() {
-            return Err(PatError::ClockSyncFailed(
-                format!("Clock confidence {}ns not acceptable for PAT", confidence.uncertainty_ns)
-            ));
+            return Err(PatError::ClockSyncFailed(format!(
+                "Clock confidence {}ns not acceptable for PAT",
+                confidence.uncertainty_ns
+            )));
         }
 
         // Execute search pattern
@@ -239,15 +254,18 @@ impl PatCoordinator {
                     // Wait until synchronized start moment
                     let now = Utc::now();
                     if now < plan.target_t0 {
-                        let delay = (plan.target_t0 - now).to_std().unwrap_or(std::time::Duration::from_secs(0));
+                        let delay = (plan.target_t0 - now)
+                            .to_std()
+                            .unwrap_or(std::time::Duration::from_secs(0));
                         tokio::time::sleep(delay).await;
                     }
 
                     // Check clock confidence
                     if !clock_confidence.is_acceptable_for_pat() {
-                        return Err(PatError::ClockSyncFailed(
-                            format!("Clock confidence {}ns not acceptable for PAT", clock_confidence.uncertainty_ns)
-                        ));
+                        return Err(PatError::ClockSyncFailed(format!(
+                            "Clock confidence {}ns not acceptable for PAT",
+                            clock_confidence.uncertainty_ns
+                        )));
                     }
 
                     // Simulate acquisition
@@ -269,7 +287,7 @@ impl PatCoordinator {
 
         // Wait for all acquisitions to complete
         let results = futures::future::join_all(handles).await;
-        
+
         results
             .into_iter()
             .map(|r| r.unwrap_or_else(|e| Err(PatError::AcquisitionFailed(e.to_string()))))
@@ -304,25 +322,27 @@ impl PatCoordinator {
     fn log_event(&mut self, event: PatEvent) {
         self.event_log.push(event);
     }
-    
+
     /// Get the acquisition shard for direct allocation (for no-heap allocations in real-time path)
     pub fn shard(&mut self) -> &mut PassShard {
         &mut self.shard
     }
-    
+
     /// Allocate acquisition state within the shard (no heap allocation)
     pub fn allocate_acquisition_state(&mut self, size: usize) -> Result<&mut [u8], PatError> {
         // In a real implementation, this would use the shard's arena
         // This prevents heap allocations in the real-time acquisition path
         tracing::debug!("Allocating {} bytes in acquisition shard", size);
-        
+
         // Use the shard's arena for allocation
         let _arena = self.shard.allocate_in_shard(0u8); // Placeholder
-        
+
         // In production: return actual buffer allocated in shard arena
-        Err(PatError::AcquisitionFailed("Shard allocation not fully implemented".to_string()))
+        Err(PatError::AcquisitionFailed(
+            "Shard allocation not fully implemented".to_string(),
+        ))
     }
-    
+
     /// Reset the shard when acquisition completes
     pub fn reset_shard(&mut self) {
         self.shard.reset();

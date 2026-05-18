@@ -5,19 +5,19 @@
 // monitor its health, command it to point. The physical plane abstracts the
 // management interface, not the optical layer.
 
-pub mod terminal;
 pub mod configuration;
+pub mod terminal;
 pub mod vendors;
 
-pub use terminal::{OpticalTerminal, EthernetEndpoint, TelemetryStream, PatHandle};
 pub use configuration::{
-    OctConfiguration, Modulation, FecConfiguration, FecCode, LinkType,
-    OctStandardVersion, ArqConfiguration, LdpcVariant, CodeRate, BaudRate,
+    ArqConfiguration, BaudRate, CodeRate, FecCode, FecConfiguration, LdpcVariant, LinkType,
+    Modulation, OctConfiguration, OctStandardVersion,
 };
-pub use vendors::{CondorMk3, Scot80, Vendor, SerialNumber};
+pub use terminal::{EthernetEndpoint, OpticalTerminal, PatHandle, TelemetryStream};
+pub use vendors::{CondorMk3, Scot80, SerialNumber, Vendor};
 
-use crate::{TerminalId, DataRate, Frequency, Bytes};
+use crate::{Bytes, DataRate, Frequency, TerminalId};
 use async_trait::async_trait;
-use chrono::{DateTime, Utc, Duration};
+use chrono::{DateTime, Duration, Utc};
 use serde::{Deserialize, Serialize};
 use std::time::Instant;

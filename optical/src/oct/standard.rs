@@ -35,7 +35,7 @@ impl OctStandardVersion {
         match self {
             Self::V3_0_0 | Self::V3_0_1 => 2_500_000_000, // 2.5 Gbps
             Self::V3_1_0 | Self::V3_2_0 => 5_000_000_000, // 5 Gbps
-            Self::V4_0_0 => 10_000_000_000, // 10 Gbps
+            Self::V4_0_0 => 10_000_000_000,               // 10 Gbps
         }
     }
 }

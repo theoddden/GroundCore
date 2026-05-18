@@ -47,11 +47,14 @@ impl CircuitBreaker {
     pub fn record_failure(&mut self) {
         self.consecutive_failures += 1;
         if self.consecutive_failures >= CIRCUIT_OPEN_THRESHOLD {
-            self.state = CircuitState::Open { opened_at: Utc::now() };
+            self.state = CircuitState::Open {
+                opened_at: Utc::now(),
+            };
             self.total_trips += 1;
             tracing::warn!(
                 "Circuit breaker opened after {} consecutive failures (trip #{})",
-                self.consecutive_failures, self.total_trips
+                self.consecutive_failures,
+                self.total_trips
             );
         }
     }
@@ -70,7 +73,10 @@ impl CircuitBreaker {
             CircuitState::Open { opened_at } => {
                 let elapsed = (Utc::now() - *opened_at).num_seconds();
                 if elapsed >= CIRCUIT_COOLDOWN_SECS {
-                    tracing::info!("Circuit breaker entering half-open after {}s cooldown", elapsed);
+                    tracing::info!(
+                        "Circuit breaker entering half-open after {}s cooldown",
+                        elapsed
+                    );
                     self.state = CircuitState::HalfOpen;
                     true
                 } else {
@@ -112,7 +118,11 @@ pub struct HardwareDevice {
 }
 
 impl HardwareDevice {
-    pub fn new(device_id: String, hardware_type: HardwareType, capabilities: HardwareCapabilities) -> Self {
+    pub fn new(
+        device_id: String,
+        hardware_type: HardwareType,
+        capabilities: HardwareCapabilities,
+    ) -> Self {
         Self {
             device_id,
             hardware_type,
@@ -122,32 +132,34 @@ impl HardwareDevice {
             last_health_check: Utc::now(),
         }
     }
-    
+
     /// Check if device is available for allocation
     pub fn is_available(&self) -> bool {
         self.healthy && self.current_allocation.is_none()
     }
-    
+
     /// Allocate this device to a pass
     pub fn allocate(&mut self, pass_id: PassId) -> Result<()> {
         if !self.is_available() {
-            return Err(ground_core::GroundStationError::Hardware(
-                format!("Device {} not available", self.device_id),
-            ));
+            return Err(ground_core::GroundStationError::Hardware(format!(
+                "Device {} not available",
+                self.device_id
+            )));
         }
-        
+
         self.current_allocation = Some(pass_id);
         Ok(())
     }
-    
+
     /// Release this device from a pass
     pub fn release(&mut self, pass_id: &PassId) -> Result<()> {
         if self.current_allocation.as_ref() != Some(pass_id) {
-            return Err(ground_core::GroundStationError::Hardware(
-                format!("Device {} not allocated to pass {}", self.device_id, pass_id),
-            ));
+            return Err(ground_core::GroundStationError::Hardware(format!(
+                "Device {} not allocated to pass {}",
+                self.device_id, pass_id
+            )));
         }
-        
+
         self.current_allocation = None;
         Ok(())
     }
@@ -208,19 +220,19 @@ impl HardwarePool {
             circuit_breakers: Arc::new(RwLock::new(HashMap::new())),
         }
     }
-    
+
     /// Add a device to the pool
     pub async fn add_device(&self, device: HardwareDevice) {
         let mut devices = self.devices.write().await;
         devices.insert(device.device_id.clone(), device);
     }
-    
+
     /// Get a device by ID
     pub async fn get_device(&self, device_id: &str) -> Option<HardwareDevice> {
         let devices = self.devices.read().await;
         devices.get(device_id).cloned()
     }
-    
+
     /// Find available devices of a specific type, excluding devices with open circuits.
     pub async fn find_available(&self, hardware_type: HardwareType, count: usize) -> Vec<String> {
         let devices = self.devices.read().await;
@@ -242,95 +254,103 @@ impl HardwarePool {
             .map(|d| d.device_id.clone())
             .collect()
     }
-    
+
     /// Allocate hardware for a pass
-    pub async fn allocate(&self, pass_id: PassId, device_ids: Vec<String>, duration_sec: u64) -> Result<HardwareAllocation> {
+    pub async fn allocate(
+        &self,
+        pass_id: PassId,
+        device_ids: Vec<String>,
+        duration_sec: u64,
+    ) -> Result<HardwareAllocation> {
         let mut devices = self.devices.write().await;
-        
+
         // Allocate each device
         for device_id in &device_ids {
-            let device = devices.get_mut(device_id)
-                .ok_or_else(|| ground_core::GroundStationError::Hardware(
-                    format!("Device {} not found", device_id),
-                ))?;
-            
+            let device = devices.get_mut(device_id).ok_or_else(|| {
+                ground_core::GroundStationError::Hardware(format!("Device {} not found", device_id))
+            })?;
+
             device.allocate(pass_id.clone())?;
         }
-        
+
         let allocation = HardwareAllocation {
             pass_id: pass_id.clone(),
             devices: device_ids.clone(),
             allocated_at: Utc::now(),
             expected_duration_sec: duration_sec,
         };
-        
+
         let mut allocations = self.allocations.write().await;
         allocations.insert(pass_id, allocation.clone());
-        
+
         Ok(allocation)
     }
-    
+
     /// Release hardware from a pass
     pub async fn release(&self, pass_id: &PassId) -> Result<()> {
         let allocation = {
             let allocations = self.allocations.read().await;
-            allocations.get(pass_id).cloned()
-                .ok_or_else(|| ground_core::GroundStationError::Hardware(
-                    format!("No allocation for pass {}", pass_id),
-                ))?
+            allocations.get(pass_id).cloned().ok_or_else(|| {
+                ground_core::GroundStationError::Hardware(format!(
+                    "No allocation for pass {}",
+                    pass_id
+                ))
+            })?
         };
-        
+
         let mut devices = self.devices.write().await;
         for device_id in &allocation.devices {
             if let Some(device) = devices.get_mut(device_id) {
                 let _ = device.release(pass_id); // Ignore errors on release
             }
         }
-        
+
         let mut allocations = self.allocations.write().await;
         allocations.remove(pass_id);
-        
+
         Ok(())
     }
-    
+
     /// Get current allocation for a pass
     pub async fn get_allocation(&self, pass_id: &PassId) -> Option<HardwareAllocation> {
         let allocations = self.allocations.read().await;
         allocations.get(pass_id).cloned()
     }
-    
+
     /// Check device health
     pub async fn check_health(&self, device_id: &str) -> Result<bool> {
         let mut devices = self.devices.write().await;
-        let device = devices.get_mut(device_id)
-            .ok_or_else(|| ground_core::GroundStationError::Hardware(
-                format!("Device {} not found", device_id),
-            ))?;
-        
+        let device = devices.get_mut(device_id).ok_or_else(|| {
+            ground_core::GroundStationError::Hardware(format!("Device {} not found", device_id))
+        })?;
+
         // In a real implementation, this would perform actual health checks
         // For now, we just update the timestamp
         device.last_health_check = Utc::now();
         Ok(device.healthy)
     }
-    
+
     /// Mark a device as unhealthy and trip its circuit breaker.
     pub async fn mark_unhealthy(&self, device_id: &str) -> Result<()> {
         let mut devices = self.devices.write().await;
-        let device = devices.get_mut(device_id)
-            .ok_or_else(|| ground_core::GroundStationError::Hardware(
-                format!("Device {} not found", device_id),
-            ))?;
+        let device = devices.get_mut(device_id).ok_or_else(|| {
+            ground_core::GroundStationError::Hardware(format!("Device {} not found", device_id))
+        })?;
 
         device.healthy = false;
 
         // Trip circuit breaker — tracks failure trajectory independently of the health flag
         let mut breakers = self.circuit_breakers.write().await;
-        let breaker = breakers.entry(device_id.to_string()).or_insert_with(CircuitBreaker::new);
+        let breaker = breakers
+            .entry(device_id.to_string())
+            .or_insert_with(CircuitBreaker::new);
         breaker.record_failure();
 
         tracing::warn!(
             "Device {} marked unhealthy (circuit failures: {}, state: {:?})",
-            device_id, breaker.consecutive_failures, breaker.state
+            device_id,
+            breaker.consecutive_failures,
+            breaker.state
         );
         Ok(())
     }

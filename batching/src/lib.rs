@@ -5,10 +5,10 @@
 //! - Demodulator output to Float Protocols
 //! - Log entry batching for efficient storage
 
-pub mod tle;
 pub mod demodulator;
 pub mod log;
+pub mod tle;
 
-pub use tle::{TleBatch, TleBatcher, TleData};
 pub use demodulator::{DemodulatorBatch, DemodulatorBatcher};
 pub use log::{LogBatch, LogBatcher};
+pub use tle::{TleBatch, TleBatcher, TleData};

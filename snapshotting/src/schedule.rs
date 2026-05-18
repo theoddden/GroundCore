@@ -5,7 +5,7 @@
 //! Callers restore the typed value via `ScheduleSnapshot::restore::<T>()`.
 
 use chrono::{DateTime, Utc};
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use sha2::{Digest, Sha256};
 
 /// Opaque schedule snapshot — stores serialized bytes to remain crate-independent.

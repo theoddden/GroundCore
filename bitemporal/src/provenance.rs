@@ -97,7 +97,7 @@ impl ProvenanceChain {
             chain_hash: String::new(),
         }
     }
-    
+
     /// Add a link to the chain
     pub fn add_link(&mut self, link: ProvenanceLink) -> Result<()> {
         // Verify chain integrity
@@ -108,46 +108,46 @@ impl ProvenanceChain {
                 ));
             }
         }
-        
+
         self.links.push(link);
         self.recompute_chain_hash();
-        
+
         Ok(())
     }
-    
+
     /// Recpute the chain hash
     fn recompute_chain_hash(&mut self) {
         use sha2::{Digest, Sha256};
-        
+
         let mut hasher = Sha256::new();
         hasher.update(self.pass_id.as_bytes());
         hasher.update(self.satellite_id.as_bytes());
         hasher.update(self.station_id.as_bytes());
-        
+
         for link in &self.links {
             hasher.update(link.hash.as_bytes());
         }
-        
+
         self.chain_hash = format!("{:x}", hasher.finalize());
     }
-    
+
     /// Verify the integrity of the chain
     pub fn verify(&self) -> bool {
         let mut previous_hash: Option<String> = None;
-        
+
         for link in &self.links {
             if link.previous_hash != previous_hash {
                 return false;
             }
             previous_hash = Some(link.hash.clone());
         }
-        
+
         // Verify chain hash
         let mut computed_chain = self.clone();
         computed_chain.recompute_chain_hash();
         computed_chain.chain_hash == self.chain_hash
     }
-    
+
     /// Get the complete event timeline
     pub fn timeline(&self) -> Vec<(EventTime, ReceptionTime, ProvenanceLinkType)> {
         self.links
@@ -155,16 +155,16 @@ impl ProvenanceChain {
             .map(|link| (link.event_time, link.reception_time, link.link_type.clone()))
             .collect()
     }
-    
+
     /// Compute total propagation delay from satellite to customer
     pub fn total_propagation_delay(&self) -> chrono::Duration {
         if self.links.is_empty() {
             return chrono::Duration::zero();
         }
-        
+
         let first = self.links.first().unwrap();
         let last = self.links.last().unwrap();
-        
+
         last.reception_time.as_datetime() - first.event_time.as_datetime()
     }
 }
@@ -181,19 +181,19 @@ impl ProvenanceVerifier {
             station_keys: HashMap::new(),
         }
     }
-    
+
     /// Add a station's public key
     pub fn add_station_key(&mut self, station_id: String, public_key: String) {
         self.station_keys.insert(station_id, public_key);
     }
-    
+
     /// Verify a provenance chain from a federated station
     pub fn verify_federated_chain(&self, chain: &ProvenanceChain) -> Result<bool> {
         // Verify chain integrity
         if !chain.verify() {
             return Ok(false);
         }
-        
+
         // Verify signatures on federation handoff links
         for link in &chain.links {
             if matches!(link.link_type, ProvenanceLinkType::FederationHandoff { .. }) {
@@ -206,10 +206,10 @@ impl ProvenanceVerifier {
                 }
             }
         }
-        
+
         Ok(true)
     }
-    
+
     /// Cross-verify two chains from different stations (for challenge passes)
     pub fn cross_verify_chains(
         &self,
@@ -224,7 +224,7 @@ impl ProvenanceVerifier {
                 details: "One or both chains invalid".to_string(),
             });
         }
-        
+
         // Check if both chains are for the same satellite pass
         if chain1.satellite_id != chain2.satellite_id {
             return Ok(CrossVerificationResult {
@@ -233,33 +233,33 @@ impl ProvenanceVerifier {
                 details: "Different satellites".to_string(),
             });
         }
-        
+
         // Compare event times (should be nearly identical for the same satellite emission)
         let mut matched_links = 0;
         let total_links = chain1.links.len() + chain2.links.len();
-        
+
         for link1 in &chain1.links {
             for link2 in &chain2.links {
                 let time_diff = (link1.event_time.as_datetime() - link2.event_time.as_datetime())
                     .num_milliseconds()
                     .abs();
-                
+
                 // Event times should match within 100ms for the same emission
                 if time_diff < 100 {
                     matched_links += 1;
                 }
             }
         }
-        
+
         let match_rate = if total_links > 0 {
             (2 * matched_links) as f64 / total_links as f64
         } else {
             0.0
         };
-        
+
         // Check bi-temporal consistency
         let bitemporal_consistency = match_rate > 0.8;
-        
+
         Ok(CrossVerificationResult {
             match_rate,
             bitemporal_consistency,

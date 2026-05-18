@@ -7,32 +7,29 @@
 // Extended with Control Node Placement Algorithm (CNPA) for optimal
 // ground station selection to minimize satellite-to-ground latency.
 
-pub mod forecast;
-pub mod routing;
-pub mod link_state;
 pub mod control_node_placement;
+pub mod forecast;
+pub mod link_state;
+pub mod routing;
 
 pub use forecast::{
-    TopologyForecast, GraphSnapshot, PotentialEdge, TopologyForecaster,
-    TopologyInterpolation, RefinementReport, LinkObservation,
+    GraphSnapshot, LinkObservation, PotentialEdge, RefinementReport, TopologyForecast,
+    TopologyForecaster, TopologyInterpolation,
 };
 
-pub use routing::{
-    SpatiotemporalRouter, Route, RoutedHop, CostModel, CostScore,
-};
+pub use routing::{CostModel, CostScore, Route, RoutedHop, SpatiotemporalRouter};
 
 pub use link_state::{
-    LinkPhase, LinkMetrics, ActiveLink, PhaseTransition,
-    DegradationReason, LossCause, TrackingQuality,
+    ActiveLink, DegradationReason, LinkMetrics, LinkPhase, LossCause, PhaseTransition,
+    TrackingQuality,
 };
 
 pub use control_node_placement::{
-    ControlNodePlacementAlgorithm, PlacementEvaluation, PlacementError,
+    ControlNodePlacementAlgorithm, PlacementError, PlacementEvaluation,
 };
 
-use crate::{NodeId, LinkId, TerminalId, DataRate, TimeWindow, GeometryScore};
-use crate::mission::IntentConstraints;
-use crate::mission::ServiceLevelAgreement;
+use crate::mission::{IntentConstraints, ServiceLevelAgreement};
+use crate::{DataRate, GeometryScore, LinkId, NodeId, TerminalId, TimeWindow};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;

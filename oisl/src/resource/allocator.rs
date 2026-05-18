@@ -1,12 +1,8 @@
 // Resource Allocator - multi-tenant resource allocation
 
-use crate::{
-    SatelliteId, TerminalId, TaskId, TenantId,
-    DataRate, Bytes, TimeWindow, Priority,
-};
 use crate::resource::{ResourceAllocation, ResourceClaim};
+use crate::{Bytes, DataRate, Priority, SatelliteId, TaskId, TenantId, TerminalId, TimeWindow};
 use chrono::{DateTime, Duration, Utc};
-use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -152,7 +148,8 @@ impl ResourceAllocator {
 
     /// Release allocation
     pub fn release(&mut self, allocation_id: &AllocationId) -> Result<(), AllocationError> {
-        let pos = self.allocations
+        let pos = self
+            .allocations
             .iter()
             .position(|a| &a.allocation_id == allocation_id)
             .ok_or_else(|| AllocationError::NotFound {
@@ -176,8 +173,13 @@ impl ResourceAllocator {
     }
 
     /// Preempt allocation (for higher priority tasks)
-    pub fn preempt(&mut self, allocation_id: &AllocationId, reason: PreemptionReason) -> Result<(), AllocationError> {
-        let allocation = self.allocations
+    pub fn preempt(
+        &mut self,
+        allocation_id: &AllocationId,
+        reason: PreemptionReason,
+    ) -> Result<(), AllocationError> {
+        let allocation = self
+            .allocations
             .iter()
             .find(|a| &a.allocation_id == allocation_id)
             .ok_or_else(|| AllocationError::NotFound {
@@ -193,7 +195,8 @@ impl ResourceAllocator {
         self.release(allocation_id)?;
         tracing::info!(
             "Preempted allocation {:?} due to: {:?}",
-            allocation_id, reason
+            allocation_id,
+            reason
         );
         Ok(())
     }
@@ -208,7 +211,11 @@ impl ResourceAllocator {
         if let Some(terminal) = &claim.optical_terminal {
             if let Some(ids) = self.terminal_index.get(terminal) {
                 for alloc_id in ids {
-                    if let Some(allocation) = self.allocations.iter().find(|a| &a.allocation_id == alloc_id) {
+                    if let Some(allocation) = self
+                        .allocations
+                        .iter()
+                        .find(|a| &a.allocation_id == alloc_id)
+                    {
                         if allocation.valid_window.overlaps(window) {
                             return Some(allocation.allocation_id);
                         }
@@ -266,16 +273,21 @@ pub struct TenantQuota {
 pub enum AllocationError {
     #[error("Allocation not found: {allocation_id:?}")]
     NotFound { allocation_id: AllocationId },
-    
+
     #[error("Tenant quota exceeded for {tenant_id}: resource {resource}")]
-    QuotaExceeded { tenant_id: TenantId, resource: String },
-    
+    QuotaExceeded {
+        tenant_id: TenantId,
+        resource: String,
+    },
+
     #[error("Resource conflict with allocation {conflicting_allocation:?}")]
-    ResourceConflict { conflicting_allocation: AllocationId },
-    
+    ResourceConflict {
+        conflicting_allocation: AllocationId,
+    },
+
     #[error("Allocation {allocation_id:?} is not preemptible")]
     NotPreemptible { allocation_id: AllocationId },
-    
+
     #[error("Insufficient resources: {0}")]
     InsufficientResources(String),
 }

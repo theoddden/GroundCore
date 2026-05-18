@@ -6,12 +6,12 @@
 //! - Schedule fragment caching
 //! - Generic LRU cache with time-based invalidation
 
-pub mod propagation;
-pub mod tle;
-pub mod schedule;
 pub mod generic;
+pub mod propagation;
+pub mod schedule;
+pub mod tle;
 
-pub use propagation::{PropagationCache, CacheEntry};
-pub use tle::{TleCache, TleCacheKey};
-pub use schedule::{ScheduleFragment, ScheduleFragmentCache};
 pub use generic::{LruCache, TimeBasedCache};
+pub use propagation::{CacheEntry, PropagationCache};
+pub use schedule::{ScheduleFragment, ScheduleFragmentCache};
+pub use tle::{TleCache, TleCacheKey};

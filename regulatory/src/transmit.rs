@@ -6,8 +6,8 @@
 //! - A frequency typed to the band
 //! - A coordination proof (if required by the band)
 
-use crate::types::{Band, CoordinationProof, Frequency, Power};
 use crate::license::License;
+use crate::types::{Band, CoordinationProof, Frequency, Power};
 use ground_core::{GroundStationError, Result};
 use thiserror::Error;
 
@@ -41,17 +41,23 @@ pub fn transmit<B: Band>(
 ) -> Result<()> {
     // Runtime checks (these should never fail if types are correct)
     if !license.is_valid() {
-        return Err(ground_core::GroundStationError::Regulatory("License not valid".to_string()));
+        return Err(ground_core::GroundStationError::Regulatory(
+            "License not valid".to_string(),
+        ));
     }
-    
+
     if !license.power_allowed(power.dbm) {
-        return Err(ground_core::GroundStationError::Regulatory("Power exceeds limit".to_string()));
+        return Err(ground_core::GroundStationError::Regulatory(
+            "Power exceeds limit".to_string(),
+        ));
     }
-    
+
     if requires_coordination && coordination.is_none() {
-        return Err(ground_core::GroundStationError::Regulatory("Coordination required".to_string()));
+        return Err(ground_core::GroundStationError::Regulatory(
+            "Coordination required".to_string(),
+        ));
     }
-    
+
     // In a real implementation, this would actually transmit
     tracing::info!(
         "Transmitting on {} at {} Hz at {} dBm",
@@ -59,7 +65,7 @@ pub fn transmit<B: Band>(
         frequency.hz(),
         power.dbm
     );
-    
+
     Ok(())
 }
 
@@ -99,14 +105,14 @@ mod tests {
             Utc::now() + chrono::Duration::hours(24),
             30.0,
         );
-        
+
         let frequency = Frequency::<LBand>::new(1_500_000_000).unwrap();
         let power = Power::new(20.0);
-        
+
         let result = transmit_no_coordination(&license, frequency, power);
         assert!(result.is_ok());
     }
-    
+
     #[test]
     fn test_transmit_power_limit() {
         let holder: CustomerId = "test".to_string();
@@ -116,14 +122,14 @@ mod tests {
             Utc::now() + chrono::Duration::hours(24),
             30.0,
         );
-        
+
         let frequency = Frequency::<LBand>::new(1_500_000_000).unwrap();
         let power = Power::new(40.0); // Exceeds 30 dBm limit
-        
+
         let result = transmit_no_coordination(&license, frequency, power);
         assert!(matches!(result, Err(TransmitError::PowerExceedsLimit)));
     }
-    
+
     #[test]
     fn test_transmit_expired_license() {
         let holder: CustomerId = "test".to_string();
@@ -133,10 +139,10 @@ mod tests {
             Utc::now() - chrono::Duration::hours(24),
             30.0,
         );
-        
+
         let frequency = Frequency::<LBand>::new(1_500_000_000).unwrap();
         let power = Power::new(20.0);
-        
+
         let result = transmit_no_coordination(&license, frequency, power);
         assert!(matches!(result, Err(TransmitError::LicenseNotValid)));
     }

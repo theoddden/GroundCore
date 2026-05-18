@@ -75,7 +75,7 @@ impl WeatherConditions {
         let cloud_factor = self.cloud_cover_percent / 100.0;
         let humidity_factor = self.humidity_percent / 100.0;
         let visibility_factor = 1.0 - (10.0 / (self.visibility_km + 10.0));
-        
+
         cloud_factor * 0.5 + humidity_factor * 0.3 + visibility_factor * 0.2
     }
 }
@@ -88,23 +88,23 @@ pub fn compute_atmospheric_attenuation(
 ) -> AttenuationDb {
     // Simplified atmospheric attenuation model
     // In production, this would use MODTRAN or similar
-    
+
     // Base attenuation from atmospheric absorption
     let base_attenuation_db = if wavelength_nm < 1000.0 {
         2.0 // Visible light has more atmospheric scattering
     } else {
         1.0 // Near-infrared has better atmospheric transmission
     };
-    
+
     // Elevation angle correction (lower elevation = more atmosphere)
     let elevation_factor = 1.0 / (path.elevation_angle_deg.to_radians().sin().max(0.1));
-    
+
     // Weather factor
     let weather_factor = weather.attenuation_factor() * 10.0; // Up to 10 dB additional loss
-    
+
     // Total attenuation
     let total_db = base_attenuation_db * elevation_factor + weather_factor;
-    
+
     AttenuationDb(total_db)
 }
 

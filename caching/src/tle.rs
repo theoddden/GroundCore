@@ -37,12 +37,12 @@ impl TleCache {
             max_age_hours,
         }
     }
-    
+
     /// Get a cached TLE
     pub fn get(&self, key: &TleCacheKey) -> Option<&CachedTle> {
         self.entries.get(key)
     }
-    
+
     /// Check if a TLE needs refresh
     pub fn needs_refresh(&self, key: &TleCacheKey) -> bool {
         match self.get(key) {
@@ -53,29 +53,30 @@ impl TleCache {
             None => true,
         }
     }
-    
+
     /// Batch refresh multiple TLEs atomically
     pub fn batch_refresh(&mut self, tles: Vec<(TleCacheKey, CachedTle)>) {
         for (key, tle) in tles {
             self.entries.insert(key, tle);
         }
     }
-    
+
     /// Invalidate a specific TLE
     pub fn invalidate(&mut self, key: &TleCacheKey) {
         self.entries.remove(key);
     }
-    
+
     /// Invalidate all TLEs for a satellite
     pub fn invalidate_satellite(&mut self, satellite_id: &SatelliteId) {
-        self.entries.retain(|key, _| &key.satellite_id != satellite_id);
+        self.entries
+            .retain(|key, _| &key.satellite_id != satellite_id);
     }
-    
+
     /// Invalidate all TLEs
     pub fn invalidate_all(&mut self) {
         self.entries.clear();
     }
-    
+
     /// Get all satellite IDs in cache
     pub fn satellite_ids(&self) -> Vec<SatelliteId> {
         self.entries
@@ -83,7 +84,7 @@ impl TleCache {
             .map(|k| k.satellite_id.clone())
             .collect()
     }
-    
+
     /// Get cache statistics
     pub fn stats(&self) -> TleCacheStats {
         TleCacheStats {

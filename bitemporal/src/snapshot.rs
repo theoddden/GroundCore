@@ -41,7 +41,7 @@ impl LogSnapshot {
     pub fn new(entries: Vec<LogEntry>) -> Self {
         let captured_at = ReceptionTime::now();
         let entry_count = entries.len();
-        
+
         let time_range = if let (Some(first), Some(last)) = (entries.first(), entries.last()) {
             (
                 first.reception_time.as_datetime(),
@@ -50,23 +50,23 @@ impl LogSnapshot {
         } else {
             (Utc::now(), Utc::now())
         };
-        
+
         let pass_ids: Vec<String> = entries
             .iter()
             .map(|e| e.pass_id.clone())
             .collect::<std::collections::HashSet<_>>()
             .into_iter()
             .collect();
-        
+
         let hash = Self::compute_hash(&entries);
-        
+
         let metadata = SnapshotMetadata {
             entry_count,
             time_range,
             pass_ids,
             hash,
         };
-        
+
         Self {
             snapshot_id: uuid::Uuid::new_v4().to_string(),
             captured_at,
@@ -74,31 +74,33 @@ impl LogSnapshot {
             metadata,
         }
     }
-    
+
     /// Compute hash of snapshot
     fn compute_hash(entries: &[LogEntry]) -> String {
         use sha2::{Digest, Sha256};
-        
+
         let mut hasher = Sha256::new();
         for entry in entries {
             hasher.update(entry.hash.as_bytes());
         }
         format!("{:x}", hasher.finalize())
     }
-    
+
     /// Verify snapshot integrity
     pub fn verify(&self) -> bool {
         Self::compute_hash(&self.entries) == self.metadata.hash
     }
-    
+
     /// Query entries by type
     pub fn query_by_type(&self, entry_type: LogEntryType) -> Vec<&LogEntry> {
         self.entries
             .iter()
-            .filter(|e| std::mem::discriminant(&e.entry_type) == std::mem::discriminant(&entry_type))
+            .filter(|e| {
+                std::mem::discriminant(&e.entry_type) == std::mem::discriminant(&entry_type)
+            })
             .collect()
     }
-    
+
     /// Query entries by pass ID
     pub fn query_by_pass(&self, pass_id: &str) -> Vec<&LogEntry> {
         self.entries
@@ -106,7 +108,7 @@ impl LogSnapshot {
             .filter(|e| e.pass_id == pass_id)
             .collect()
     }
-    
+
     /// Query entries in time range
     pub fn query_by_time_range(&self, start: DateTime<Utc>, end: DateTime<Utc>) -> Vec<&LogEntry> {
         self.entries
@@ -140,7 +142,7 @@ impl SnapshotManager {
             last_snapshot_time: None,
         }
     }
-    
+
     /// Check if a snapshot should be taken
     pub fn should_snapshot(&self) -> bool {
         if let Some(last) = self.last_snapshot_time {
@@ -150,7 +152,7 @@ impl SnapshotManager {
             true
         }
     }
-    
+
     /// Take a snapshot if needed
     pub fn snapshot_if_needed(&mut self, entries: Vec<LogEntry>) -> Option<LogSnapshot> {
         if self.should_snapshot() {
@@ -162,38 +164,36 @@ impl SnapshotManager {
             None
         }
     }
-    
+
     /// Add a snapshot
     fn add_snapshot(&mut self, snapshot: LogSnapshot) {
         self.snapshots.push(snapshot);
-        
+
         // Prune old snapshots
         while self.snapshots.len() > self.max_snapshots {
             self.snapshots.remove(0);
         }
     }
-    
+
     /// Get the most recent snapshot
     pub fn latest(&self) -> Option<&LogSnapshot> {
         self.snapshots.last()
     }
-    
+
     /// Get snapshot closest to a given time
     pub fn find_closest(&self, time: DateTime<Utc>) -> Option<&LogSnapshot> {
-        self.snapshots
-            .iter()
-            .min_by_key(|s| {
-                (s.captured_at.as_datetime() - time)
-                    .num_milliseconds()
-                    .abs()
-            })
+        self.snapshots.iter().min_by_key(|s| {
+            (s.captured_at.as_datetime() - time)
+                .num_milliseconds()
+                .abs()
+        })
     }
-    
+
     /// Get all snapshots
     pub fn all_snapshots(&self) -> &[LogSnapshot] {
         &self.snapshots
     }
-    
+
     /// Prune snapshots older than a threshold
     pub fn prune_older_than(&mut self, age_sec: i64) {
         let cutoff = Utc::now() - chrono::Duration::seconds(age_sec);

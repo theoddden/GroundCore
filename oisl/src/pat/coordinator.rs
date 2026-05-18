@@ -4,9 +4,9 @@
 // becomes operationally essential. The acquisition protocol depends on agreed
 // timestamps. The bi-temporal log proves that the timestamps were agreed correctly.
 
-use crate::{TerminalId, AcquisitionId, OctConfiguration};
-use crate::pat::{PrecisionClock, PrecisionTimestamp, ClockConfidence};
-use chrono::{DateTime, Utc, Duration};
+use crate::pat::{ClockConfidence, PrecisionClock, PrecisionTimestamp};
+use crate::{AcquisitionId, OctConfiguration, TerminalId};
+use chrono::{DateTime, Duration, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
@@ -59,7 +59,8 @@ impl PatCoordinator {
             system_decision_chain: vec![],
         });
 
-        self.pat_schedules.insert(acquisition.target_t0, acquisition);
+        self.pat_schedules
+            .insert(acquisition.target_t0, acquisition);
         Ok(())
     }
 
@@ -251,4 +252,3 @@ pub enum PatError {
     #[error("Acquisition timeout after {0:?}")]
     Timeout(Duration),
 }
-

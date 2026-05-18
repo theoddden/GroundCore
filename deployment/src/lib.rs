@@ -10,12 +10,12 @@
 //! - No shared mutable state between passes (enforced by sharding)
 //! - Communication through versioned shared memory
 
-pub mod supervisor;
-pub mod subprocess;
 pub mod handoff;
+pub mod subprocess;
+pub mod supervisor;
 pub mod version;
 
-pub use supervisor::{Supervisor, SupervisorConfig};
-pub use subprocess::{PassProcess, ProcessState, ProcessHandle};
 pub use handoff::{HandoffManager, HandoffResult};
+pub use subprocess::{PassProcess, ProcessHandle, ProcessState};
+pub use supervisor::{Supervisor, SupervisorConfig};
 pub use version::{Version, VersionedBinary};

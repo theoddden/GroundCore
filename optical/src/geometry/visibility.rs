@@ -72,7 +72,11 @@ pub struct ForbiddenZone {
 }
 
 impl ForbiddenZone {
-    pub fn solar_exclusion(sun_azimuth_rad: f64, sun_elevation_rad: f64, exclusion_angle_deg: f64) -> Self {
+    pub fn solar_exclusion(
+        sun_azimuth_rad: f64,
+        sun_elevation_rad: f64,
+        exclusion_angle_deg: f64,
+    ) -> Self {
         Self {
             center_azimuth_rad: sun_azimuth_rad,
             center_elevation_rad: sun_elevation_rad,
@@ -99,7 +103,7 @@ pub fn predict_visibility_window(
 ) -> Vec<VisibilityWindow> {
     // Simplified implementation - in production this would use SGP4 propagation
     let now = Utc::now();
-    
+
     // Generate sample windows (placeholder)
     vec![
         VisibilityWindow {
@@ -128,9 +132,6 @@ pub struct Orbit {
 
 impl Orbit {
     pub fn new(satellite_id: String, tle: String) -> Self {
-        Self {
-            satellite_id,
-            tle,
-        }
+        Self { satellite_id, tle }
     }
 }

@@ -6,23 +6,22 @@
 // to recover from failure.
 
 pub mod compiler;
-pub mod state_machine;
 pub mod scheduler;
+pub mod state_machine;
 pub mod validator;
 
 pub use compiler::{
-    IntentCompiler, MissionIntent, TaskingPlan, ObjectiveType,
-    IntentConstraints, ServiceLevelAgreement, PlanExplanation,
-    CompilationError, ValidationWarning,
+    CompilationError, IntentCompiler, IntentConstraints, MissionIntent, ObjectiveType,
+    PlanExplanation, ServiceLevelAgreement, TaskingPlan, ValidationWarning,
 };
 
+pub use scheduler::{LinkReservation, SatelliteTask, TaskingScheduler};
 pub use state_machine::{ConstellationState, SatelliteState};
-pub use scheduler::{TaskingScheduler, SatelliteTask, LinkReservation};
 pub use validator::{PlanValidator, ValidationReport};
 
 use crate::{
-    IntentId, PlanId, TaskId, SatelliteId, TenantId, AssetId, GeoRegion,
-    SensorType, TimeWindow, Bytes, ConfidenceScore, Priority, BiTemporal,
+    AssetId, BiTemporal, Bytes, ConfidenceScore, GeoRegion, IntentId, PlanId, Priority,
+    SatelliteId, SensorType, TaskId, TenantId, TimeWindow,
 };
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
@@ -71,7 +70,7 @@ pub struct IntentConstraints {
     pub min_throughput: Option<u64>, // bytes per second
     pub allowed_regions: Option<Vec<GeoRegion>>,
     pub forbidden_regions: Option<Vec<GeoRegion>>,
-    pub power_budget: Option<f64>, // watts
+    pub power_budget: Option<f64>,  // watts
     pub thermal_limit: Option<f64>, // celsius
 }
 
@@ -190,23 +189,26 @@ pub enum TradeoffType {
 #[derive(Debug, Clone, Serialize, Deserialize, thiserror::Error)]
 pub enum CompilationError {
     #[error("No feasible route found between {source} and {destination}")]
-    NoFeasibleRoute { source: SatelliteId, destination: SatelliteId },
-    
+    NoFeasibleRoute {
+        source: SatelliteId,
+        destination: SatelliteId,
+    },
+
     #[error("Insufficient resources on satellite {satellite_id}")]
     InsufficientResources { satellite_id: SatelliteId },
-    
+
     #[error("Constraints cannot be satisfied: {reason}")]
     UnsatisfiableConstraints { reason: String },
-    
+
     #[error("Intent deadline cannot be met: required {required}s, available {available}s")]
     DeadlineMissed { required: u64, available: u64 },
-    
+
     #[error("Invalid intent: {reason}")]
     InvalidIntent { reason: String },
-    
+
     #[error("Topology forecast unavailable for horizon {horizon:?}")]
     TopologyUnavailable { horizon: chrono::Duration },
-    
+
     #[error("Internal error: {0}")]
     Internal(String),
 }

@@ -6,7 +6,7 @@
 
 use crate::drf::{DominantResourceFairness, ResourceType};
 use crate::reputation::{ReputationTracker, TenantReputation};
-use crate::schedule::{PassRequest, ScheduledPass, Schedule};
+use crate::schedule::{PassRequest, Schedule, ScheduledPass};
 use caching::ScheduleFragmentCache;
 use chrono::{DateTime, Utc};
 use ground_core::{CustomerId, PassId, Result};
@@ -59,17 +59,17 @@ impl ScheduleOptimizer {
             fragment_cache: ScheduleFragmentCache::new(32),
         }
     }
-    
+
     /// Set DRF instance
     pub fn set_drf(&mut self, drf: DominantResourceFairness) {
         self.drf = drf;
     }
-    
+
     /// Set reputation tracker
     pub fn set_reputation(&mut self, reputation: ReputationTracker) {
         self.reputation = reputation;
     }
-    
+
     /// Optimize schedule for a set of requests.
     ///
     /// Uses `tokio::task::yield_now()` every 100 iterations to prevent
@@ -141,7 +141,8 @@ impl ScheduleOptimizer {
         if best_score < pre_score {
             tracing::warn!(
                 "Optimization produced worse schedule ({:.1} < {:.1}), rolling back",
-                best_score, pre_score
+                best_score,
+                pre_score
             );
             if let Ok(rolled_back) = pre_snapshot.restore::<Schedule>() {
                 return Ok(rolled_back);
@@ -150,25 +151,25 @@ impl ScheduleOptimizer {
 
         Ok(best_schedule)
     }
-    
+
     /// Evaluate schedule quality
     fn evaluate_schedule(&self, schedule: &Schedule) -> f64 {
         let mut score = 0.0;
-        
+
         // Fairness component (lower dominant share variance = higher score)
         let fairness_stats = self.drf.fairness_stats();
         let fairness_score = 1.0 - fairness_stats.fairness_gap;
         score += fairness_score * 100.0;
-        
+
         // Reputation component (higher avg reputation = higher score)
         let reputation_stats = self.reputation.stats();
         let reputation_score = reputation_stats.avg_reputation;
         score += reputation_score * 50.0;
-        
+
         // Conflict penalty
         let conflicts = schedule.check_conflicts();
         score -= conflicts.len() as f64 * 200.0;
-        
+
         // Request fulfillment component
         let fulfilled_ratio = if schedule.passes.is_empty() {
             0.0
@@ -176,14 +177,14 @@ impl ScheduleOptimizer {
             1.0 // Would be computed from actual request fulfillment
         };
         score += fulfilled_ratio * 30.0;
-        
+
         score
     }
-    
+
     /// Generate neighbor schedule by making a small change
     fn generate_neighbor(&self, schedule: &Schedule, requests: &[PassRequest]) -> Schedule {
         let mut neighbor = schedule.clone();
-        
+
         if neighbor.passes.is_empty() && !requests.is_empty() {
             // Add a new pass
             if let Some(request) = requests.first() {
@@ -198,10 +199,10 @@ impl ScheduleOptimizer {
             // For now, we just shuffle
             neighbor.passes.swap(idx, (idx + 1) % len);
         }
-        
+
         neighbor
     }
-    
+
     /// Create a scheduled pass from a request
     fn create_pass_from_request(&self, request: &PassRequest) -> ScheduledPass {
         // In a real implementation, this would compute actual pass times
@@ -226,7 +227,7 @@ impl ScheduleOptimizer {
             status: crate::schedule::PassStatus::Scheduled,
         }
     }
-    
+
     /// Incremental re-optimization using schedule fragments.
     ///
     /// Caches the IDs of stable "committed" passes (windows starting before now)
@@ -250,10 +251,7 @@ impl ScheduleOptimizer {
         // Register committed pass IDs in the fragment cache for audit trail
         let stable_ids: Vec<PassId> = stable.iter().map(|p| p.pass_id.clone()).collect();
         if !stable_ids.is_empty() {
-            let fragment = caching::ScheduleFragment::new(
-                stable_ids,
-                300, // immutable for 5 minutes
-            );
+            let fragment = caching::ScheduleFragment::new(stable_ids, 300); // immutable for 5 minutes
             self.fragment_cache.add_fragment(fragment);
         }
 
@@ -293,12 +291,12 @@ impl ScheduleOptimizer {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_optimization_basic() {
         let config = OptimizationConfig::default();
         let mut optimizer = ScheduleOptimizer::new(config);
-        
+
         let request = PassRequest {
             request_id: "req1".to_string(),
             customer_id: "customer1".to_string(),
@@ -318,11 +316,16 @@ mod tests {
             sla_tier: crate::schedule::SlaTier::Standard,
             submitted_at: Utc::now(),
         };
-        
+
         let schedule = optimizer
-            .optimize(&[request], Utc::now(), Utc::now() + chrono::Duration::hours(24), None)
+            .optimize(
+                &[request],
+                Utc::now(),
+                Utc::now() + chrono::Duration::hours(24),
+                None,
+            )
             .unwrap();
-        
+
         assert_eq!(schedule.passes.len(), 1);
     }
 }

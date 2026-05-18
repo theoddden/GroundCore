@@ -2,7 +2,7 @@
 
 use crate::command::{Command, CommandId, CommandPriority, CommandState};
 use chrono::{DateTime, Utc};
-use ground_core::{Result, GroundStationError};
+use ground_core::{GroundStationError, Result};
 use priority_queue::PriorityQueue;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -62,15 +62,15 @@ impl CommandQueue {
     pub async fn enqueue(&self, command: Command) -> Result<CommandId> {
         let id = command.id;
         let queued = QueuedCommand::new(command);
-        
+
         let priority = -(queued.command.priority as i64); // Higher priority = lower value
-        
+
         let mut queue = self.queue.write().await;
         let mut commands = self.commands.write().await;
-        
+
         queue.push(id, queued.clone(), priority);
         commands.insert(id, queued);
-        
+
         Ok(id)
     }
 
@@ -82,17 +82,17 @@ impl CommandQueue {
     ) -> Result<CommandId> {
         let id = command.id;
         let queued = QueuedCommand::new(command);
-        
+
         let priority = -(queued.command.priority as i64);
-        
+
         let mut queue = self.queue.write().await;
         let mut commands = self.commands.write().await;
         let mut dependencies = self.dependencies.write().await;
-        
+
         queue.push(id, queued.clone(), priority);
         commands.insert(id, queued);
         dependencies.insert(id, depends_on);
-        
+
         Ok(id)
     }
 
@@ -101,17 +101,18 @@ impl CommandQueue {
         let mut queue = self.queue.write().await;
         let commands = self.commands.read().await;
         let dependencies = self.dependencies.read().await;
-        
+
         // Find the highest priority command with satisfied dependencies
         while let Some((id, queued, _)) = queue.pop() {
             // Check dependencies
             if let Some(deps) = dependencies.get(&id) {
                 let all_deps_satisfied = deps.iter().all(|dep_id| {
-                    commands.get(dep_id)
+                    commands
+                        .get(dep_id)
                         .map(|c| c.state == CommandState::Acknowledged)
                         .unwrap_or(false)
                 });
-                
+
                 if !all_deps_satisfied {
                     // Put it back and continue
                     let priority = -(queued.command.priority as i64);
@@ -119,7 +120,7 @@ impl CommandQueue {
                     continue;
                 }
             }
-            
+
             // Update state
             let mut commands_mut = self.commands.write().await;
             if let Some(cmd) = commands_mut.get_mut(&id) {
@@ -127,7 +128,7 @@ impl CommandQueue {
                 return Some(cmd.command.clone());
             }
         }
-        
+
         None
     }
 
@@ -174,14 +175,35 @@ impl CommandQueue {
     pub async fn stats(&self) -> QueueStats {
         let commands = self.commands.read().await;
         let total = commands.len();
-        let queued = commands.values().filter(|c| c.state == CommandState::Queued).count();
-        let scheduled = commands.values().filter(|c| c.state == CommandState::Scheduled).count();
-        let transmitting = commands.values().filter(|c| c.state == CommandState::Transmitting).count();
-        let awaiting = commands.values().filter(|c| c.state == CommandState::AwaitingAck).count();
-        let acknowledged = commands.values().filter(|c| c.state == CommandState::Acknowledged).count();
-        let failed = commands.values().filter(|c| c.state == CommandState::Failed).count();
-        let timeout = commands.values().filter(|c| c.state == CommandState::Timeout).count();
-        
+        let queued = commands
+            .values()
+            .filter(|c| c.state == CommandState::Queued)
+            .count();
+        let scheduled = commands
+            .values()
+            .filter(|c| c.state == CommandState::Scheduled)
+            .count();
+        let transmitting = commands
+            .values()
+            .filter(|c| c.state == CommandState::Transmitting)
+            .count();
+        let awaiting = commands
+            .values()
+            .filter(|c| c.state == CommandState::AwaitingAck)
+            .count();
+        let acknowledged = commands
+            .values()
+            .filter(|c| c.state == CommandState::Acknowledged)
+            .count();
+        let failed = commands
+            .values()
+            .filter(|c| c.state == CommandState::Failed)
+            .count();
+        let timeout = commands
+            .values()
+            .filter(|c| c.state == CommandState::Timeout)
+            .count();
+
         QueueStats {
             total,
             queued,

@@ -71,11 +71,7 @@ pub struct LinkAttestation {
 }
 
 impl LinkAttestation {
-    pub fn new(
-        link_id: uuid::Uuid,
-        event: AttestableEvent,
-        terminal_id: String,
-    ) -> Self {
+    pub fn new(link_id: uuid::Uuid, event: AttestableEvent, terminal_id: String) -> Self {
         Self {
             attestation_id: Uuid::new_v4(),
             link_id,

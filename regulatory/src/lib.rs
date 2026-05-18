@@ -9,12 +9,12 @@
 //! The key insight: if you don't have the license for a band, your code
 //! doesn't compile. This is compile-time enforcement, not runtime checking.
 
-pub mod types;
+pub mod enforcement;
 pub mod license;
 pub mod transmit;
-pub mod enforcement;
+pub mod types;
 
-pub use types::{Band, Frequency, Power};
+pub use enforcement::{ComplianceChecker, ComplianceResult};
 pub use license::{License, LicenseStore};
 pub use transmit::{TransmitError, transmit};
-pub use enforcement::{ComplianceChecker, ComplianceResult};
+pub use types::{Band, Frequency, Power};

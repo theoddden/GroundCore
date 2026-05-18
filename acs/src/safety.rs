@@ -70,13 +70,20 @@ impl SafetyInterlock {
 
     /// Check if position is within limits
     pub async fn check_position_limits(&self, azimuth: f64, elevation: f64) -> bool {
-        azimuth >= self.az_min && azimuth <= self.az_max && elevation >= self.el_min && elevation <= self.el_max
+        azimuth >= self.az_min
+            && azimuth <= self.az_max
+            && elevation >= self.el_min
+            && elevation <= self.el_max
     }
 
     /// Check for collision with defined zones
     pub async fn check_collision(&self, azimuth: f64, elevation: f64) -> bool {
         for (az_min, az_max, el_min, el_max) in &self.collision_zones {
-            if azimuth >= *az_min && azimuth <= *az_max && elevation >= *el_min && elevation <= *el_max {
+            if azimuth >= *az_min
+                && azimuth <= *az_max
+                && elevation >= *el_min
+                && elevation <= *el_max
+            {
                 return true;
             }
         }
@@ -109,7 +116,8 @@ impl SafetyInterlock {
 
     /// Update watchdog heartbeat
     pub fn update_watchdog(&self) {
-        self.last_heartbeat.store(Utc::now().timestamp_millis(), Ordering::Relaxed);
+        self.last_heartbeat
+            .store(Utc::now().timestamp_millis(), Ordering::Relaxed);
     }
 
     /// Check watchdog timeout
@@ -120,7 +128,11 @@ impl SafetyInterlock {
     }
 
     /// Validate position and update interlock state
-    pub async fn validate_position(&self, azimuth: f64, elevation: f64) -> Result<(), InterlockState> {
+    pub async fn validate_position(
+        &self,
+        azimuth: f64,
+        elevation: f64,
+    ) -> Result<(), InterlockState> {
         if self.is_emergency_stop() {
             let mut state = self.state.write().await;
             *state = InterlockState::EmergencyStop;

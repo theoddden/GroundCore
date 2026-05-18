@@ -4,12 +4,12 @@
 // each acquisition should begin based on timing constraints, resource availability,
 // and priority.
 
-use crate::pat::{AcquisitionPlan, AcquisitionId};
 use crate::pat::coordinator::PatError;
+use crate::pat::{AcquisitionId, AcquisitionPlan};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use std::collections::BinaryHeap;
 use std::cmp::Ordering;
+use std::collections::BinaryHeap;
 
 /// Acquisition queue entry
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -96,7 +96,7 @@ impl AcquisitionScheduler {
         // Remove from queue if present
         let mut temp_queue = BinaryHeap::new();
         let mut found = false;
-        
+
         while let Some(entry) = self.queue.pop() {
             if entry.plan.plan_id == acquisition_id {
                 found = true;
@@ -104,9 +104,9 @@ impl AcquisitionScheduler {
                 temp_queue.push(entry);
             }
         }
-        
+
         self.queue = temp_queue;
-        
+
         if found {
             Ok(())
         } else {

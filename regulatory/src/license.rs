@@ -35,13 +35,13 @@ impl<B: Band> License<B> {
             max_power_dbm,
         }
     }
-    
+
     /// Check if this license is currently valid
     pub fn is_valid(&self) -> bool {
         let now = Utc::now();
         now >= self.valid_from && now < self.valid_until
     }
-    
+
     /// Get the remaining validity duration
     pub fn remaining_validity(&self) -> Option<chrono::Duration> {
         let now = Utc::now();
@@ -51,7 +51,7 @@ impl<B: Band> License<B> {
             None
         }
     }
-    
+
     /// Check if a power level is within license limits
     pub fn power_allowed(&self, power_dbm: f64) -> bool {
         power_dbm <= self.max_power_dbm
@@ -69,27 +69,27 @@ impl LicenseStore {
             licenses: HashMap::new(),
         }
     }
-    
+
     /// Add a license (serialized)
     pub fn add_license(&mut self, key: String, license: serde_json::Value) {
         self.licenses.insert(key, license);
     }
-    
+
     /// Get a license for a specific band
     pub fn get_license<B: Band>(&self, holder: &CustomerId) -> Option<License<B>> {
         let key = format!("{}:{}", holder, B::NAME);
-        self.licenses.get(&key).and_then(|value| {
-            serde_json::from_value(value.clone()).ok()
-        })
+        self.licenses
+            .get(&key)
+            .and_then(|value| serde_json::from_value(value.clone()).ok())
     }
-    
+
     /// Check if a holder has a valid license for a band
     pub fn has_valid_license<B: Band>(&self, holder: &CustomerId) -> bool {
         self.get_license::<B>(holder)
             .map(|license| license.is_valid())
             .unwrap_or(false)
     }
-    
+
     /// Check whether a license stored under `key` is currently valid.
     /// Returns `Some(true)` if valid, `Some(false)` if expired, `None` if the
     /// key doesn't exist or the timestamp cannot be parsed.
@@ -97,9 +97,7 @@ impl LicenseStore {
         let value = self.licenses.get(key)?;
         let until_str = value.get("valid_until")?.as_str()?;
         let until = chrono::DateTime::parse_from_rfc3339(until_str)
-            .or_else(|_| chrono::DateTime::parse_from_rfc3339(
-                &until_str.replace(" ", "T"),
-            ))
+            .or_else(|_| chrono::DateTime::parse_from_rfc3339(&until_str.replace(" ", "T")))
             .ok()?;
         Some(until > chrono::Utc::now())
     }
@@ -109,7 +107,7 @@ impl LicenseStore {
         let key = format!("{}:{}", holder, band_name);
         self.licenses.remove(&key);
     }
-    
+
     /// Get all licenses for a holder
     pub fn get_holder_licenses(&self, holder: &CustomerId) -> Vec<String> {
         self.licenses
@@ -124,16 +122,16 @@ impl LicenseStore {
 mod tests {
     use super::*;
     use crate::types::LBand;
-    
+
     #[test]
     fn test_license_validity() {
         let holder = "test-customer".to_string();
         let now = Utc::now();
         let future = now + chrono::Duration::hours(24);
-        
+
         let license = License::<LBand>::new(holder.clone(), now, future, 30.0);
         assert!(license.is_valid());
-        
+
         let expired_license = License::<LBand>::new(
             holder.clone(),
             now - chrono::Duration::hours(48),
@@ -142,22 +140,22 @@ mod tests {
         );
         assert!(!expired_license.is_valid());
     }
-    
+
     #[test]
     fn test_license_store() {
         let mut store = LicenseStore::new();
         let holder = "test-customer".to_string();
-        
+
         let license = License::<LBand>::new(
             holder.clone(),
             Utc::now(),
             Utc::now() + chrono::Duration::hours(24),
             30.0,
         );
-        
+
         let key = format!("{}:{}", holder, LBand::NAME);
         store.add_license(key.clone(), serde_json::to_value(&license).unwrap());
-        
+
         assert!(store.has_valid_license::<LBand>(&holder));
     }
 }

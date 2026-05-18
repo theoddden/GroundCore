@@ -1,8 +1,8 @@
 //! Supervisor for pass subprocesses
 
+use crate::handoff::{HandoffManager, HandoffResult};
 use crate::subprocess::{PassProcess, ProcessManager, ProcessState};
 use crate::version::{Version, VersionedBinary};
-use crate::handoff::{HandoffManager, HandoffResult};
 use chrono::{DateTime, Utc};
 use ground_core::{PassId, Result};
 use serde::{Deserialize, Serialize};
@@ -64,28 +64,24 @@ impl Supervisor {
             started_at: Utc::now(),
         }
     }
-    
+
     /// Get current version
     pub fn current_version(&self) -> Version {
         self.config.current_version
     }
-    
+
     /// Schedule a pass
     pub fn schedule_pass(&mut self, pass: ScheduledPass) {
         self.scheduled_passes.push(pass);
     }
-    
+
     /// Start a pass subprocess by spawning the configured binary.
     ///
     /// Arguments passed to the child:
     /// - `--pass-id <uuid>`
     /// - `--shard-region shard-<uuid>` (shared-memory region name)
     /// - `--hardware <dev1>,<dev2>,...`
-    pub fn start_pass(
-        &mut self,
-        pass_id: PassId,
-        hardware: Vec<String>,
-    ) -> Result<PassProcess> {
+    pub fn start_pass(&mut self, pass_id: PassId, hardware: Vec<String>) -> Result<PassProcess> {
         let region_id = format!("shard-{}", pass_id);
         let hardware_str = hardware.join(",");
 
@@ -97,9 +93,12 @@ impl Supervisor {
             .arg("--hardware")
             .arg(&hardware_str)
             .spawn()
-            .map_err(|e| ground_core::GroundStationError::Hardware(
-                format!("Failed to spawn pass process {}: {}", pass_id, e),
-            ))?;
+            .map_err(|e| {
+                ground_core::GroundStationError::Hardware(format!(
+                    "Failed to spawn pass process {}: {}",
+                    pass_id, e
+                ))
+            })?;
 
         let pid = child.id();
         // Leak the Child handle into a raw pid; in production you would
@@ -122,19 +121,22 @@ impl Supervisor {
         tracing::info!("Spawned pass {} as PID {}", pass_id, pid);
         Ok(process)
     }
-    
+
     /// Signal a pass subprocess to complete gracefully.
     ///
     /// Sends SIGTERM on Unix; on Windows a TerminateProcess equivalent is used
     /// via `taskkill /PID <pid>` (best-effort).
     pub fn complete_pass(&mut self, pass_id: &PassId) -> Result<()> {
-        let process = self.process_manager.get_process(pass_id)
-            .ok_or_else(|| ground_core::GroundStationError::Hardware(
-                format!("Pass {} not found", pass_id),
-            ))?;
+        let process = self.process_manager.get_process(pass_id).ok_or_else(|| {
+            ground_core::GroundStationError::Hardware(format!("Pass {} not found", pass_id))
+        })?;
 
         let pid = process.process.pid;
-        tracing::info!("Sending completion signal to pass {} (PID {})", pass_id, pid);
+        tracing::info!(
+            "Sending completion signal to pass {} (PID {})",
+            pass_id,
+            pid
+        );
 
         #[cfg(unix)]
         {
@@ -144,12 +146,16 @@ impl Supervisor {
             match status {
                 Ok(s) if s.success() => {}
                 Ok(_) => {
-                    tracing::warn!("kill -TERM {} returned non-zero (process may have already exited)", pid);
+                    tracing::warn!(
+                        "kill -TERM {} returned non-zero (process may have already exited)",
+                        pid
+                    );
                 }
                 Err(e) => {
-                    return Err(ground_core::GroundStationError::Hardware(
-                        format!("Failed to send SIGTERM to PID {}: {}", pid, e),
-                    ));
+                    return Err(ground_core::GroundStationError::Hardware(format!(
+                        "Failed to send SIGTERM to PID {}: {}",
+                        pid, e
+                    )));
                 }
             }
         }
@@ -163,17 +169,17 @@ impl Supervisor {
 
         Ok(())
     }
-    
+
     /// Get process manager
     pub fn process_manager(&self) -> &ProcessManager {
         &self.process_manager
     }
-    
+
     /// Get handoff manager
     pub fn handoff_manager(&mut self) -> &mut HandoffManager {
         &mut self.handoff_manager
     }
-    
+
     /// Deploy a new version (zero-downtime)
     pub fn deploy(&mut self, new_binary: VersionedBinary) -> Result<HandoffResult> {
         tracing::info!(
@@ -181,14 +187,14 @@ impl Supervisor {
             new_binary.version,
             self.config.current_version
         );
-        
+
         // Verify binary
         if !new_binary.verify() {
             return Err(ground_core::GroundStationError::Hardware(
                 "Binary verification failed".to_string(),
             ));
         }
-        
+
         // Check schema compatibility
         if !new_binary.schema_compatible(&VersionedBinary {
             version: self.config.current_version,
@@ -201,26 +207,26 @@ impl Supervisor {
                 "Schema version incompatible - requires migration".to_string(),
             ));
         }
-        
+
         // Perform handoff
         let result = self.handoff_manager.perform_handoff(
             &self.process_manager,
             &self.config,
             &new_binary,
         )?;
-        
+
         // Update configuration
         self.config.binary_path = new_binary.path;
         self.config.current_version = new_binary.version;
         self.config.schema_version = new_binary.schema_version;
-        
+
         Ok(result)
     }
-    
+
     /// Get supervisor statistics
     pub fn stats(&self) -> SupervisorStats {
         let process_stats = self.process_manager.stats();
-        
+
         SupervisorStats {
             version: self.config.current_version,
             uptime_seconds: (Utc::now() - self.started_at).num_seconds(),

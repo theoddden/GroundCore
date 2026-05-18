@@ -8,12 +8,12 @@
 //! Sharding ensures that a bug in one pass cannot corrupt another pass's state,
 //! and that memory leaks are isolated to individual shards.
 
-pub mod shard;
-pub mod pool;
 pub mod emergency;
+pub mod pool;
+pub mod shard;
 pub mod tenant;
 
+pub use emergency::{EmergencyShard, EmergencyShardPool};
+pub use pool::{CircuitBreaker, CircuitState, HardwareAllocation, HardwarePool};
 pub use shard::{PassShard, ShardLocalLog};
-pub use pool::{HardwarePool, HardwareAllocation, CircuitBreaker, CircuitState};
-pub use emergency::{EmergencyShardPool, EmergencyShard};
-pub use tenant::{TenantShard, ProtectedMemoryRegion};
+pub use tenant::{ProtectedMemoryRegion, TenantShard};

@@ -5,7 +5,7 @@
 //! Callers restore the typed value via `DemodulatorSnapshotWrapper::restore::<T>()`.
 
 use chrono::{DateTime, Utc};
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use serde::{Deserialize, Serialize, de::DeserializeOwned};
 
 /// Opaque demodulator snapshot — crate-independent serialized bytes.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -37,7 +37,11 @@ impl DemodulatorSnapshotter {
     }
 
     /// Take a snapshot of any serializable demodulator state.
-    pub fn snapshot<T: Serialize>(&mut self, pass_id: String, state: &T) -> DemodulatorSnapshotWrapper {
+    pub fn snapshot<T: Serialize>(
+        &mut self,
+        pass_id: String,
+        state: &T,
+    ) -> DemodulatorSnapshotWrapper {
         let wrapper = DemodulatorSnapshotWrapper {
             snapshot_id: uuid::Uuid::new_v4().to_string(),
             pass_id,

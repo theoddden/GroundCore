@@ -1,7 +1,7 @@
 //! RF switch control
 
-use crate::device::{RfDevice, RfDeviceType, RfDeviceState, DeviceCalibration};
-use ground_core::{Result, GroundStationError};
+use crate::device::{DeviceCalibration, RfDevice, RfDeviceState, RfDeviceType};
+use ground_core::{GroundStationError, Result};
 use serde::{Deserialize, Serialize};
 use tokio::sync::RwLock;
 use uuid::Uuid;
@@ -42,16 +42,16 @@ pub enum SwitchType {
 pub trait SwitchControl: RfDevice {
     /// Set switch position
     async fn set_position(&mut self, position: SwitchPosition) -> Result<()>;
-    
+
     /// Get current switch position
     async fn get_position(&self) -> Result<SwitchPosition>;
-    
+
     /// Get available positions
     async fn get_available_positions(&self) -> Result<Vec<SwitchPosition>>;
-    
+
     /// Set switch state (for individual switch in a bank)
     async fn set_switch_state(&mut self, switch_index: usize, state: SwitchState) -> Result<()>;
-    
+
     /// Get switch state
     async fn get_switch_state(&self, switch_index: usize) -> Result<SwitchState>;
 }
@@ -68,7 +68,11 @@ pub struct GenericRfSwitch {
 
 impl GenericRfSwitch {
     /// Create a new generic RF switch
-    pub fn new(switch_type: SwitchType, available_positions: Vec<SwitchPosition>, num_switches: usize) -> Self {
+    pub fn new(
+        switch_type: SwitchType,
+        available_positions: Vec<SwitchPosition>,
+        num_switches: usize,
+    ) -> Self {
         Self {
             id: Uuid::new_v4(),
             switch_type,
@@ -89,7 +93,7 @@ impl RfDevice for GenericRfSwitch {
     async fn get_state(&self) -> Result<RfDeviceState> {
         let position = self.current_position.read().await;
         let states = self.switch_states.read().await;
-        
+
         Ok(RfDeviceState {
             device_id: self.id,
             device_type: RfDeviceType::Switch,
@@ -142,12 +146,14 @@ impl SwitchControl for GenericRfSwitch {
         }
 
         if !self.available_positions.contains(&position) {
-            return Err(GroundStationError::Validation("Invalid switch position".to_string()));
+            return Err(GroundStationError::Validation(
+                "Invalid switch position".to_string(),
+            ));
         }
 
         let mut current = self.current_position.write().await;
         *current = position;
-        
+
         tracing::info!("Switch set to position {:?}", position);
         Ok(())
     }
@@ -168,9 +174,11 @@ impl SwitchControl for GenericRfSwitch {
 
         let mut states = self.switch_states.write().await;
         if switch_index >= states.len() {
-            return Err(GroundStationError::Validation("Invalid switch index".to_string()));
+            return Err(GroundStationError::Validation(
+                "Invalid switch index".to_string(),
+            ));
         }
-        
+
         states[switch_index] = state;
         Ok(())
     }
@@ -178,7 +186,9 @@ impl SwitchControl for GenericRfSwitch {
     async fn get_switch_state(&self, switch_index: usize) -> Result<SwitchState> {
         let states = self.switch_states.read().await;
         if switch_index >= states.len() {
-            return Err(GroundStationError::Validation("Invalid switch index".to_string()));
+            return Err(GroundStationError::Validation(
+                "Invalid switch index".to_string(),
+            ));
         }
         Ok(states[switch_index])
     }

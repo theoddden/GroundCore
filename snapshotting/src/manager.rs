@@ -43,26 +43,26 @@ impl SnapshotManager {
             federation_snapshotter: FederationSnapshotter::new(),
         }
     }
-    
+
     /// Get schedule snapshotter
     pub fn schedule(&mut self) -> &mut ScheduleSnapshotter {
         &mut self.schedule_snapshotter
     }
-    
+
     /// Get demodulator snapshotter
     pub fn demodulator(&mut self) -> &mut DemodulatorSnapshotter {
         &mut self.demodulator_snapshotter
     }
-    
+
     /// Get federation snapshotter
     pub fn federation(&mut self) -> &mut FederationSnapshotter {
         &mut self.federation_snapshotter
     }
-    
+
     /// Get all snapshot metadata
     pub fn all_metadata(&self) -> Vec<SnapshotMetadata> {
         let mut metadata = Vec::new();
-        
+
         // Schedule snapshots
         for snapshot in self.schedule_snapshotter.get_snapshots() {
             metadata.push(SnapshotMetadata {
@@ -72,7 +72,7 @@ impl SnapshotManager {
                 size_bytes: snapshot.size_bytes,
             });
         }
-        
+
         // Demodulator snapshots
         for snapshot in self.demodulator_snapshotter.get_snapshots() {
             let size = serde_json::to_string(&snapshot).unwrap().len();
@@ -83,7 +83,7 @@ impl SnapshotManager {
                 size_bytes: size,
             });
         }
-        
+
         // Federation snapshots
         for snapshot in self.federation_snapshotter.get_snapshots() {
             let size = serde_json::to_string(&snapshot).unwrap().len();
@@ -94,7 +94,7 @@ impl SnapshotManager {
                 size_bytes: size,
             });
         }
-        
+
         metadata
     }
 }

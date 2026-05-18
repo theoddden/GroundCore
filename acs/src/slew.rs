@@ -1,6 +1,6 @@
 //! Slew rate limiting and motion planning
 
-use crate::controller::{PointingTarget};
+use crate::controller::PointingTarget;
 use chrono::{DateTime, Duration, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -80,23 +80,18 @@ impl SlewLimiter {
         start_time: DateTime<Utc>,
     ) -> Result<SlewTrajectory, String> {
         let id = Uuid::new_v4();
-        
+
         // Compute minimum time trajectory
         let (az_duration, el_duration) = self.compute_minimum_time(start, target)?;
-        
+
         // Overall duration is the max of the two axes
         let duration = az_duration.max(el_duration);
         let end_time = start_time + Duration::milliseconds((duration * 1000.0) as i64);
-        
+
         // Generate waypoints based on motion profile
-        let (az_waypoints, el_waypoints) = self.generate_waypoints(
-            start,
-            target,
-            start_time,
-            duration,
-            self.default_profile,
-        )?;
-        
+        let (az_waypoints, el_waypoints) =
+            self.generate_waypoints(start, target, start_time, duration, self.default_profile)?;
+
         Ok(SlewTrajectory {
             id,
             start,
@@ -110,17 +105,29 @@ impl SlewLimiter {
     }
 
     /// Compute minimum time for slew respecting rate and acceleration limits
-    fn compute_minimum_time(&self, start: (f64, f64), target: (f64, f64)) -> Result<(f64, f64), String> {
+    fn compute_minimum_time(
+        &self,
+        start: (f64, f64),
+        target: (f64, f64),
+    ) -> Result<(f64, f64), String> {
         let az_distance = (target.0 - start.0).abs();
         let el_distance = (target.1 - start.1).abs();
-        
+
         // Minimum time = time to accelerate + time at max rate + time to decelerate
         // t_min = 2 * sqrt(distance / acceleration) if distance < rate^2 / acceleration
         // Otherwise: t_min = distance / rate + rate / acceleration
-        
-        let az_min_time = self.axis_minimum_time(az_distance, self.azimuth_rate_limit, self.azimuth_accel_limit);
-        let el_min_time = self.axis_minimum_time(el_distance, self.elevation_rate_limit, self.elevation_accel_limit);
-        
+
+        let az_min_time = self.axis_minimum_time(
+            az_distance,
+            self.azimuth_rate_limit,
+            self.azimuth_accel_limit,
+        );
+        let el_min_time = self.axis_minimum_time(
+            el_distance,
+            self.elevation_rate_limit,
+            self.elevation_accel_limit,
+        );
+
         Ok((az_min_time, el_min_time))
     }
 
@@ -129,9 +136,9 @@ impl SlewLimiter {
         if distance < 1e-6 {
             return 0.0;
         }
-        
+
         let critical_distance = rate_limit * rate_limit / accel_limit;
-        
+
         if distance < critical_distance {
             // Triangle profile (accelerate then decelerate, never reach max rate)
             2.0 * (distance / accel_limit).sqrt()
@@ -152,27 +159,27 @@ impl SlewLimiter {
     ) -> Result<(Vec<(DateTime<Utc>, f64)>, Vec<(DateTime<Utc>, f64)>), String> {
         let num_waypoints = 20;
         let dt = duration / (num_waypoints as f64);
-        
+
         let mut az_waypoints = Vec::new();
         let mut el_waypoints = Vec::new();
-        
+
         for i in 0..=num_waypoints {
             let t = (i as f64) * dt;
             let time = start_time + Duration::milliseconds((t * 1000.0) as i64);
-            
+
             let progress = match profile {
                 MotionProfile::Trapezoidal => self.trapezoidal_progress(t, duration),
                 MotionProfile::SCurve => self.scurve_progress(t, duration),
                 MotionProfile::MinimumTime => self.trapezoidal_progress(t, duration),
             };
-            
+
             let az = start.0 + (target.0 - start.0) * progress;
             let el = start.1 + (target.1 - start.1) * progress;
-            
+
             az_waypoints.push((time, az));
             el_waypoints.push((time, el));
         }
-        
+
         Ok((az_waypoints, el_waypoints))
     }
 
@@ -184,12 +191,12 @@ impl SlewLimiter {
         if t >= duration {
             return 1.0;
         }
-        
+
         // Simplified trapezoidal (linear acceleration and deceleration)
         let accel_time = duration * 0.2;
         let coast_time = duration * 0.6;
         let decel_time = duration * 0.2;
-        
+
         if t < accel_time {
             // Acceleration phase
             0.5 * (t / accel_time).powi(2)
@@ -211,20 +218,17 @@ impl SlewLimiter {
         if t >= duration {
             return 1.0;
         }
-        
+
         // S-curve using sine function for smooth acceleration
         let normalized_t = t / duration;
         0.5 * (1.0 - (normalized_t * std::f64::consts::PI).cos())
     }
 
     /// Check if slew is possible within time limit
-    pub fn can_slew_in_time(
-        &self,
-        start: (f64, f64),
-        target: (f64, f64),
-        time_limit: f64,
-    ) -> bool {
-        let (az_min_time, el_min_time) = self.compute_minimum_time(start, target).unwrap_or((f64::MAX, f64::MAX));
+    pub fn can_slew_in_time(&self, start: (f64, f64), target: (f64, f64), time_limit: f64) -> bool {
+        let (az_min_time, el_min_time) = self
+            .compute_minimum_time(start, target)
+            .unwrap_or((f64::MAX, f64::MAX));
         az_min_time.max(el_min_time) <= time_limit
     }
 

@@ -1,8 +1,8 @@
 //! AGC controller with automatic gain adjustment
 
 use crate::amplifier::{AmplifierControl, AmplifierStatus};
-use crate::attenuator::{AttenuatorControl};
-use ground_core::{Result, GroundStationError};
+use crate::attenuator::AttenuatorControl;
+use ground_core::{GroundStationError, Result};
 use serde::{Deserialize, Serialize};
 use std::sync::atomic::{AtomicF64, Ordering};
 use tokio::sync::RwLock;
@@ -111,7 +111,7 @@ impl AgcController {
     /// Update signal level
     pub async fn update_signal_level(&self, level: f64) {
         self.current_level.store(level, Ordering::Relaxed);
-        
+
         if self.is_enabled() && self.get_mode().await == AgcMode::Automatic {
             if let Err(e) = self.adjust_gain().await {
                 tracing::warn!("AGC adjustment failed: {}", e);
@@ -142,7 +142,8 @@ impl AgcController {
         let amplifiers = self.amplifiers.read().await;
         for amp in amplifiers.iter() {
             if let Ok(current_gain) = amp.get_gain().await {
-                let new_gain = (current_gain + adjustment).clamp(self.config.min_gain, self.config.max_gain);
+                let new_gain =
+                    (current_gain + adjustment).clamp(self.config.min_gain, self.config.max_gain);
                 if let Err(e) = amp.set_gain(new_gain).await {
                     tracing::warn!("Failed to set amplifier gain: {}", e);
                 }
@@ -160,7 +161,11 @@ impl AgcController {
             }
         }
 
-        tracing::debug!("AGC adjusted gain by {} dB (error: {} dB)", adjustment, error);
+        tracing::debug!(
+            "AGC adjusted gain by {} dB (error: {} dB)",
+            adjustment,
+            error
+        );
         Ok(())
     }
 
@@ -174,7 +179,7 @@ impl AgcController {
     /// Manually set gain (for manual mode)
     pub async fn set_manual_gain(&self, gain_db: f64) -> Result<()> {
         let amplifiers = self.amplifiers.read().await;
-        
+
         for amp in amplifiers.iter() {
             if let Err(e) = amp.set_gain(gain_db).await {
                 tracing::warn!("Failed to set amplifier gain: {}", e);
@@ -218,7 +223,7 @@ impl AgcController {
         let mode = self.mode.read().await;
         let current_level = self.current_level.load(Ordering::Relaxed);
         let total_gain = self.get_total_gain().await.unwrap_or(0.0);
-        
+
         AgcStatus {
             enabled: self.is_enabled(),
             mode: *mode,

@@ -55,16 +55,29 @@ impl SearchPattern {
 
     pub fn estimated_duration_ms(&self) -> u64 {
         match self {
-            Self::Spiral { max_radius_urad, scan_rate_urad_per_sec, .. } => {
+            Self::Spiral {
+                max_radius_urad,
+                scan_rate_urad_per_sec,
+                ..
+            } => {
                 let area = std::f64::consts::PI * max_radius_urad.powi(2);
                 let scan_area_per_ms = scan_rate_urad_per_sec / 1000.0;
                 (area / scan_area_per_ms) as u64
             }
-            Self::Raster { width_urad, height_urad, line_spacing_urad, .. } => {
+            Self::Raster {
+                width_urad,
+                height_urad,
+                line_spacing_urad,
+                ..
+            } => {
                 let total_scan_urad = (width_urad * height_urad) / line_spacing_urad;
                 (total_scan_urad / 50.0) as u64 // Assume 50 urad/ms scan rate
             }
-            Self::Lissajous { amplitude_x_urad, amplitude_y_urad, .. } => {
+            Self::Lissajous {
+                amplitude_x_urad,
+                amplitude_y_urad,
+                ..
+            } => {
                 let perimeter = 2.0 * (amplitude_x_urad + amplitude_y_urad);
                 (perimeter / 50.0) as u64
             }
@@ -106,7 +119,12 @@ pub struct SpiralPattern {
 }
 
 impl SpiralPattern {
-    pub fn new(initial_radius_urad: f64, spiral_pitch_urad: f64, max_radius_urad: f64, scan_rate_urad_per_sec: f64) -> Self {
+    pub fn new(
+        initial_radius_urad: f64,
+        spiral_pitch_urad: f64,
+        max_radius_urad: f64,
+        scan_rate_urad_per_sec: f64,
+    ) -> Self {
         Self {
             initial_radius_urad,
             spiral_pitch_urad,
@@ -145,10 +163,12 @@ impl RasterPattern {
         let lines = (self.height_urad / self.line_spacing_urad) as u32;
         let line = step % lines;
         let direction = if (step / lines) % 2 == 0 { 1.0 } else { -1.0 };
-        
-        let x = (step as f64 % (self.width_urad / self.line_spacing_urad)) * self.line_spacing_urad * direction;
+
+        let x = (step as f64 % (self.width_urad / self.line_spacing_urad))
+            * self.line_spacing_urad
+            * direction;
         let y = (line as f64) * self.line_spacing_urad - (self.height_urad / 2.0);
-        
+
         (x, y)
     }
 }
@@ -173,7 +193,8 @@ impl LissajousPattern {
     pub fn position_at_time_ms(&self, time_ms: f64) -> (f64, f64) {
         let t = time_ms / 1000.0;
         let x = self.amplitude_x_urad * (2.0 * std::f64::consts::PI * t).cos();
-        let y = self.amplitude_y_urad * (2.0 * std::f64::consts::PI * self.frequency_ratio * t).sin();
+        let y =
+            self.amplitude_y_urad * (2.0 * std::f64::consts::PI * self.frequency_ratio * t).sin();
         (x, y)
     }
 }

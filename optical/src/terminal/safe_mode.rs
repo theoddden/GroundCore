@@ -8,7 +8,10 @@ use serde::{Deserialize, Serialize};
 pub enum SafeModeState {
     Normal,
     EnteringSafeMode,
-    InSafeMode { reason: String, since: DateTime<Utc> },
+    InSafeMode {
+        reason: String,
+        since: DateTime<Utc>,
+    },
     Recovering,
     Failed,
 }

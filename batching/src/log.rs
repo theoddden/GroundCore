@@ -27,33 +27,33 @@ impl LogBatcher {
             batch_size,
         }
     }
-    
+
     /// Add a log entry
     pub fn add_entry(&mut self, entry: LogEntry) {
         self.pending_entries.push(entry);
     }
-    
+
     /// Check if batch is ready
     pub fn is_ready(&self) -> bool {
         self.pending_entries.len() >= self.batch_size
     }
-    
+
     /// Flush the batch
     pub fn flush(&mut self) -> Option<LogBatch> {
         if self.pending_entries.is_empty() {
             return None;
         }
-        
+
         let batch = LogBatch {
             batch_id: uuid::Uuid::new_v4().to_string(),
             entries: self.pending_entries.clone(),
             created_at: chrono::Utc::now(),
         };
-        
+
         self.pending_entries.clear();
         Some(batch)
     }
-    
+
     /// Force flush
     pub fn force_flush(&mut self) -> Option<LogBatch> {
         self.flush()

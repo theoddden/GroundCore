@@ -6,14 +6,14 @@
 // of time. If their clocks disagree by more than a few hundred microseconds,
 // acquisition fails.
 
-pub mod coordinator;
 pub mod clock;
+pub mod coordinator;
 
-pub use coordinator::{PatCoordinator, ScheduledAcquisition, PatEvent, PatEventType};
-pub use clock::{PrecisionClock, PrecisionTimestamp, ClockConfidence};
+pub use clock::{ClockConfidence, PrecisionClock, PrecisionTimestamp};
+pub use coordinator::{PatCoordinator, PatEvent, PatEventType, ScheduledAcquisition};
 
-use crate::{TerminalId, AcquisitionId, OctConfiguration, PointingVector};
 use crate::pat::coordinator::{AcquisitionSequence, FallbackAction};
-use chrono::{DateTime, Utc, Duration};
+use crate::{AcquisitionId, OctConfiguration, PointingVector, TerminalId};
+use chrono::{DateTime, Duration, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;

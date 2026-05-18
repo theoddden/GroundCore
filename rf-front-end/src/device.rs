@@ -1,6 +1,6 @@
 //! RF device abstraction
 
-use ground_core::{Result, GroundStationError};
+use ground_core::{GroundStationError, Result};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -52,22 +52,22 @@ pub struct RfDeviceState {
 pub trait RfDevice: Send + Sync {
     /// Get device type
     fn get_type(&self) -> RfDeviceType;
-    
+
     /// Get device state
     async fn get_state(&self) -> Result<RfDeviceState>;
-    
+
     /// Set device state
     async fn set_state(&mut self, state: RfDeviceState) -> Result<()>;
-    
+
     /// Enable device
     async fn enable(&mut self) -> Result<()>;
-    
+
     /// Disable device
     async fn disable(&mut self) -> Result<()>;
-    
+
     /// Get calibration data
     async fn get_calibration(&self) -> Result<DeviceCalibration>;
-    
+
     /// Check if device is healthy
     async fn health_check(&self) -> Result<bool>;
 }
@@ -114,7 +114,7 @@ impl RfDevice for GenericRfDevice {
     fn get_type(&self) -> RfDeviceType {
         self.device_type
     }
-    
+
     async fn get_state(&self) -> Result<RfDeviceState> {
         Ok(RfDeviceState {
             device_id: self.id,
@@ -126,7 +126,7 @@ impl RfDevice for GenericRfDevice {
             last_updated: chrono::Utc::now(),
         })
     }
-    
+
     async fn set_state(&mut self, state: RfDeviceState) -> Result<()> {
         self.enabled = state.enabled;
         self.settings = state.settings;
@@ -134,20 +134,22 @@ impl RfDevice for GenericRfDevice {
         self.fault = state.fault;
         Ok(())
     }
-    
+
     async fn enable(&mut self) -> Result<()> {
         if self.fault {
-            return Err(GroundStationError::Hardware("Device fault - cannot enable".to_string()));
+            return Err(GroundStationError::Hardware(
+                "Device fault - cannot enable".to_string(),
+            ));
         }
         self.enabled = true;
         Ok(())
     }
-    
+
     async fn disable(&mut self) -> Result<()> {
         self.enabled = false;
         Ok(())
     }
-    
+
     async fn get_calibration(&self) -> Result<DeviceCalibration> {
         Ok(DeviceCalibration {
             calibrated_at: chrono::Utc::now(),
@@ -156,7 +158,7 @@ impl RfDevice for GenericRfDevice {
             valid_until: None,
         })
     }
-    
+
     async fn health_check(&self) -> Result<bool> {
         // Check if device is enabled and not faulted
         Ok(self.enabled && !self.fault)

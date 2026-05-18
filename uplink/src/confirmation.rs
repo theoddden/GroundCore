@@ -2,7 +2,7 @@
 
 use crate::command::{Command, CommandId, CommandState};
 use chrono::{DateTime, Duration, Utc};
-use ground_core::{Result, GroundStationError};
+use ground_core::{GroundStationError, Result};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::time::Duration as StdDuration;
@@ -93,19 +93,29 @@ impl ConfirmationTracker {
             entry.last_update = Utc::now();
             Ok(CommandOutcome::Acknowledged)
         } else {
-            Err(GroundStationError::NotFound(format!("Command {}", command_id)))
+            Err(GroundStationError::NotFound(format!(
+                "Command {}",
+                command_id
+            )))
         }
     }
 
     /// Handle NACK from satellite
-    pub async fn handle_nack(&self, command_id: CommandId, reason: String) -> Result<CommandOutcome> {
+    pub async fn handle_nack(
+        &self,
+        command_id: CommandId,
+        reason: String,
+    ) -> Result<CommandOutcome> {
         let mut entries = self.entries.write().await;
         if let Some(entry) = entries.get_mut(&command_id) {
             entry.state = CommandState::Failed;
             entry.last_update = Utc::now();
             Ok(CommandOutcome::Rejected(reason))
         } else {
-            Err(GroundStationError::NotFound(format!("Command {}", command_id)))
+            Err(GroundStationError::NotFound(format!(
+                "Command {}",
+                command_id
+            )))
         }
     }
 
@@ -150,7 +160,10 @@ impl ConfirmationTracker {
             entry.last_update = Utc::now();
             Ok(true)
         } else {
-            Err(GroundStationError::NotFound(format!("Command {}", command_id)))
+            Err(GroundStationError::NotFound(format!(
+                "Command {}",
+                command_id
+            )))
         }
     }
 
@@ -170,7 +183,8 @@ impl ConfirmationTracker {
     /// Get all pending commands (awaiting ACK)
     pub async fn pending(&self) -> Vec<ConfirmationEntry> {
         let entries = self.entries.read().await;
-        entries.values()
+        entries
+            .values()
             .filter(|e| e.state == CommandState::AwaitingAck)
             .cloned()
             .collect()
@@ -179,7 +193,8 @@ impl ConfirmationTracker {
     /// Get all failed commands
     pub async fn failed(&self) -> Vec<ConfirmationEntry> {
         let entries = self.entries.read().await;
-        entries.values()
+        entries
+            .values()
             .filter(|e| matches!(e.state, CommandState::Failed | CommandState::Timeout))
             .cloned()
             .collect()
@@ -189,10 +204,22 @@ impl ConfirmationTracker {
     pub async fn stats(&self) -> ConfirmationStats {
         let entries = self.entries.read().await;
         let total = entries.len();
-        let pending = entries.values().filter(|e| e.state == CommandState::AwaitingAck).count();
-        let acknowledged = entries.values().filter(|e| e.state == CommandState::Acknowledged).count();
-        let failed = entries.values().filter(|e| matches!(e.state, CommandState::Failed | CommandState::Timeout)).count();
-        let transmitting = entries.values().filter(|e| e.state == CommandState::Transmitting).count();
+        let pending = entries
+            .values()
+            .filter(|e| e.state == CommandState::AwaitingAck)
+            .count();
+        let acknowledged = entries
+            .values()
+            .filter(|e| e.state == CommandState::Acknowledged)
+            .count();
+        let failed = entries
+            .values()
+            .filter(|e| matches!(e.state, CommandState::Failed | CommandState::Timeout))
+            .count();
+        let transmitting = entries
+            .values()
+            .filter(|e| e.state == CommandState::Transmitting)
+            .count();
 
         ConfirmationStats {
             total,
@@ -218,10 +245,10 @@ pub struct ConfirmationStats {
 pub async fn timeout_checker_task(tracker: ConfirmationTracker, interval: StdDuration) {
     loop {
         sleep(interval).await;
-        
+
         // Check for timeouts
         let timed_out = tracker.check_timeouts().await;
-        
+
         // Retry timed out commands
         for command_id in timed_out {
             if let Ok(can_retry) = tracker.retry(command_id).await {

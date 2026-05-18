@@ -28,7 +28,7 @@ where
             max_size,
         }
     }
-    
+
     /// Get a value from the cache
     pub fn get(&mut self, key: &K) -> Option<V> {
         if let Some(entry) = self.entries.get_mut(key) {
@@ -38,14 +38,14 @@ where
             None
         }
     }
-    
+
     /// Put a value into the cache
     pub fn put(&mut self, key: K, value: V) {
         // Evict if at capacity
         if self.entries.len() >= self.max_size {
             self.evict_lru();
         }
-        
+
         self.entries.insert(
             key,
             CacheEntry {
@@ -55,12 +55,12 @@ where
             },
         );
     }
-    
+
     /// Remove a value from the cache
     pub fn remove(&mut self, key: &K) -> Option<V> {
         self.entries.remove(key).map(|e| e.value)
     }
-    
+
     /// Evict the least recently used entry
     fn evict_lru(&mut self) {
         if let Some(lru_key) = self
@@ -72,12 +72,12 @@ where
             self.entries.remove(&lru_key);
         }
     }
-    
+
     /// Clear the cache
     pub fn clear(&mut self) {
         self.entries.clear();
     }
-    
+
     /// Get cache size
     pub fn len(&self) -> usize {
         self.entries.len()
@@ -101,7 +101,7 @@ where
             ttl_seconds,
         }
     }
-    
+
     /// Get a value from the cache
     pub fn get(&mut self, key: &K) -> Option<V> {
         if let Some(entry) = self.entries.get_mut(key) {
@@ -116,7 +116,7 @@ where
             None
         }
     }
-    
+
     /// Put a value into the cache
     pub fn put(&mut self, key: K, value: V) {
         self.entries.insert(
@@ -128,14 +128,14 @@ where
             },
         );
     }
-    
+
     /// Remove expired entries
     pub fn remove_expired(&mut self) {
         let now = Utc::now();
         self.entries
             .retain(|_, e| (now - e.created_at).num_seconds() <= self.ttl_seconds);
     }
-    
+
     /// Clear the cache
     pub fn clear(&mut self) {
         self.entries.clear();

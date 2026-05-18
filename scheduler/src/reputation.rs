@@ -42,7 +42,7 @@ impl ResourceUsage {
             used: 0.0,
         }
     }
-    
+
     pub fn utilization_rate(&self) -> f64 {
         if self.allocated > 0.0 {
             self.used / self.allocated
@@ -58,19 +58,22 @@ impl TenantReputation {
             tenant_id,
             dominant_resource: None,
             historical_utilization: 0.5, // Start neutral
-            reputation: 1.0, // Start with perfect reputation
-            current_allocation: ResourceUsage::new(),
+            reputation: 1.0,             // Start with perfect reputation
+            current_allocation: ResourceUsage {
+                allocated: 100.0,
+                used: 0.0,
+            },
             total_requests: 0,
             total_fulfilled: 0,
             total_wasted: 0.0,
         }
     }
-    
+
     /// Update reputation based on utilization
     pub fn update_utilization(&mut self, utilization: f64) {
         // Exponential moving average with alpha = 0.1
         self.historical_utilization = 0.1 * utilization + 0.9 * self.historical_utilization;
-        
+
         // Reputation follows utilization with some hysteresis
         if self.historical_utilization > 0.8 {
             // High utilization: increase reputation
@@ -80,36 +83,40 @@ impl TenantReputation {
             self.reputation = (self.reputation * 0.9 + 0.5 * 0.1).max(0.0);
         }
     }
-    
+
     /// Record a request
     pub fn record_request(&mut self) {
         self.total_requests += 1;
     }
-    
+
     /// Record a fulfilled request
     pub fn record_fulfilled(&mut self, allocated: f64, used: f64) {
         self.total_fulfilled += 1;
         self.current_allocation.allocated += allocated;
         self.current_allocation.used += used;
-        
+
         // Track waste
         let waste = (allocated - used).max(0.0);
         self.total_wasted += waste;
-        
+
         // Update utilization
-        let utilization = if allocated > 0.0 { used / allocated } else { 0.0 };
+        let utilization = if allocated > 0.0 {
+            used / allocated
+        } else {
+            0.0
+        };
         self.update_utilization(utilization);
     }
-    
+
     /// Compute scheduling priority with reputation weighting
     pub fn scheduling_priority(&self) -> f64 {
         // Base priority from DRF (lower share = higher priority)
         let base = 1.0 / (self.current_allocation.allocated + 1.0);
-        
+
         // Apply reputation weighting
         base * self.reputation
     }
-    
+
     /// Get waste ratio
     pub fn waste_ratio(&self) -> f64 {
         if self.current_allocation.allocated > 0.0 {
@@ -133,7 +140,7 @@ impl ReputationTracker {
             alpha,
         }
     }
-    
+
     /// Get or create tenant reputation
     pub fn get_or_create(&mut self, tenant_id: CustomerId) -> &mut TenantReputation {
         self.tenants
@@ -141,29 +148,30 @@ impl ReputationTracker {
             .or_insert_with(|| TenantReputation::new(tenant_id))
             .into()
     }
-    
+
     /// Get tenant reputation
     pub fn get(&self, tenant_id: &CustomerId) -> Option<&TenantReputation> {
         self.tenants.get(tenant_id)
     }
-    
+
     /// Update tenant utilization
     pub fn update_utilization(&mut self, tenant_id: &CustomerId, utilization: f64) {
         if let Some(reputation) = self.tenants.get_mut(tenant_id) {
             reputation.update_utilization(utilization);
         }
     }
-    
+
     /// Record request for a tenant
     pub fn record_request(&mut self, tenant_id: &CustomerId) {
         self.get_or_create(tenant_id.clone()).record_request();
     }
-    
+
     /// Record fulfilled allocation
     pub fn record_fulfilled(&mut self, tenant_id: &CustomerId, allocated: f64, used: f64) {
-        self.get_or_create(tenant_id.clone()).record_fulfilled(allocated, used);
+        self.get_or_create(tenant_id.clone())
+            .record_fulfilled(allocated, used);
     }
-    
+
     /// Select tenant with highest priority (considering reputation)
     pub fn select_best_tenant(&self, candidates: &[CustomerId]) -> Option<CustomerId> {
         candidates
@@ -175,21 +183,21 @@ impl ReputationTracker {
             })
             .cloned()
     }
-    
+
     /// Get reputation statistics
     pub fn stats(&self) -> ReputationStats {
         let num_tenants = self.tenants.len();
         let reputations: Vec<f64> = self.tenants.values().map(|r| r.reputation).collect();
-        
+
         let avg_reputation = if num_tenants > 0 {
             reputations.iter().sum::<f64>() / num_tenants as f64
         } else {
             0.0
         };
-        
+
         let high_reputation = reputations.iter().filter(|&&r| r > 0.8).count();
         let low_reputation = reputations.iter().filter(|&&r| r < 0.5).count();
-        
+
         ReputationStats {
             num_tenants,
             avg_reputation,
@@ -211,34 +219,34 @@ pub struct ReputationStats {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_reputation_update() {
         let mut reputation = TenantReputation::new("tenant1".to_string());
-        
+
         assert_eq!(reputation.reputation, 1.0);
-        
+
         // High utilization should maintain reputation
         reputation.record_fulfilled(100.0, 95.0);
         assert!(reputation.reputation > 0.9);
-        
+
         // Low utilization should decrease reputation
         reputation.record_fulfilled(100.0, 30.0);
         reputation.record_fulfilled(100.0, 30.0);
         reputation.record_fulfilled(100.0, 30.0);
         assert!(reputation.reputation < 0.8);
     }
-    
+
     #[test]
     fn test_reputation_tracker() {
         let mut tracker = ReputationTracker::new(0.1);
-        
+
         let tenant1 = "tenant1".to_string();
         let tenant2 = "tenant2".to_string();
-        
+
         tracker.record_fulfilled(&tenant1, 100.0, 90.0); // Good utilization
         tracker.record_fulfilled(&tenant2, 100.0, 30.0); // Poor utilization
-        
+
         // Tenant1 should have higher priority
         let selected = tracker.select_best_tenant(&[tenant1.clone(), tenant2.clone()]);
         assert_eq!(selected, Some(tenant1));

@@ -8,10 +8,10 @@
 //! requires a license value as one of its parameters, and the license is typed
 //! to that specific band. If you don't have the license, your code doesn't compile.
 
-pub mod parser;
 pub mod generator;
+pub mod parser;
 pub mod rules;
 
-pub use parser::PolicyParser;
 pub use generator::GeneratedTypes;
-pub use rules::{FrequencyBand, PowerLimit, LicenseRequirement, CoordinationRequirement};
+pub use parser::PolicyParser;
+pub use rules::{CoordinationRequirement, FrequencyBand, LicenseRequirement, PowerLimit};

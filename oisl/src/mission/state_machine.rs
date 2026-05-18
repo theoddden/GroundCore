@@ -1,8 +1,6 @@
 // Constellation State Machine - maintains live state model with bi-temporal versioning
 
-use crate::{
-    SatelliteId, AssetId, GeoRegion, TimeWindow, BiTemporal,
-};
+use crate::{AssetId, BiTemporal, GeoRegion, SatelliteId, TimeWindow};
 use bitemporal::timestamp::{EventTime, ReceptionTime};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
@@ -96,11 +94,7 @@ impl ConstellationState {
             satellites: HashMap::new(),
             optical_terminals: HashMap::new(),
             ground_stations: HashMap::new(),
-            current_version: BiTemporal::new(
-                now,
-                EventTime::new(now),
-                ReceptionTime::new(now),
-            ),
+            current_version: BiTemporal::new(now, EventTime::new(now), ReceptionTime::new(now)),
         }
     }
 
@@ -110,14 +104,14 @@ impl ConstellationState {
         if self.satellites.contains_key(asset) {
             return Some(asset.clone());
         }
-        
+
         // Check if asset is associated with a satellite via terminal
         for terminal in self.optical_terminals.values() {
             if terminal.terminal_id.to_string() == *asset {
                 return Some(terminal.satellite_id.clone());
             }
         }
-        
+
         None
     }
 
@@ -129,15 +123,17 @@ impl ConstellationState {
         constraints: &crate::mission::IntentConstraints,
     ) -> Option<AssetId> {
         let sat_state = self.satellites.get(satellite)?;
-        
+
         let mut best_station = None;
         let mut best_score = 0.0;
 
         for (station_id, station) in &self.ground_stations {
             // Check if station is available during window
-            let available = station.availability.iter()
+            let available = station
+                .availability
+                .iter()
                 .any(|avail| avail.overlaps(window));
-            
+
             if !available {
                 continue;
             }
@@ -172,11 +168,12 @@ impl ConstellationState {
         // Simple elevation angle calculation
         let lat_diff = (orb_pos.latitude - station_loc.0).to_radians();
         let lon_diff = (orb_pos.longitude - station_loc.1).to_radians();
-        let elevation = (lat_diff.sin() * lat_diff.sin() + lat_diff.cos() * lat_diff.cos() * 
-                       lon_diff.cos()).acos();
-        
+        let elevation = (lat_diff.sin() * lat_diff.sin()
+            + lat_diff.cos() * lat_diff.cos() * lon_diff.cos())
+        .acos();
+
         let elevation_deg = elevation.to_degrees();
-        
+
         // Higher elevation = better
         let elevation_score = if elevation_deg > 30.0 {
             1.0

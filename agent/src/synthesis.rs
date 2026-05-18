@@ -136,7 +136,7 @@ impl AnomalySynthesizer {
     pub fn dropped_signals(&self) -> u64 {
         self.dropped_signals
     }
-    
+
     /// Check if synthesis should run
     pub fn should_synthesize(&self) -> bool {
         if let Some(last) = self.last_synthesis {
@@ -146,25 +146,25 @@ impl AnomalySynthesizer {
             true
         }
     }
-    
+
     /// Synthesize weak signals into coherent alerts
     pub fn synthesize(&mut self, system_state: &SystemState) -> Vec<AnomalyAlert> {
         let now = Utc::now();
         self.last_synthesis = Some(now);
-        
+
         let mut alerts = Vec::new();
-        
+
         // Group signals by component
         let mut by_component: std::collections::HashMap<String, Vec<WeakSignal>> =
             std::collections::HashMap::new();
-        
+
         for signal in &self.signal_buffer {
             by_component
                 .entry(signal.component.clone())
                 .or_insert_with(Vec::new)
                 .push(signal.clone());
         }
-        
+
         // Synthesize alerts for each component
         for (component, signals) in by_component {
             if signals.len() >= 3 {
@@ -173,13 +173,13 @@ impl AnomalySynthesizer {
                 alerts.push(alert);
             }
         }
-        
+
         // Clear buffer after synthesis
         self.signal_buffer.clear();
-        
+
         alerts
     }
-    
+
     /// Synthesize alert for a specific component
     fn synthesize_component_alert(
         &self,
@@ -187,8 +187,11 @@ impl AnomalySynthesizer {
         signals: Vec<WeakSignal>,
         _system_state: &SystemState,
     ) -> AnomalyAlert {
-        let max_strength = signals.iter().map(|s| s.strength.abs()).fold(0.0_f64, f64::max);
-        
+        let max_strength = signals
+            .iter()
+            .map(|s| s.strength.abs())
+            .fold(0.0_f64, f64::max);
+
         let severity = if max_strength > 5.0 {
             AlertSeverity::Critical
         } else if max_strength > 3.0 {
@@ -198,9 +201,9 @@ impl AnomalySynthesizer {
         } else {
             AlertSeverity::Low
         };
-        
+
         let title = format!("Anomaly detected in {}", component);
-        
+
         let explanation = format!(
             "Detected {} weak signals from {} with maximum strength {:.2}. Pattern suggests {}.",
             signals.len(),
@@ -208,9 +211,9 @@ impl AnomalySynthesizer {
             max_strength,
             self.infer_pattern(&signals)
         );
-        
+
         let recommendations = self.generate_recommendations(&signals);
-        
+
         AnomalyAlert {
             alert_id: uuid::Uuid::new_v4().to_string(),
             generated_at: Utc::now(),
@@ -226,13 +229,17 @@ impl AnomalySynthesizer {
             },
         }
     }
-    
+
     /// Infer pattern from signals
     fn infer_pattern(&self, signals: &[WeakSignal]) -> &str {
         // Simple pattern inference based on signal types
-        let has_statistical = signals.iter().any(|s| matches!(s.signal_type, SignalType::StatisticalAnomaly { .. }));
-        let has_change_point = signals.iter().any(|s| matches!(s.signal_type, SignalType::ChangePoint));
-        
+        let has_statistical = signals
+            .iter()
+            .any(|s| matches!(s.signal_type, SignalType::StatisticalAnomaly { .. }));
+        let has_change_point = signals
+            .iter()
+            .any(|s| matches!(s.signal_type, SignalType::ChangePoint));
+
         if has_change_point {
             "sudden state change"
         } else if has_statistical {
@@ -241,11 +248,11 @@ impl AnomalySynthesizer {
             "multi-factor anomaly"
         }
     }
-    
+
     /// Generate recommendations based on signals
     fn generate_recommendations(&self, signals: &[WeakSignal]) -> Vec<String> {
         let mut recommendations = Vec::new();
-        
+
         for signal in signals {
             match signal.signal_type {
                 SignalType::StatisticalAnomaly { z_score } if z_score > 4.0 => {
@@ -263,11 +270,11 @@ impl AnomalySynthesizer {
                 _ => {}
             }
         }
-        
+
         if recommendations.is_empty() {
             recommendations.push("Monitor for further signals".to_string());
         }
-        
+
         recommendations
     }
 }

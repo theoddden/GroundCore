@@ -39,62 +39,60 @@ impl PropagationCache {
             max_age: Duration::seconds(max_age_sec),
         }
     }
-    
+
     /// Look up or compute orbital state with caching
-    pub fn lookup_or_compute<F>(
-        &mut self,
-        time: DateTime<Utc>,
-        compute_fn: F,
-    ) -> Option<CacheEntry>
+    pub fn lookup_or_compute<F>(&mut self, time: DateTime<Utc>, compute_fn: F) -> Option<CacheEntry>
     where
         F: FnOnce(DateTime<Utc>) -> CacheEntry,
     {
         // Clean up old entries
         self.cleanup();
-        
+
         // Try to find interpolatable cached positions
         if let Some(entry) = self.lookup_interpolatable(time) {
             return Some(entry);
         }
-        
+
         // Compute fresh state
         let entry = compute_fn(time);
-        
+
         // Insert into cache
         self.entries.insert(time, entry.clone());
-        
+
         Some(entry)
     }
-    
+
     /// Look up an interpolatable position
     fn lookup_interpolatable(&self, time: DateTime<Utc>) -> Option<CacheEntry> {
         // Find surrounding cached positions
         let before = self.entries.range(..=time).next_back();
         let after = self.entries.range(time..).next();
-        
+
         match (before, after) {
             (Some((t1, s1)), Some((t2, s2))) => {
                 // Check if within interpolation window
                 let dt1 = (time - *t1).num_seconds().abs();
                 let dt2 = (*t2 - time).num_seconds().abs();
-                
-                if dt1 <= self.interpolation_window.num_seconds() && dt2 <= self.interpolation_window.num_seconds() {
+
+                if dt1 <= self.interpolation_window.num_seconds()
+                    && dt2 <= self.interpolation_window.num_seconds()
+                {
                     // Linear interpolation
                     let total_dt = (*t2 - *t1).num_seconds() as f64;
                     let t = (time - *t1).num_seconds() as f64 / total_dt;
-                    
+
                     let position = (
                         s1.position.0 * (1.0 - t) + s2.position.0 * t,
                         s1.position.1 * (1.0 - t) + s2.position.1 * t,
                         s1.position.2 * (1.0 - t) + s2.position.2 * t,
                     );
-                    
+
                     let velocity = (
                         s1.velocity.0 * (1.0 - t) + s2.velocity.0 * t,
                         s1.velocity.1 * (1.0 - t) + s2.velocity.1 * t,
                         s1.velocity.2 * (1.0 - t) + s2.velocity.2 * t,
                     );
-                    
+
                     return Some(CacheEntry {
                         position,
                         velocity,
@@ -117,21 +115,21 @@ impl PropagationCache {
             }
             (None, None) => {}
         }
-        
+
         None
     }
-    
+
     /// Invalidate cache entries older than max_age
     fn cleanup(&mut self) {
         let now = Utc::now();
         self.entries.retain(|time, _| now - *time < self.max_age);
     }
-    
+
     /// Invalidate all cache entries
     pub fn invalidate_all(&mut self) {
         self.entries.clear();
     }
-    
+
     /// Get cache statistics
     pub fn stats(&self) -> CacheStats {
         CacheStats {

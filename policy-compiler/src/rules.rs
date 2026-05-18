@@ -155,19 +155,17 @@ impl RegulatoryPolicy {
             issued_at: Utc::now(),
         }
     }
-    
+
     /// Add band rules
     pub fn add_band_rules(&mut self, rules: BandRules) {
         self.band_rules.push(rules);
     }
-    
+
     /// Get rules for a specific band
     pub fn get_band_rules(&self, band_name: &str) -> Option<&BandRules> {
-        self.band_rules
-            .iter()
-            .find(|r| r.band.name == band_name)
+        self.band_rules.iter().find(|r| r.band.name == band_name)
     }
-    
+
     /// Check if a frequency falls within any regulated band
     pub fn find_band_for_frequency(&self, frequency_hz: u64) -> Option<&BandRules> {
         self.band_rules

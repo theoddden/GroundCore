@@ -1,8 +1,8 @@
 //! Vendor-specific antenna controller adapters
 
-use crate::controller::{AntennaController, ControllerStatus, PointingTarget, ControllerError};
+use crate::controller::{AntennaController, ControllerError, ControllerStatus, PointingTarget};
 use async_trait::async_trait;
-use ground_core::{Result, GroundStationError};
+use ground_core::{GroundStationError, Result};
 use std::time::Duration;
 use tokio::time::sleep;
 
@@ -37,21 +37,23 @@ impl VertexRsIAdapter {
 impl AntennaController for VertexRsIAdapter {
     async fn point(&mut self, azimuth: f64, elevation: f64) -> Result<()> {
         if !self.enabled {
-            return Err(GroundStationError::Hardware("Controller disabled".to_string()));
+            return Err(GroundStationError::Hardware(
+                "Controller disabled".to_string(),
+            ));
         }
 
         let cmd = self.format_pointing_command(azimuth, elevation)?;
-        
+
         // In real implementation, send command via serial/ethernet
         tracing::debug!("VertexRSI command: {:?}", cmd);
-        
+
         self.status = ControllerStatus::Slewing;
         sleep(Duration::from_millis(100)).await; // Simulate slew time
-        
+
         self.current_az = azimuth;
         self.current_el = elevation;
         self.status = ControllerStatus::Idle;
-        
+
         Ok(())
     }
 
@@ -129,20 +131,22 @@ impl GeneralDynamicsAdapter {
 impl AntennaController for GeneralDynamicsAdapter {
     async fn point(&mut self, azimuth: f64, elevation: f64) -> Result<()> {
         if !self.enabled {
-            return Err(GroundStationError::Hardware("Controller disabled".to_string()));
+            return Err(GroundStationError::Hardware(
+                "Controller disabled".to_string(),
+            ));
         }
 
         // General Dynamics protocol (simplified)
         let cmd = format!("MOVE AZ={} EL={}\n", azimuth, elevation);
         tracing::debug!("GD command: {}", cmd);
-        
+
         self.status = ControllerStatus::Slewing;
         sleep(Duration::from_millis(100)).await;
-        
+
         self.current_az = azimuth;
         self.current_el = elevation;
         self.status = ControllerStatus::Idle;
-        
+
         Ok(())
     }
 
@@ -219,17 +223,19 @@ impl PhasedArrayAdapter {
 impl AntennaController for PhasedArrayAdapter {
     async fn point(&mut self, azimuth: f64, elevation: f64) -> Result<()> {
         if !self.enabled {
-            return Err(GroundStationError::Hardware("Controller disabled".to_string()));
+            return Err(GroundStationError::Hardware(
+                "Controller disabled".to_string(),
+            ));
         }
 
         // Phased array beam steering (simplified)
         let cmd = format!("BEAM AZ={} EL={}\n", azimuth, elevation);
         tracing::debug!("Phased array command: {}", cmd);
-        
+
         self.status = ControllerStatus::Tracking; // Phased arrays track continuously
         self.current_az = azimuth;
         self.current_el = elevation;
-        
+
         Ok(())
     }
 

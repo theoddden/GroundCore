@@ -11,13 +11,16 @@
 
 mod control_plane_handoff;
 
-use crate::{OperatorId, TerminalId, LinkId, SatelliteId, NodeId, BiTemporal};
+use crate::{BiTemporal, LinkId, NodeId, OperatorId, SatelliteId, TerminalId};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 use std::collections::HashMap;
-use sha2::{Sha256, Digest};
 
-pub use control_plane_handoff::{ControlPlaneHandoff, HandoffState, HandoffStep, HandoffTrigger, HandoffManager, HandoffMetrics, HandoffError};
+pub use control_plane_handoff::{
+    ControlPlaneHandoff, HandoffError, HandoffManager, HandoffMetrics, HandoffState, HandoffStep,
+    HandoffTrigger,
+};
 
 /// Federation plane
 pub struct FederationPlane {
@@ -45,13 +48,20 @@ impl FederationPlane {
 
     /// Add control node (ground station running full control plane)
     pub fn add_control_node(&mut self, control_node: ControlNode) {
-        self.control_nodes.insert(control_node.node_id.clone(), control_node);
+        self.control_nodes
+            .insert(control_node.node_id.clone(), control_node);
     }
 
     /// Bind satellite to control node
-    pub fn bind_satellite(&mut self, satellite_id: SatelliteId, control_node_id: NodeId) -> Result<(), FederationError> {
+    pub fn bind_satellite(
+        &mut self,
+        satellite_id: SatelliteId,
+        control_node_id: NodeId,
+    ) -> Result<(), FederationError> {
         if !self.control_nodes.contains_key(&control_node_id) {
-            return Err(FederationError::ControlNodeNotFound { node_id: control_node_id });
+            return Err(FederationError::ControlNodeNotFound {
+                node_id: control_node_id,
+            });
         }
 
         let binding = ControlPlaneBinding {
@@ -73,12 +83,17 @@ impl FederationPlane {
         target_control_node_id: NodeId,
     ) -> Result<HandoffRequest, FederationError> {
         if !self.control_nodes.contains_key(&target_control_node_id) {
-            return Err(FederationError::ControlNodeNotFound { node_id: target_control_node_id });
+            return Err(FederationError::ControlNodeNotFound {
+                node_id: target_control_node_id,
+            });
         }
 
-        let binding = self.satellite_bindings
+        let binding = self
+            .satellite_bindings
             .get_mut(satellite_id)
-            .ok_or_else(|| FederationError::SatelliteNotBound { satellite_id: satellite_id.clone() })?;
+            .ok_or_else(|| FederationError::SatelliteNotBound {
+                satellite_id: satellite_id.clone(),
+            })?;
 
         let request_id = uuid::Uuid::new_v4();
         let request = HandoffRequest {
@@ -96,16 +111,25 @@ impl FederationPlane {
     }
 
     /// Complete control plane handoff
-    pub fn complete_handoff(&mut self, satellite_id: &SatelliteId, request: HandoffRequest) -> Result<(), FederationError> {
-        let binding = self.satellite_bindings
+    pub fn complete_handoff(
+        &mut self,
+        satellite_id: &SatelliteId,
+        request: HandoffRequest,
+    ) -> Result<(), FederationError> {
+        let binding = self
+            .satellite_bindings
             .get_mut(satellite_id)
-            .ok_or_else(|| FederationError::SatelliteNotBound { satellite_id: satellite_id.clone() })?;
+            .ok_or_else(|| FederationError::SatelliteNotBound {
+                satellite_id: satellite_id.clone(),
+            })?;
 
         let handover_record = HandoverRecord {
             from_node: binding.control_node_id.clone(),
             to_node: request.target_control_node_id.clone(),
             handover_at: BiTemporal::new(Utc::now(), Utc::now()),
-            duration_ms: request.completed_at.map(|t| (t - request.created_at).num_milliseconds() as u64),
+            duration_ms: request
+                .completed_at
+                .map(|t| (t - request.created_at).num_milliseconds() as u64),
         };
 
         binding.control_node_id = request.target_control_node_id.clone();
@@ -118,7 +142,9 @@ impl FederationPlane {
 
     /// Get satellite's current control node
     pub fn get_satellite_control_node(&self, satellite_id: &SatelliteId) -> Option<&NodeId> {
-        self.satellite_bindings.get(satellite_id).map(|b| &b.control_node_id)
+        self.satellite_bindings
+            .get(satellite_id)
+            .map(|b| &b.control_node_id)
     }
 
     /// Add federation peer
@@ -135,11 +161,11 @@ impl FederationPlane {
         agreement: RevenueAgreement,
     ) -> Result<LinkId, FederationError> {
         // Verify peer exists and is trusted
-        let peer = self.federation_peers
-            .get(&peer_operator)
-            .ok_or_else(|| FederationError::PeerNotFound {
+        let peer = self.federation_peers.get(&peer_operator).ok_or_else(|| {
+            FederationError::PeerNotFound {
                 operator_id: peer_operator.clone(),
-            })?;
+            }
+        })?;
 
         if peer.trust_score.0 < 0.5 {
             return Err(FederationError::InsufficientTrust {
@@ -296,7 +322,10 @@ impl AttestationEngine {
     }
 
     /// Attest a peer
-    pub fn attest_peer(&mut self, operator_id: &OperatorId) -> Result<AttestationRecord, AttestationError> {
+    pub fn attest_peer(
+        &mut self,
+        operator_id: &OperatorId,
+    ) -> Result<AttestationRecord, AttestationError> {
         // Check cache
         if let Some(record) = self.attestation_cache.get(operator_id) {
             if record.is_valid() {
@@ -309,7 +338,7 @@ impl AttestationEngine {
         let mut hasher = Sha256::new();
         hasher.update(attestation_data.as_bytes());
         let attestation_hash = hasher.finalize().to_vec();
-        
+
         let record = AttestationRecord {
             operator_id: operator_id.clone(),
             attested_at: Utc::now(),
@@ -317,7 +346,8 @@ impl AttestationEngine {
             attestation_hash,
         };
 
-        self.attestation_cache.insert(operator_id.clone(), record.clone());
+        self.attestation_cache
+            .insert(operator_id.clone(), record.clone());
         Ok(record)
     }
 
@@ -449,10 +479,16 @@ pub enum FederationError {
     PeerNotFound { operator_id: OperatorId },
 
     #[error("Insufficient trust for {operator_id}: trust_score {trust_score}")]
-    InsufficientTrust { operator_id: OperatorId, trust_score: f64 },
+    InsufficientTrust {
+        operator_id: OperatorId,
+        trust_score: f64,
+    },
 
     #[error("Policy violation for {operator_id}: {reason}")]
-    PolicyViolation { operator_id: OperatorId, reason: String },
+    PolicyViolation {
+        operator_id: OperatorId,
+        reason: String,
+    },
 
     #[error("Attestation failed: {0}")]
     AttestationFailed(String),

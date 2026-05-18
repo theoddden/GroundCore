@@ -10,10 +10,10 @@
 //! This is critical for testing shadow failover, Doppler correction, and
 //! other real-time features in a controlled environment.
 
-pub mod simulator;
-pub mod signal;
 pub mod failure;
+pub mod signal;
+pub mod simulator;
 
-pub use simulator::{SimulatedSdr, SimulatedSdrConfig};
-pub use signal::{SignalGenerator, SignalType, NoiseModel};
 pub use failure::{FailureInjector, FailureType};
+pub use signal::{NoiseModel, SignalGenerator, SignalType};
+pub use simulator::{SimulatedSdr, SimulatedSdrConfig};

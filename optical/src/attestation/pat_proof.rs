@@ -3,9 +3,9 @@
 // PAT attestations provide cryptographic proof that acquisition and tracking
 // occurred with specific parameters at specific times.
 
-use crate::{BiTemporal, EventTime, ReceptionTime};
 use crate::attestation::link_proof::{AttestationId, Hash, Signature};
 use crate::pat::AcquisitionResult;
+use crate::{BiTemporal, EventTime, ReceptionTime};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -80,8 +80,16 @@ impl TrackingProof {
     pub fn new(tracking_id: Uuid) -> Self {
         Self {
             tracking_id,
-            start_time: BiTemporal::new(Utc::now(), EventTime::new(Utc::now()), ReceptionTime::new(Utc::now())),
-            end_time: BiTemporal::new(Utc::now(), EventTime::new(Utc::now()), ReceptionTime::new(Utc::now())),
+            start_time: BiTemporal::new(
+                Utc::now(),
+                EventTime::new(Utc::now()),
+                ReceptionTime::new(Utc::now()),
+            ),
+            end_time: BiTemporal::new(
+                Utc::now(),
+                EventTime::new(Utc::now()),
+                ReceptionTime::new(Utc::now()),
+            ),
             duration_seconds: 0.0,
             average_pointing_error_urad: 0.0,
             average_snr_db: 0.0,

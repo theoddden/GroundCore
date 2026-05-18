@@ -47,7 +47,7 @@ impl AgentContext {
             context_window: Vec::new(),
         }
     }
-    
+
     /// Add a context entry
     pub fn add_context(&mut self, role: Role, content: String) {
         self.context_window.push(ContextEntry {
@@ -55,26 +55,26 @@ impl AgentContext {
             role,
             content,
         });
-        
+
         // Keep context window bounded
         if self.context_window.len() > 100 {
             self.context_window.remove(0);
         }
     }
-    
+
     /// Process a user query
     pub async fn query(&mut self, question: String) -> QueryResult {
         self.add_context(Role::User, question.clone());
-        
+
         // Get current system state
         let system_state = self.observation_tool.get_system_state();
-        
+
         // In a real implementation, this would use Claude Code to reason
         // over the context and system state to generate an answer
         let answer = self.generate_answer(&question, system_state.as_ref().ok());
-        
+
         self.add_context(Role::Agent, answer.clone());
-        
+
         QueryResult {
             answer,
             evidence: Vec::new(),
@@ -82,7 +82,7 @@ impl AgentContext {
             confidence: 0.8,
         }
     }
-    
+
     /// Generate an answer (simplified implementation)
     fn generate_answer(&self, question: &str, state: Option<&SystemState>) -> String {
         if let Some(state) = state {
@@ -114,19 +114,22 @@ impl AgentContext {
             "Unable to retrieve system state. Please check system health.".to_string()
         }
     }
-    
+
     /// Explain a decision or event
     pub fn explain(&self, event_id: String) -> QueryResult {
         // In a real implementation, this would load historical context
         // and use the agent to explain what happened and why
         QueryResult {
-            answer: format!("Event {}: This would be explained using historical context and bi-temporal logs.", event_id),
+            answer: format!(
+                "Event {}: This would be explained using historical context and bi-temporal logs.",
+                event_id
+            ),
             evidence: vec!["Bi-temporal log entry".to_string()],
             system_state: None,
             confidence: 0.7,
         }
     }
-    
+
     /// Draft an incident report
     pub fn draft_incident_report(&self, incident_data: serde_json::Value) -> String {
         // In a real implementation, this would use the agent to synthesize

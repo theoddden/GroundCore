@@ -1,11 +1,8 @@
 // Satellite Scheduler - Kubernetes-like scheduling across satellite nodes
 
-use crate::{
-    SatelliteId, TaskId, TenantId, Priority, TimeWindow,
-    AllocationId, PreemptionReason,
-};
-use crate::resource::{ResourceClaim, ResourceAllocation, SatelliteNode};
-use chrono::{DateTime, Utc, Duration};
+use crate::resource::{ResourceAllocation, ResourceClaim, SatelliteNode};
+use crate::{AllocationId, PreemptionReason, Priority, SatelliteId, TaskId, TenantId, TimeWindow};
+use chrono::{DateTime, Duration, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -15,7 +12,11 @@ pub trait SatelliteScheduler: Send + Sync {
     fn allocate(&mut self, claim: ResourceClaim) -> Result<AllocationId, ScheduleError>;
 
     /// Preempt an allocation
-    fn preempt(&mut self, allocation_id: AllocationId, reason: PreemptionReason) -> Result<(), ScheduleError>;
+    fn preempt(
+        &mut self,
+        allocation_id: AllocationId,
+        reason: PreemptionReason,
+    ) -> Result<(), ScheduleError>;
 
     /// Rebalance allocations across satellites
     fn rebalance(&mut self) -> RebalanceReport;
@@ -39,7 +40,8 @@ impl DefaultSatelliteScheduler {
     }
 
     pub fn add_satellite(&mut self, satellite: SatelliteNode) {
-        self.satellites.insert(satellite.satellite_id.clone(), satellite);
+        self.satellites
+            .insert(satellite.satellite_id.clone(), satellite);
     }
 
     fn find_best_satellite(&self, claim: &ResourceClaim) -> Option<&SatelliteNode> {
@@ -50,14 +52,17 @@ impl DefaultSatelliteScheduler {
                 // Prefer satellite with more available resources
                 let a_avail = a.power_budget.available_watts;
                 let b_avail = b.power_budget.available_watts;
-                b_avail.partial_cmp(&a_avail).unwrap_or(std::cmp::Ordering::Equal)
+                b_avail
+                    .partial_cmp(&a_avail)
+                    .unwrap_or(std::cmp::Ordering::Equal)
             })
     }
 }
 
 impl SatelliteScheduler for DefaultSatelliteScheduler {
     fn allocate(&mut self, claim: ResourceClaim) -> Result<AllocationId, ScheduleError> {
-        let satellite = self.find_best_satellite(&claim)
+        let satellite = self
+            .find_best_satellite(&claim)
             .ok_or_else(|| ScheduleError::NoAvailableNode)?;
 
         let task_id = TaskId::new_v4();
@@ -65,13 +70,10 @@ impl SatelliteScheduler for DefaultSatelliteScheduler {
         let valid_window = TimeWindow::new(Utc::now(), Utc::now() + claim.duration);
         let priority = Priority::Medium;
 
-        let allocation_id = self.allocator.allocate(
-            claim.clone(),
-            task_id,
-            tenant_id,
-            priority,
-            valid_window,
-        ).map_err(|e| ScheduleError::AllocationFailed(e.to_string()))?;
+        let allocation_id = self
+            .allocator
+            .allocate(claim.clone(), task_id, tenant_id, priority, valid_window)
+            .map_err(|e| ScheduleError::AllocationFailed(e.to_string()))?;
 
         // Update satellite state
         let sat_id = satellite.satellite_id.clone();
@@ -82,8 +84,13 @@ impl SatelliteScheduler for DefaultSatelliteScheduler {
         Ok(allocation_id)
     }
 
-    fn preempt(&mut self, allocation_id: AllocationId, reason: PreemptionReason) -> Result<(), ScheduleError> {
-        self.allocator.preempt(&allocation_id, reason)
+    fn preempt(
+        &mut self,
+        allocation_id: AllocationId,
+        reason: PreemptionReason,
+    ) -> Result<(), ScheduleError> {
+        self.allocator
+            .preempt(&allocation_id, reason)
             .map_err(|e| ScheduleError::PreemptionFailed(e.to_string()))?;
 
         // Release from satellite
@@ -102,7 +109,8 @@ impl SatelliteScheduler for DefaultSatelliteScheduler {
         let mut allocations_to_move = Vec::new();
 
         for (sat_id, satellite) in &self.satellites {
-            let utilization = satellite.power_budget.allocated_watts / satellite.power_budget.total_watts;
+            let utilization =
+                satellite.power_budget.allocated_watts / satellite.power_budget.total_watts;
             if utilization > 0.8 {
                 // Find allocations that can be moved
                 for allocation in &satellite.current_allocations {
@@ -120,19 +128,17 @@ impl SatelliteScheduler for DefaultSatelliteScheduler {
                 if target_sat.satellite_id != source_sat {
                     // Move allocation
                     self.allocator.release(&allocation.allocation_id).ok();
-                    
+
                     let task_id = TaskId::new_v4();
                     let tenant_id = allocation.tenant_id.clone();
                     let valid_window = allocation.valid_window.clone();
                     let priority = allocation.priority;
 
-                    if self.allocator.allocate(
-                        claim,
-                        task_id,
-                        tenant_id,
-                        priority,
-                        valid_window,
-                    ).is_ok() {
+                    if self
+                        .allocator
+                        .allocate(claim, task_id, tenant_id, priority, valid_window)
+                        .is_ok()
+                    {
                         moved_allocations += 1;
                     } else {
                         failed_migrations += 1;
@@ -156,7 +162,8 @@ impl SatelliteScheduler for DefaultSatelliteScheduler {
                 satellite_id: sat_id.clone(),
                 available_power: satellite.power_budget.available_watts,
                 available_bandwidth: satellite.available_bandwidth(),
-                available_terminals: satellite.optical_terminals
+                available_terminals: satellite
+                    .optical_terminals
                     .values()
                     .filter(|t| t.available)
                     .map(|t| t.terminal_id.clone())
@@ -209,13 +216,13 @@ pub struct SatelliteAvailability {
 pub enum ScheduleError {
     #[error("No available satellite node for allocation")]
     NoAvailableNode,
-    
+
     #[error("Allocation failed: {0}")]
     AllocationFailed(String),
-    
+
     #[error("Preemption failed: {0}")]
     PreemptionFailed(String),
-    
+
     #[error("Satellite not found: {0}")]
     SatelliteNotFound(String),
 }

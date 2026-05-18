@@ -117,19 +117,19 @@ impl ProposalManager {
             proposals: std::collections::HashMap::new(),
         }
     }
-    
+
     /// Create a new proposal
     pub fn create_proposal(&mut self, proposal: ActionProposal) -> String {
         let id = proposal.proposal_id.clone();
         self.proposals.insert(id.clone(), proposal);
         id
     }
-    
+
     /// Get a proposal
     pub fn get_proposal(&self, proposal_id: &str) -> Option<&ActionProposal> {
         self.proposals.get(proposal_id)
     }
-    
+
     /// Approve a proposal
     pub fn approve(&mut self, proposal_id: &str, approved_by: String) -> Result<(), String> {
         if let Some(proposal) = self.proposals.get_mut(proposal_id) {
@@ -141,7 +141,7 @@ impl ProposalManager {
             Err("Proposal not found".to_string())
         }
     }
-    
+
     /// Reject a proposal
     pub fn reject(&mut self, proposal_id: &str, rejected_by: String) -> Result<(), String> {
         if let Some(proposal) = self.proposals.get_mut(proposal_id) {
@@ -153,14 +153,14 @@ impl ProposalManager {
             Err("Proposal not found".to_string())
         }
     }
-    
+
     /// Execute an approved proposal
     pub fn execute(&mut self, proposal_id: &str) -> Result<(), String> {
         if let Some(proposal) = self.proposals.get_mut(proposal_id) {
             if proposal.approval_status != ApprovalStatus::Approved {
                 return Err("Proposal not approved".to_string());
             }
-            
+
             // In a real implementation, this would execute the action
             proposal.approval_status = ApprovalStatus::Executed;
             proposal.execution_result = Some(ExecutionResult {
@@ -168,13 +168,13 @@ impl ProposalManager {
                 output: "Action executed successfully".to_string(),
                 completed_at: Utc::now(),
             });
-            
+
             Ok(())
         } else {
             Err("Proposal not found".to_string())
         }
     }
-    
+
     /// Get pending proposals
     pub fn pending_proposals(&self) -> Vec<&ActionProposal> {
         self.proposals
@@ -182,18 +182,21 @@ impl ProposalManager {
             .filter(|p| p.approval_status == ApprovalStatus::Pending)
             .collect()
     }
-    
+
     /// Get proposals requiring approval (consequential actions)
     pub fn requires_approval(&self) -> Vec<&ActionProposal> {
         self.proposals
             .values()
             .filter(|p| {
                 p.approval_status == ApprovalStatus::Pending
-                    && matches!(p.expected_impact.risk_level, RiskLevel::Medium | RiskLevel::High | RiskLevel::Critical)
+                    && matches!(
+                        p.expected_impact.risk_level,
+                        RiskLevel::Medium | RiskLevel::High | RiskLevel::Critical
+                    )
             })
             .collect()
     }
-    
+
     /// Get autonomous actions (low risk, can execute without approval)
     pub fn autonomous_actions(&self) -> Vec<&ActionProposal> {
         self.proposals

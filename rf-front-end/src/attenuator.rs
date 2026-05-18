@@ -1,7 +1,7 @@
 //! Attenuator control
 
-use crate::device::{RfDevice, RfDeviceType, RfDeviceState, DeviceCalibration};
-use ground_core::{Result, GroundStationError};
+use crate::device::{DeviceCalibration, RfDevice, RfDeviceState, RfDeviceType};
+use ground_core::{GroundStationError, Result};
 use serde::{Deserialize, Serialize};
 use std::sync::atomic::{AtomicF64, Ordering};
 use tokio::sync::RwLock;
@@ -21,19 +21,19 @@ pub struct AttenuationLevel {
 pub trait AttenuatorControl: RfDevice {
     /// Set attenuation in dB
     async fn set_attenuation(&mut self, attenuation_db: f64) -> Result<()>;
-    
+
     /// Get current attenuation in dB
     async fn get_attenuation(&self) -> Result<f64>;
-    
+
     /// Increment attenuation by step
     async fn increment_attenuation(&mut self, step_db: f64) -> Result<()>;
-    
+
     /// Decrement attenuation by step
     async fn decrement_attenuation(&mut self, step_db: f64) -> Result<()>;
-    
+
     /// Get attenuation range
     async fn get_attenuation_range(&self) -> Result<(f64, f64)>;
-    
+
     /// Get step size
     async fn get_step_size(&self) -> Result<f64>;
 }
@@ -72,7 +72,7 @@ impl VariableAttenuator {
     /// Get calibrated attenuation
     async fn get_calibrated_attenuation(&self, commanded_db: f64) -> f64 {
         let table = self.calibration_table.read().await;
-        
+
         if table.is_empty() {
             return commanded_db;
         }
@@ -111,7 +111,7 @@ impl RfDevice for VariableAttenuator {
     async fn get_state(&self) -> Result<RfDeviceState> {
         let current = self.current_attenuation.load(Ordering::Relaxed);
         let calibrated = self.get_calibrated_attenuation(current).await;
-        
+
         Ok(RfDeviceState {
             device_id: self.id,
             device_type: RfDeviceType::Attenuator,
@@ -147,7 +147,7 @@ impl RfDevice for VariableAttenuator {
     async fn get_calibration(&self) -> Result<DeviceCalibration> {
         let table = self.calibration_table.read().await;
         let coefficients: Vec<f64> = table.iter().map(|(cmd, actual)| actual - cmd).collect();
-        
+
         Ok(DeviceCalibration {
             calibrated_at: chrono::Utc::now(),
             coefficients,
@@ -165,7 +165,9 @@ impl RfDevice for VariableAttenuator {
 impl AttenuatorControl for VariableAttenuator {
     async fn set_attenuation(&mut self, attenuation_db: f64) -> Result<()> {
         if !self.enabled {
-            return Err(GroundStationError::Hardware("Attenuator disabled".to_string()));
+            return Err(GroundStationError::Hardware(
+                "Attenuator disabled".to_string(),
+            ));
         }
 
         if attenuation_db < self.min_attenuation || attenuation_db > self.max_attenuation {
@@ -177,10 +179,14 @@ impl AttenuatorControl for VariableAttenuator {
 
         // Quantize to step size
         let quantized = (attenuation_db / self.step_size).round() * self.step_size;
-        
+
         self.current_attenuation.store(quantized, Ordering::Relaxed);
-        tracing::debug!("Attenuator set to {} dB (quantized from {} dB)", quantized, attenuation_db);
-        
+        tracing::debug!(
+            "Attenuator set to {} dB (quantized from {} dB)",
+            quantized,
+            attenuation_db
+        );
+
         Ok(())
     }
 
@@ -230,10 +236,13 @@ impl DigitalStepAttenuator {
     /// Set attenuation using digital control word
     pub async fn set_control_word(&mut self, control_word: u64) -> Result<()> {
         if control_word >= (1_u64 << self.num_bits) {
-            return Err(GroundStationError::Validation("Control word out of range".to_string()));
+            return Err(GroundStationError::Validation(
+                "Control word out of range".to_string(),
+            ));
         }
 
-        let attenuation = (control_word as f64 / (2_u64.pow(self.num_bits as u32) as f64)) * self.inner.max_attenuation;
+        let attenuation = (control_word as f64 / (2_u64.pow(self.num_bits as u32) as f64))
+            * self.inner.max_attenuation;
         self.inner.set_attenuation(attenuation).await
     }
 

@@ -39,19 +39,23 @@ impl DopplerSchedule {
             .iter()
             .enumerate()
             .map(|(i, (_, offset))| {
-                let sample_id = SampleId::new(start_sample_id.as_u64() + (i as u64 * sample_rate_hz / 1000));
+                let sample_id =
+                    SampleId::new(start_sample_id.as_u64() + (i as u64 * sample_rate_hz / 1000));
                 (sample_id, *offset)
             })
             .collect();
-        
+
         Self {
             base_frequency,
             samples,
             computed_at: Utc::now(),
-            tle_epoch: predictions.first().map(|(t, _)| *t).unwrap_or_else(Utc::now),
+            tle_epoch: predictions
+                .first()
+                .map(|(t, _)| *t)
+                .unwrap_or_else(Utc::now),
         }
     }
-    
+
     /// Interpolate the frequency offset for a given sample ID
     pub fn interpolate(&self, sample_id: SampleId) -> FrequencyOffset {
         // Binary search for the surrounding samples
@@ -59,19 +63,19 @@ impl DopplerSchedule {
             Ok(i) => return self.samples[i].1,
             Err(i) => i,
         };
-        
+
         if idx == 0 {
             return self.samples.first().map(|(_, offset)| *offset).unwrap_or(0);
         }
-        
+
         if idx >= self.samples.len() {
             return self.samples.last().map(|(_, offset)| *offset).unwrap_or(0);
         }
-        
+
         // Linear interpolation between the two surrounding samples
         let (id1, offset1) = self.samples[idx - 1];
         let (id2, offset2) = self.samples[idx];
-        
+
         let t = (sample_id.as_u64() - id1.as_u64()) as f64 / (id2.as_u64() - id1.as_u64()) as f64;
         (offset1 as f64 + t * (offset2 as f64 - offset1 as f64)) as i64
     }
@@ -95,30 +99,30 @@ impl NcoController {
             sample_rate,
         }
     }
-    
+
     /// Set frequency offset with phase continuity
     /// The NCO accumulates phase across frequency changes rather than resetting
     pub fn set_frequency_continuous(&mut self, offset: FrequencyOffset) {
         self.current_offset = offset;
         // Phase is NOT reset - this is the key to phase continuity
     }
-    
+
     /// Get the current frequency offset
     pub fn current_offset(&self) -> FrequencyOffset {
         self.current_offset
     }
-    
+
     /// Process a single sample through the NCO
     /// Returns the phase-adjusted frequency for this sample
     pub fn process_sample(&mut self) -> f64 {
         // Update phase accumulator
         let phase_increment = (self.current_offset as f64) / (self.sample_rate as f64);
         self.phase = (self.phase + phase_increment) % 1.0;
-        
+
         // Return the current phase (used for mixing)
         self.phase
     }
-    
+
     /// Reset phase accumulator
     pub fn reset_phase(&mut self) {
         self.phase = 0.0;
@@ -133,7 +137,7 @@ pub fn apply_doppler_schedule(
 ) -> Result<Frequency> {
     let target_offset = schedule.interpolate(current_sample);
     nco.set_frequency_continuous(target_offset);
-    
+
     let corrected_frequency = (schedule.base_frequency as i64 + target_offset) as u64;
     Ok(corrected_frequency)
 }
@@ -149,7 +153,12 @@ pub struct DopplerPredictor {
 }
 
 impl DopplerPredictor {
-    pub fn new(station_lat_deg: f64, station_lon_deg: f64, station_alt_km: f64, carrier_frequency: f64) -> Self {
+    pub fn new(
+        station_lat_deg: f64,
+        station_lon_deg: f64,
+        station_alt_km: f64,
+        carrier_frequency: f64,
+    ) -> Self {
         Self {
             constants: None,
             station: (station_lat_deg, station_lon_deg, station_alt_km),
@@ -159,11 +168,16 @@ impl DopplerPredictor {
 
     /// Load TLE and initialize the SGP4 constants
     pub fn load_tle(&mut self, tle_line1: &str, tle_line2: &str) -> Result<()> {
-        let elements = Elements::from_tle(Some("satellite".to_string()), tle_line1.as_bytes(), tle_line2.as_bytes())
-            .map_err(|e| ground_core::GroundStationError::Hardware(format!("Invalid TLE: {}", e)))?;
+        let elements = Elements::from_tle(
+            Some("satellite".to_string()),
+            tle_line1.as_bytes(),
+            tle_line2.as_bytes(),
+        )
+        .map_err(|e| ground_core::GroundStationError::Hardware(format!("Invalid TLE: {}", e)))?;
 
-        let constants = Constants::from_elements(&elements)
-            .map_err(|e| ground_core::GroundStationError::Hardware(format!("SGP4 constants error: {}", e)))?;
+        let constants = Constants::from_elements(&elements).map_err(|e| {
+            ground_core::GroundStationError::Hardware(format!("SGP4 constants error: {}", e))
+        })?;
 
         self.constants = Some(constants);
         Ok(())
@@ -181,7 +195,10 @@ impl DopplerPredictor {
         step_ms: u64,
     ) -> Vec<(DateTime<Utc>, FrequencyOffset)> {
         let Some(constants) = &self.constants else {
-            tracing::warn!("No TLE loaded for satellite {}, returning empty Doppler prediction", satellite_id);
+            tracing::warn!(
+                "No TLE loaded for satellite {}, returning empty Doppler prediction",
+                satellite_id
+            );
             return vec![];
         };
 
@@ -203,7 +220,8 @@ impl DopplerPredictor {
             };
 
             // Convert station geodetic to ECI
-            let station_eci = self.geodetic_to_eci(station_lat, station_lon, station_alt, current_time);
+            let station_eci =
+                self.geodetic_to_eci(station_lat, station_lon, station_alt, current_time);
 
             // Compute range vector from station to satellite
             let rx = position.position[0] - station_eci[0];
@@ -222,11 +240,13 @@ impl DopplerPredictor {
                     continue;
                 }
             };
-            let future_station_eci = self.geodetic_to_eci(station_lat, station_lon, station_alt, future_time);
+            let future_station_eci =
+                self.geodetic_to_eci(station_lat, station_lon, station_alt, future_time);
             let future_rx = future_position.position[0] - future_station_eci[0];
             let future_ry = future_position.position[1] - future_station_eci[1];
             let future_rz = future_position.position[2] - future_station_eci[2];
-            let future_range = (future_rx * future_rx + future_ry * future_ry + future_rz * future_rz).sqrt();
+            let future_range =
+                (future_rx * future_rx + future_ry * future_ry + future_rz * future_rz).sqrt();
 
             let range_rate = (future_range - range) / step_sec; // km/s
 
@@ -242,7 +262,13 @@ impl DopplerPredictor {
 
     /// Convert geodetic coordinates (lat, lon in degrees, alt in km) to ECI at a given time
     /// Simplified approximation: rotates by GMST (Greenwich Mean Sidereal Time)
-    fn geodetic_to_eci(&self, lat_deg: f64, lon_deg: f64, alt_km: f64, time: DateTime<Utc>) -> [f64; 3] {
+    fn geodetic_to_eci(
+        &self,
+        lat_deg: f64,
+        lon_deg: f64,
+        alt_km: f64,
+        time: DateTime<Utc>,
+    ) -> [f64; 3] {
         let lat = lat_deg.to_radians();
         let lon = lon_deg.to_radians();
 
@@ -268,7 +294,7 @@ impl DopplerPredictor {
 
         [x, y, z]
     }
-    
+
     /// Refine propagation using observed Doppler residuals (UKF)
     /// This addresses the SGP4 accuracy limitation mentioned in Problem 2
     pub fn refine_with_observation(
@@ -280,7 +306,11 @@ impl DopplerPredictor {
         // In a real implementation, this would update an Unscented Kalman Filter
         // to refine the orbital state estimate based on the residual
         let residual = observed_doppler - predicted_doppler;
-        tracing::debug!("Doppler residual at {:?}: {} Hz", observation_time, residual);
+        tracing::debug!(
+            "Doppler residual at {:?}: {} Hz",
+            observation_time,
+            residual
+        );
         // UKF update would go here
     }
 }

@@ -39,42 +39,42 @@ impl PassShard {
             created_at: Utc::now(),
         }
     }
-    
+
     /// Allocate within the shard (no global allocator touched)
     pub fn allocate_in_shard<T>(&self, value: T) -> &T {
         self.arena.alloc(value)
     }
-    
+
     /// Allocate a mutable value within the shard
     pub fn allocate_in_shard_mut<T>(&self, value: T) -> &mut T {
         self.arena.alloc(value)
     }
-    
+
     /// Add a ring buffer to the shard
     pub fn add_ring_buffer(&mut self, buffer: RingBuffer) {
         self.ring_buffers.push(buffer);
     }
-    
+
     /// Get pass state
     pub fn state(&self) -> &PassState {
         &self.state
     }
-    
+
     /// Get mutable pass state
     pub fn state_mut(&mut self) -> &mut PassState {
         &mut self.state
     }
-    
+
     /// Get shard-local log
     pub fn log(&self) -> &ShardLocalLog {
         &self.bitemporal_log
     }
-    
+
     /// Get mutable shard-local log
     pub fn log_mut(&mut self) -> &mut ShardLocalLog {
         &mut self.bitemporal_log
     }
-    
+
     /// Allocate a slice of `size` elements within the shard arena.
     ///
     /// # Safety
@@ -149,35 +149,35 @@ impl RingBuffer {
             tail: 0,
         }
     }
-    
+
     /// Write samples to the ring buffer
     pub unsafe fn write(&mut self, samples: &[f32]) -> Result<usize> {
         let available = self.available();
         let count = samples.len().min(available);
-        
+
         for i in 0..count {
             let idx = (self.head + i) % self.capacity;
             *self.buffer.add(idx) = samples[i];
         }
-        
+
         self.head = (self.head + count) % self.capacity;
         Ok(count)
     }
-    
+
     /// Read samples from the ring buffer
     pub unsafe fn read(&mut self, buffer: &mut [f32]) -> Result<usize> {
         let available = self.used();
         let count = buffer.len().min(available);
-        
+
         for i in 0..count {
             let idx = (self.tail + i) % self.capacity;
             buffer[i] = *self.buffer.add(idx);
         }
-        
+
         self.tail = (self.tail + count) % self.capacity;
         Ok(count)
     }
-    
+
     /// Available space for writing
     fn available(&self) -> usize {
         if self.head >= self.tail {
@@ -186,7 +186,7 @@ impl RingBuffer {
             self.tail - self.head - 1
         }
     }
-    
+
     /// Used space (samples available for reading)
     fn used(&self) -> usize {
         if self.head >= self.tail {
@@ -210,17 +210,17 @@ impl ShardLocalLog {
             entries: HashMap::new(),
         }
     }
-    
+
     /// Append a log entry
     pub fn append(&mut self, sample_id: u64, entry: LogEntry) {
         self.entries.insert(sample_id, entry);
     }
-    
+
     /// Get a log entry
     pub fn get(&self, sample_id: u64) -> Option<&LogEntry> {
         self.entries.get(&sample_id)
     }
-    
+
     /// Get all entries
     pub fn entries(&self) -> &HashMap<u64, LogEntry> {
         &self.entries

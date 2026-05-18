@@ -14,17 +14,17 @@ use serde::{Deserialize, Serialize};
 use std::f64::consts::PI;
 
 // ── Physical constants ────────────────────────────────────────────────────────
-const MU: f64 = 3.986_004_418e14;   // Earth gravitational parameter (m³/s²)
-const R_EARTH: f64 = 6_378_137.0;   // Earth equatorial radius (m)
-const J2: f64 = 1.082_63e-3;        // Earth's J2 oblateness coefficient
+const MU: f64 = 3.986_004_418e14; // Earth gravitational parameter (m³/s²)
+const R_EARTH: f64 = 6_378_137.0; // Earth equatorial radius (m)
+const J2: f64 = 1.082_63e-3; // Earth's J2 oblateness coefficient
 const OMEGA_EARTH: f64 = 7.292_115_0e-5; // Earth rotation rate (rad/s)
 const SPEED_OF_LIGHT: f64 = 299_792_458.0; // m/s
 
 // ── UKF tuning parameters ─────────────────────────────────────────────────────
-const N: usize = 6;          // State dimension
-const ALPHA: f64 = 0.1;      // Spread of sigma points around mean
-const BETA: f64 = 2.0;       // Prior knowledge parameter (optimal for Gaussian)
-const KAPPA: f64 = 0.0;      // Secondary scaling parameter
+const N: usize = 6; // State dimension
+const ALPHA: f64 = 0.1; // Spread of sigma points around mean
+const BETA: f64 = 2.0; // Prior knowledge parameter (optimal for Gaussian)
+const KAPPA: f64 = 0.0; // Secondary scaling parameter
 const LAMBDA: f64 = ALPHA * ALPHA * (N as f64 + KAPPA) - N as f64; // ≈ -5.94
 
 // Sigma-point weights
@@ -85,12 +85,11 @@ fn rk4_propagate(state: &Vector6<f64>, dt: f64) -> Vector6<f64> {
 /// Uses IAU 1982 mean sidereal time formula.
 fn gmst_radians(t: DateTime<Utc>) -> f64 {
     // Julian date of J2000.0 epoch = 2451545.0
-    let jd = 2_451_545.0
-        + (t.timestamp() as f64 - 946_727_935.816) / 86_400.0;
+    let jd = 2_451_545.0 + (t.timestamp() as f64 - 946_727_935.816) / 86_400.0;
     let t_ut1 = (jd - 2_451_545.0) / 36_525.0;
     // GMST in seconds
-    let gmst_sec = 67_310.548_41
-        + (8_640_184.812_866 + (0.093_104 - 6.2e-6 * t_ut1) * t_ut1) * t_ut1;
+    let gmst_sec =
+        67_310.548_41 + (8_640_184.812_866 + (0.093_104 - 6.2e-6 * t_ut1) * t_ut1) * t_ut1;
     (gmst_sec * PI / 43_200.0).rem_euclid(2.0 * PI)
 }
 
@@ -176,18 +175,15 @@ impl UkfState {
             1_000_000.0, // 1 km position uncertainty (m²)
             1_000_000.0,
             1_000_000.0,
-            100.0,       // 10 m/s velocity uncertainty (m²/s²)
+            100.0, // 10 m/s velocity uncertainty (m²/s²)
             100.0,
             100.0,
         ));
 
         let process_noise = Matrix6::from_diagonal(&Vector6::new(
-            1.0,   // m²/s residual position noise per second
-            1.0,
-            1.0,
-            1e-4,  // m²/s³ velocity noise per second
-            1e-4,
-            1e-4,
+            1.0, // m²/s residual position noise per second
+            1.0, 1.0, 1e-4, // m²/s³ velocity noise per second
+            1e-4, 1e-4,
         ));
 
         Self {
@@ -208,16 +204,13 @@ impl UkfState {
         let scaled_p = self.covariance * scale;
 
         // Cholesky: scaled_p = L * L^T
-        let l = scaled_p
-            .cholesky()
-            .map(|c| c.l())
-            .unwrap_or_else(|| {
-                // Regularise with a small diagonal and retry
-                (scaled_p + Matrix6::identity() * 1e-6)
-                    .cholesky()
-                    .map(|c| c.l())
-                    .unwrap_or_else(|| Matrix6::identity() * scale.sqrt())
-            });
+        let l = scaled_p.cholesky().map(|c| c.l()).unwrap_or_else(|| {
+            // Regularise with a small diagonal and retry
+            (scaled_p + Matrix6::identity() * 1e-6)
+                .cholesky()
+                .map(|c| c.l())
+                .unwrap_or_else(|| Matrix6::identity() * scale.sqrt())
+        });
 
         let mut sigma = [Vector6::zeros(); 2 * N + 1];
         sigma[0] = self.state;
@@ -239,10 +232,8 @@ impl UkfState {
         let sigma = self.sigma_points();
 
         // Propagate each sigma point through orbital dynamics
-        let propagated: Vec<Vector6<f64>> = sigma
-            .iter()
-            .map(|s| rk4_propagate(s, dt_sec))
-            .collect();
+        let propagated: Vec<Vector6<f64>> =
+            sigma.iter().map(|s| rk4_propagate(s, dt_sec)).collect();
 
         // Weighted mean
         let mut mean = Vector6::zeros();
@@ -371,7 +362,8 @@ impl UkfRefiner {
 
     /// Initialize UKF state for a satellite from an orbital state estimate.
     pub fn initialize(&mut self, satellite_id: String, state: &OrbitalState) {
-        self.states.insert(satellite_id, UkfState::from_orbital_state(state));
+        self.states
+            .insert(satellite_id, UkfState::from_orbital_state(state));
     }
 
     /// Process a Doppler observation to refine the orbital state.
@@ -382,12 +374,12 @@ impl UkfRefiner {
         _predicted_doppler: Frequency,
         time: DateTime<Utc>,
     ) -> Result<()> {
-        let ukf_state = self
-            .states
-            .get_mut(satellite_id)
-            .ok_or_else(|| ground_core::GroundStationError::Tracking(
-                format!("Satellite {} not initialised in UKF", satellite_id),
-            ))?;
+        let ukf_state = self.states.get_mut(satellite_id).ok_or_else(|| {
+            ground_core::GroundStationError::Tracking(format!(
+                "Satellite {} not initialised in UKF",
+                satellite_id
+            ))
+        })?;
 
         // Predict to observation time using J2-perturbed RK4
         let dt = (time - ukf_state.time).num_milliseconds() as f64 / 1_000.0;
@@ -397,12 +389,8 @@ impl UkfRefiner {
         }
 
         // Compute station ECI at observation time (GMST-rotated)
-        let station_eci = station_to_eci(
-            self.station_lat,
-            self.station_lon,
-            self.station_alt,
-            time,
-        );
+        let station_eci =
+            station_to_eci(self.station_lat, self.station_lon, self.station_alt, time);
 
         // Update with observed Doppler using full sigma-point measurement model
         ukf_state.update_with_doppler_measurement(
@@ -422,12 +410,12 @@ impl UkfRefiner {
     /// Compute the predicted Doppler shift for a satellite at the current time.
     pub fn predict_doppler(&self, satellite_id: &str, time: DateTime<Utc>) -> Option<f64> {
         let ukf_state = self.states.get(satellite_id)?;
-        let station_eci = station_to_eci(
-            self.station_lat,
-            self.station_lon,
-            self.station_alt,
-            time,
-        );
-        Some(doppler_measurement(&ukf_state.state, &station_eci, self.carrier_hz))
+        let station_eci =
+            station_to_eci(self.station_lat, self.station_lon, self.station_alt, time);
+        Some(doppler_measurement(
+            &ukf_state.state,
+            &station_eci,
+            self.carrier_hz,
+        ))
     }
 }

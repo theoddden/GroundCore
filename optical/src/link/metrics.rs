@@ -80,11 +80,9 @@ impl<T> BoundedHistory<T> {
         if self.history.is_empty() {
             return 0.0;
         }
-        
-        let sum: f64 = self.history.iter()
-            .map(|s| s.as_ref().bit_error_rate)
-            .sum();
-        
+
+        let sum: f64 = self.history.iter().map(|s| s.as_ref().bit_error_rate).sum();
+
         sum / self.history.len() as f64
     }
 
@@ -97,17 +95,21 @@ impl<T> BoundedHistory<T> {
         }
 
         let recent = self.history.iter().rev().take(5).collect::<Vec<_>>();
-        let recent_avg: f64 = recent.iter()
+        let recent_avg: f64 = recent
+            .iter()
             .map(|s| s.as_ref().signal_quality_db)
-            .sum::<f64>() / recent.len() as f64;
+            .sum::<f64>()
+            / recent.len() as f64;
 
         let older = self.history.iter().take(5).collect::<Vec<_>>();
-        let older_avg: f64 = older.iter()
+        let older_avg: f64 = older
+            .iter()
             .map(|s| s.as_ref().signal_quality_db)
-            .sum::<f64>() / older.len() as f64;
+            .sum::<f64>()
+            / older.len() as f64;
 
         let delta = recent_avg - older_avg;
-        
+
         if delta > 1.0 {
             MetricTrend::Improving
         } else if delta < -1.0 {

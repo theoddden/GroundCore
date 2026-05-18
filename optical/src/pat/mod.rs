@@ -4,19 +4,19 @@
 // independently arrive at the same acquisition state at the same time without
 // communicating.
 
-pub mod scheduler;
-pub mod coordinator;
 pub mod clock;
+pub mod coordinator;
+pub mod recovery;
+pub mod scheduler;
 pub mod search;
 pub mod tracking;
-pub mod recovery;
 
-pub use scheduler::{AcquisitionScheduler, AcquisitionQueue};
-pub use coordinator::{PatCoordinator, AcquisitionPlan, PatPhase, AcquisitionResult};
-pub use clock::{PrecisionClock, PrecisionTimestamp, ClockConfidence, TimeReference, DriftRate};
-pub use search::{SearchPattern, SearchState, SpiralPattern, RasterPattern, LissajousPattern};
+pub use clock::{ClockConfidence, DriftRate, PrecisionClock, PrecisionTimestamp, TimeReference};
+pub use coordinator::{AcquisitionPlan, AcquisitionResult, PatCoordinator, PatPhase};
+pub use recovery::{FallbackAction, LossReason, RecoveryStrategy};
+pub use scheduler::{AcquisitionQueue, AcquisitionScheduler};
+pub use search::{LissajousPattern, RasterPattern, SearchPattern, SearchState, SpiralPattern};
 pub use tracking::{TrackingHandle, TrackingMetrics, TrackingQuality};
-pub use recovery::{RecoveryStrategy, FallbackAction, LossReason};
 
 use uuid::Uuid;
 

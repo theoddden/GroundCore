@@ -2,15 +2,15 @@
 //
 // The SDA OCT Standard is well-defined and the implementation tracks the spec closely.
 
-pub mod standard;
 pub mod config;
-pub mod negotiation;
 pub mod framing;
+pub mod negotiation;
+pub mod standard;
 
-pub use standard::{OctStandardVersion, OctStandard};
 pub use config::{
-    OctConfiguration, LinkType, Modulation, FecConfiguration,
-    FecCode, ArqConfiguration, TrackingTone, AtmosphericModel,
+    ArqConfiguration, AtmosphericModel, FecCode, FecConfiguration, LinkType, Modulation,
+    OctConfiguration, TrackingTone,
 };
-pub use negotiation::{negotiate_version, NegotiationError};
 pub use framing::{EthernetFrame, FramingError};
+pub use negotiation::{NegotiationError, negotiate_version};
+pub use standard::{OctStandard, OctStandardVersion};

@@ -12,7 +12,7 @@ impl EventTime {
     pub fn new(time: DateTime<Utc>) -> Self {
         Self(time)
     }
-    
+
     pub fn as_datetime(&self) -> DateTime<Utc> {
         self.0
     }
@@ -33,11 +33,11 @@ impl ReceptionTime {
     pub fn new(time: DateTime<Utc>) -> Self {
         Self(time)
     }
-    
+
     pub fn as_datetime(&self) -> DateTime<Utc> {
         self.0
     }
-    
+
     pub fn now() -> Self {
         Self(Utc::now())
     }
@@ -69,7 +69,7 @@ impl<T> BiTemporal<T> {
             reception_time,
         }
     }
-    
+
     /// Create a bi-temporal value with current reception time
     pub fn with_current_reception(value: T, event_time: EventTime) -> Self {
         Self {
@@ -78,7 +78,7 @@ impl<T> BiTemporal<T> {
             reception_time: ReceptionTime::now(),
         }
     }
-    
+
     /// Map over the value while preserving timestamps
     pub fn map<U, F>(self, f: F) -> BiTemporal<U>
     where
@@ -90,7 +90,7 @@ impl<T> BiTemporal<T> {
             reception_time: self.reception_time,
         }
     }
-    
+
     /// Get the time difference between event and reception
     pub fn propagation_delay(&self) -> chrono::Duration {
         self.reception_time.as_datetime() - self.event_time.as_datetime()
@@ -100,26 +100,26 @@ impl<T> BiTemporal<T> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_bitemporal_creation() {
         let event = EventTime::new(Utc::now() - chrono::Duration::seconds(1));
         let reception = ReceptionTime::now();
-        
+
         let bt: BiTemporal<i32> = BiTemporal::new(42, event, reception);
-        
+
         assert_eq!(bt.value, 42);
         assert!(bt.propagation_delay().num_seconds() > 0);
     }
-    
+
     #[test]
     fn test_bitemporal_map() {
         let event = EventTime::new(Utc::now() - chrono::Duration::seconds(1));
         let reception = ReceptionTime::now();
-        
+
         let bt1: BiTemporal<i32> = BiTemporal::new(42, event, reception);
         let bt2: BiTemporal<String> = bt1.map(|x| x.to_string());
-        
+
         assert_eq!(bt2.value, "42");
         assert_eq!(bt2.event_time, event);
         assert_eq!(bt2.reception_time, reception);

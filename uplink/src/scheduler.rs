@@ -2,7 +2,7 @@
 
 use crate::command::{Command, CommandId, CommandPriority};
 use chrono::{DateTime, Duration, Utc};
-use ground_core::{PassId, Result, GroundStationError};
+use ground_core::{GroundStationError, PassId, Result};
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, VecDeque};
 use tokio::sync::RwLock;
@@ -117,7 +117,8 @@ impl TransmissionScheduler {
     pub async fn active_windows(&self) -> Vec<TransmissionWindow> {
         let windows = self.windows.read().await;
         let now = Utc::now();
-        windows.values()
+        windows
+            .values()
             .filter(|w| w.contains(now))
             .cloned()
             .collect()
@@ -126,28 +127,31 @@ impl TransmissionScheduler {
     /// Schedule a command for transmission
     pub async fn schedule(&self, command: Command) -> Result<ScheduledTransmission> {
         let now = Utc::now();
-        
+
         // Find suitable transmission window
         let windows = self.windows.read().await;
-        let window = windows.values()
+        let window = windows
+            .values()
             .find(|w| w.contains(now) || w.time_until_start().is_some())
-            .ok_or_else(|| GroundStationError::Validation("No suitable transmission window".to_string()))?;
-        
+            .ok_or_else(|| {
+                GroundStationError::Validation("No suitable transmission window".to_string())
+            })?;
+
         // Calculate transmission time
         let transmission_time = if window.contains(now) {
             now
         } else {
             window.start
         };
-        
+
         // Estimate duration (based on command size and max rate)
         let estimated_duration = Duration::milliseconds(
-            ((command.payload.len() as f64 / window.max_rate) * 1000.0) as i64
+            ((command.payload.len() as f64 / window.max_rate) * 1000.0) as i64,
         );
-        
+
         // Doppler compensation placeholder (would use tracking predictions)
         let doppler_compensation = 0.0;
-        
+
         let scheduled = ScheduledTransmission {
             command_id: command.id,
             window: window.clone(),
@@ -155,7 +159,7 @@ impl TransmissionScheduler {
             estimated_duration,
             doppler_compensation,
         };
-        
+
         // Check for conflicts
         if self.has_conflict(&scheduled).await? {
             match self.conflict_strategy {
@@ -163,64 +167,72 @@ impl TransmissionScheduler {
                     // Check if this command has higher priority than conflicting ones
                     if !self.can_override(&command).await {
                         return Err(GroundStationError::Validation(
-                            "Transmission conflict - lower priority".to_string()
+                            "Transmission conflict - lower priority".to_string(),
                         ));
                     }
                 }
                 ConflictStrategy::Fcfs => {
                     return Err(GroundStationError::Validation(
-                        "Transmission conflict - first come first served".to_string()
+                        "Transmission conflict - first come first served".to_string(),
                     ));
                 }
                 ConflictStrategy::Reject => {
                     return Err(GroundStationError::Validation(
-                        "Transmission conflict - rejected".to_string()
+                        "Transmission conflict - rejected".to_string(),
                     ));
                 }
             }
         }
-        
+
         // Store scheduled transmission
         let mut scheduled_map = self.scheduled.write().await;
         scheduled_map.insert(command.id, scheduled.clone());
-        
+
         Ok(scheduled)
     }
 
     /// Check if transmission conflicts with existing schedule
     async fn has_conflict(&self, scheduled: &ScheduledTransmission) -> Result<bool> {
         let scheduled_map = self.scheduled.read().await;
-        
+
         for existing in scheduled_map.values() {
             // Check time overlap
-            let overlap = scheduled.transmission_time < existing.transmission_time + existing.estimated_duration
-                && existing.transmission_time < scheduled.transmission_time + scheduled.estimated_duration;
-            
+            let overlap = scheduled.transmission_time
+                < existing.transmission_time + existing.estimated_duration
+                && existing.transmission_time
+                    < scheduled.transmission_time + scheduled.estimated_duration;
+
             if overlap {
                 return Ok(true);
             }
         }
-        
+
         Ok(false)
     }
 
     /// Check if command can override existing schedule (higher priority)
     async fn can_override(&self, command: &Command) -> bool {
         let scheduled_map = self.scheduled.read().await;
-        
+
         if let Some(existing) = scheduled_map.get(&command.id) {
             return false; // Can't override self
         }
-        
+
         // Check if all conflicting commands have lower priority
         for existing in scheduled_map.values() {
-            if let Some(existing_cmd) = self.pending.read().await.iter().find(|c| c.id == existing.command_id) {
+            if let Some(existing_cmd) = self
+                .pending
+                .read()
+                .await
+                .iter()
+                .find(|c| c.id == existing.command_id)
+            {
                 if existing_cmd.priority >= command.priority {
                     return false;
                 }
             }
         }
-        
+
         true
     }
 

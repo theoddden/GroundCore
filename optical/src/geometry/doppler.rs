@@ -3,8 +3,8 @@
 // Doppler shift matters for optical links because the wavelength is so small.
 // A relative velocity of 7 km/s produces a significant frequency shift.
 
-use serde::{Deserialize, Serialize};
 use crate::geometry::pointing::{SatellitePosition, compute_range_rate};
+use serde::{Deserialize, Serialize};
 
 /// Doppler prediction
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
@@ -22,7 +22,7 @@ impl DopplerPrediction {
         let _c_km_s = 299_792.458; // Speed of light in km/s
         let wavelength_km = wavelength_nm * 1e-12; // Convert nm to km
         let doppler_shift_hz = relative_velocity_km_s / wavelength_km;
-        
+
         Self {
             doppler_shift_hz,
             wavelength_nm,

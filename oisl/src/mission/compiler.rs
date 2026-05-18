@@ -1,23 +1,23 @@
 // Intent Compiler - translates declarative intent to imperative tasking
 
-use super::{
-    MissionIntent, TaskingPlan, ObjectiveType, PlanExplanation,
-    CompilationError, ValidationWarning, SatelliteTask, TaskType,
-    LinkReservation, IntentConstraints, ServiceLevelAgreement,
-};
+use crate::mission::state_machine::ConstellationState;
+use crate::topology::{SpatiotemporalRouter, TopologyForecast};
 use crate::{
-    PlanId, TaskId, SatelliteId, AssetId, Bytes, TimeWindow,
-    ConfidenceScore, Priority, TenantId, GeoRegion, SensorType, BiTemporal,
-    BandwidthAllocation, DataRate,
+    AssetId, BandwidthAllocation, BiTemporal, Bytes, ConfidenceScore, DataRate, GeoRegion, PlanId,
+    Priority, SatelliteId, SensorType, TaskId, TenantId, TimeWindow,
 };
 use bitemporal::timestamp::{EventTime, ReceptionTime};
-use crate::topology::{TopologyForecast, SpatiotemporalRouter};
-use crate::mission::state_machine::ConstellationState;
-use chrono::{DateTime, Utc, Duration};
+use chrono::{DateTime, Duration, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Mutex;
 use uuid::Uuid;
+
+use super::{
+    CompilationError, IntentConstraints, LinkReservation, MissionIntent, ObjectiveType,
+    PlanExplanation, SatelliteTask, ServiceLevelAgreement, TaskType, TaskingPlan,
+    ValidationWarning,
+};
 
 /// Intent compiler - compiles declarative intent to imperative tasking
 pub trait IntentCompiler: Send + Sync {
@@ -45,7 +45,9 @@ pub struct DefaultIntentCompiler {
 
 impl DefaultIntentCompiler {
     pub fn new(router: SpatiotemporalRouter) -> Self {
-        Self { router: Mutex::new(router) }
+        Self {
+            router: Mutex::new(router),
+        }
     }
 }
 
@@ -59,58 +61,66 @@ impl IntentCompiler for DefaultIntentCompiler {
         let plan_id = PlanId::new_v4();
         let now = Utc::now();
         let compiled_at = BiTemporal::new(now, EventTime::new(now), ReceptionTime::new(now));
-        
+
         // Determine valid until based on intent deadline or default horizon
-        let valid_until = intent.sla.deadline
+        let valid_until = intent
+            .sla
+            .deadline
             .unwrap_or_else(|| Utc::now() + Duration::hours(24));
 
         // Compile based on objective type
         let (satellite_tasks, link_reservations) = match &intent.objective {
-            ObjectiveType::DataRelay { source, destination, volume } => {
-                self.compile_data_relay(
-                    source,
-                    destination,
-                    *volume,
-                    constellation,
-                    topology,
-                    &intent.constraints,
-                    &intent.sla,
-                )?
-            }
-            ObjectiveType::Observation { target, sensor, revisit_rate } => {
-                self.compile_observation(
-                    target,
-                    sensor,
-                    *revisit_rate,
-                    constellation,
-                    topology,
-                    &intent.constraints,
-                    &intent.sla,
-                    &intent.submitted_by,
-                )?
-            }
-            ObjectiveType::Custody { target, persistence } => {
-                self.compile_custody(
-                    target,
-                    *persistence,
-                    constellation,
-                    topology,
-                    &intent.constraints,
-                    &intent.sla,
-                    &intent.submitted_by,
-                )?
-            }
-            ObjectiveType::Downlink { satellite, ground_window } => {
-                self.compile_downlink(
-                    satellite,
-                    ground_window,
-                    constellation,
-                    topology,
-                    &intent.constraints,
-                    &intent.sla,
-                    &intent.submitted_by,
-                )?
-            }
+            ObjectiveType::DataRelay {
+                source,
+                destination,
+                volume,
+            } => self.compile_data_relay(
+                source,
+                destination,
+                *volume,
+                constellation,
+                topology,
+                &intent.constraints,
+                &intent.sla,
+            )?,
+            ObjectiveType::Observation {
+                target,
+                sensor,
+                revisit_rate,
+            } => self.compile_observation(
+                target,
+                sensor,
+                *revisit_rate,
+                constellation,
+                topology,
+                &intent.constraints,
+                &intent.sla,
+                &intent.submitted_by,
+            )?,
+            ObjectiveType::Custody {
+                target,
+                persistence,
+            } => self.compile_custody(
+                target,
+                *persistence,
+                constellation,
+                topology,
+                &intent.constraints,
+                &intent.sla,
+                &intent.submitted_by,
+            )?,
+            ObjectiveType::Downlink {
+                satellite,
+                ground_window,
+            } => self.compile_downlink(
+                satellite,
+                ground_window,
+                constellation,
+                topology,
+                &intent.constraints,
+                &intent.sla,
+                &intent.submitted_by,
+            )?,
         };
 
         // Calculate confidence based on topology forecast quality
@@ -146,7 +156,8 @@ impl IntentCompiler for DefaultIntentCompiler {
         }
 
         // Check for resource contention
-        let terminal_usage: HashMap<_, Vec<_>> = plan.link_reservations
+        let terminal_usage: HashMap<_, Vec<_>> = plan
+            .link_reservations
             .iter()
             .flat_map(|r| vec![&r.terminal_a, &r.terminal_b])
             .fold(HashMap::new(), |mut acc, term| {
@@ -158,7 +169,10 @@ impl IntentCompiler for DefaultIntentCompiler {
             if usages.len() > 1 {
                 warnings.push(ValidationWarning {
                     warning_type: crate::mission::ValidationWarningType::ResourceContention,
-                    message: format!("Terminal {:?} has multiple concurrent reservations", terminal),
+                    message: format!(
+                        "Terminal {:?} has multiple concurrent reservations",
+                        terminal
+                    ),
                     severity: crate::mission::ValidationSeverity::Warning,
                 });
             }
@@ -178,7 +192,8 @@ impl IntentCompiler for DefaultIntentCompiler {
 
     fn explain(&self, plan: &TaskingPlan) -> PlanExplanation {
         // Generate explanation of routing decisions
-        let routing_decisions = plan.satellite_tasks
+        let routing_decisions = plan
+            .satellite_tasks
             .iter()
             .filter_map(|task| {
                 if let TaskType::OpticalLinkEstablishment { peer_terminal, .. } = &task.task_type {
@@ -187,7 +202,8 @@ impl IntentCompiler for DefaultIntentCompiler {
                         destination: "peer".to_string(), // Would be resolved from peer_terminal
                         selected_route: vec![],
                         alternative_routes: vec![],
-                        rationale: "Selected based on optimal geometry and availability".to_string(),
+                        rationale: "Selected based on optimal geometry and availability"
+                            .to_string(),
                     })
                 } else {
                     None
@@ -222,18 +238,24 @@ impl DefaultIntentCompiler {
         sla: &ServiceLevelAgreement,
     ) -> Result<(Vec<SatelliteTask>, Vec<LinkReservation>), CompilationError> {
         // Resolve source and destination to satellites
-        let source_sat = constellation.resolve_asset_to_satellite(source)
+        let source_sat = constellation
+            .resolve_asset_to_satellite(source)
             .ok_or_else(|| CompilationError::InvalidIntent {
                 reason: format!("Source asset {} not found in constellation", source),
             })?;
-        
-        let dest_sat = constellation.resolve_asset_to_satellite(destination)
+
+        let dest_sat = constellation
+            .resolve_asset_to_satellite(destination)
             .ok_or_else(|| CompilationError::InvalidIntent {
-                reason: format!("Destination asset {} not found in constellation", destination),
+                reason: format!(
+                    "Destination asset {} not found in constellation",
+                    destination
+                ),
             })?;
 
         // Compute route through constellation
-        let route = self.router
+        let route = self
+            .router
             .lock()
             .map_err(|_| CompilationError::Internal("Router lock poisoned".into()))?
             .compute_route(&source_sat, &dest_sat, topology, constraints, sla)
@@ -248,7 +270,7 @@ impl DefaultIntentCompiler {
 
         for (i, hop) in route.hops.iter().enumerate() {
             let task_id = TaskId::new_v4();
-            
+
             // Create optical link establishment task
             satellite_tasks.push(SatelliteTask {
                 task_id,
@@ -258,11 +280,17 @@ impl DefaultIntentCompiler {
                         .satellites
                         .get(&hop.edge.endpoints.1)
                         .and_then(|s| s.optical_terminals.first().copied())
-                        .unwrap_or_else(|| Uuid::new_v5(&Uuid::NAMESPACE_DNS, hop.edge.endpoints.1.as_bytes())),
+                        .unwrap_or_else(|| {
+                            Uuid::new_v5(&Uuid::NAMESPACE_DNS, hop.edge.endpoints.1.as_bytes())
+                        }),
                     optical_config: crate::physical::OctConfiguration::default_s2s(),
                 },
                 scheduled_window: hop.use_window.clone(),
-                dependencies: if i > 0 { vec![satellite_tasks[i-1].task_id] } else { vec![] },
+                dependencies: if i > 0 {
+                    vec![satellite_tasks[i - 1].task_id]
+                } else {
+                    vec![]
+                },
                 priority: Priority::Medium,
                 tenant_id: source.clone(),
             });
@@ -274,12 +302,16 @@ impl DefaultIntentCompiler {
                 .satellites
                 .get(&hop.edge.endpoints.0)
                 .and_then(|s| s.optical_terminals.first().copied())
-                .unwrap_or_else(|| Uuid::new_v5(&Uuid::NAMESPACE_DNS, hop.edge.endpoints.0.as_bytes()));
+                .unwrap_or_else(|| {
+                    Uuid::new_v5(&Uuid::NAMESPACE_DNS, hop.edge.endpoints.0.as_bytes())
+                });
             let term_b = constellation
                 .satellites
                 .get(&hop.edge.endpoints.1)
                 .and_then(|s| s.optical_terminals.first().copied())
-                .unwrap_or_else(|| Uuid::new_v5(&Uuid::NAMESPACE_DNS, hop.edge.endpoints.1.as_bytes()));
+                .unwrap_or_else(|| {
+                    Uuid::new_v5(&Uuid::NAMESPACE_DNS, hop.edge.endpoints.1.as_bytes())
+                });
 
             link_reservations.push(LinkReservation {
                 reservation_id: Uuid::new_v4(),
@@ -328,10 +360,9 @@ impl DefaultIntentCompiler {
         }
 
         for window_idx in 0..num_windows {
-            let window_start = topology.horizon_start
-                + Duration::seconds(window_idx as i64 * revisit_secs);
-            let window_end = window_start
-                + Duration::seconds(revisit_secs.min(600)); // cap at 10-min passes
+            let window_start =
+                topology.horizon_start + Duration::seconds(window_idx as i64 * revisit_secs);
+            let window_end = window_start + Duration::seconds(revisit_secs.min(600)); // cap at 10-min passes
             let obs_window = TimeWindow::new(window_start, window_end);
 
             // Round-robin across candidate satellites for revisit coverage
@@ -356,16 +387,11 @@ impl DefaultIntentCompiler {
             let downlink_end = downlink_start + Duration::seconds(300); // 5-min downlink
             let downlink_window = TimeWindow::new(downlink_start, downlink_end);
 
-            if let Some(gs_id) = constellation.find_optimal_ground_station(
-                &sat_id,
-                &downlink_window,
-                constraints,
-            ) {
+            if let Some(gs_id) =
+                constellation.find_optimal_ground_station(&sat_id, &downlink_window, constraints)
+            {
                 let dl_task_id = TaskId::new_v4();
-                let gs_terminal = Uuid::new_v5(
-                    &Uuid::NAMESPACE_DNS,
-                    gs_id.as_bytes(),
-                );
+                let gs_terminal = Uuid::new_v5(&Uuid::NAMESPACE_DNS, gs_id.as_bytes());
                 let sat_terminal = constellation
                     .satellites
                     .get(&sat_id)
@@ -412,9 +438,13 @@ impl DefaultIntentCompiler {
         tenant_id: &TenantId,
     ) -> Result<(Vec<SatelliteTask>, Vec<LinkReservation>), CompilationError> {
         // Resolve target asset to a satellite (the asset being "kept in custody")
-        let target_sat = constellation.resolve_asset_to_satellite(target)
+        let target_sat = constellation
+            .resolve_asset_to_satellite(target)
             .ok_or_else(|| CompilationError::InvalidIntent {
-                reason: format!("Custody target asset '{}' not found in constellation", target),
+                reason: format!(
+                    "Custody target asset '{}' not found in constellation",
+                    target
+                ),
             })?;
 
         let mut satellite_tasks = Vec::new();
@@ -569,7 +599,9 @@ impl DefaultIntentCompiler {
         _tasks: &[SatelliteTask],
     ) -> ConfidenceScore {
         // Confidence based on forecast horizon and quality
-        let horizon = topology.horizon_end.signed_duration_since(topology.horizon_start);
+        let horizon = topology
+            .horizon_end
+            .signed_duration_since(topology.horizon_start);
         let base_confidence = if horizon > Duration::hours(12) {
             0.7
         } else if horizon > Duration::hours(6) {

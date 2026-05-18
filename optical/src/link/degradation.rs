@@ -4,9 +4,9 @@
 // failing entirely. Detecting degradation early gives the system time to initiate
 // a handoff to a backup link before the primary fails.
 
-use crate::link::state_machine::{DegradationReason, DegradationAction, LinkQuality};
 use crate::link::metrics::{MetricSnapshot, MetricTrend};
-use chrono::{DateTime, Utc, Duration};
+use crate::link::state_machine::{DegradationAction, DegradationReason, LinkQuality};
+use chrono::{DateTime, Duration, Utc};
 use serde::{Deserialize, Serialize};
 
 /// Degradation detector
@@ -27,11 +27,7 @@ impl DegradationDetector {
         }
     }
 
-    pub fn with_thresholds(
-        ber: f64,
-        snr_db: f64,
-        pointing_urad: f64,
-    ) -> Self {
+    pub fn with_thresholds(ber: f64, snr_db: f64, pointing_urad: f64) -> Self {
         Self {
             threshold_ber: ber,
             threshold_snr_db: snr_db,
@@ -80,7 +76,8 @@ impl DegradationDetector {
                 MetricTrend::Stable => {
                     return Some((
                         DegradationReason::UnexplainedSnrDrop {
-                            magnitude_db: self.threshold_snr_db - current_quality.signal_to_noise_db,
+                            magnitude_db: self.threshold_snr_db
+                                - current_quality.signal_to_noise_db,
                         },
                         DegradationAction::Monitor,
                     ));
@@ -89,7 +86,8 @@ impl DegradationDetector {
                     // SNR is improving but still below threshold - monitor
                     return Some((
                         DegradationReason::UnexplainedSnrDrop {
-                            magnitude_db: self.threshold_snr_db - current_quality.signal_to_noise_db,
+                            magnitude_db: self.threshold_snr_db
+                                - current_quality.signal_to_noise_db,
                         },
                         DegradationAction::Monitor,
                     ));

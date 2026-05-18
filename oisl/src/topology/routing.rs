@@ -4,17 +4,17 @@
 // graph is harder - you're routing through time as well as space. A path might
 // be (A → B at T=0) → (B → C at T=120s) where B and C aren't visible at T=0.
 
-use caching::LruCache;
-use crate::{
-    NodeId, LinkId, TerminalId, DataRate, TimeWindow, ConfidenceScore,
-    PotentialEdge, BandwidthAllocation, GeometryScore,
-};
 use crate::mission::{IntentConstraints, ServiceLevelAgreement};
 use crate::topology::TopologyForecast;
-use chrono::{DateTime, Utc, Duration};
+use crate::{
+    BandwidthAllocation, ConfidenceScore, DataRate, GeometryScore, LinkId, NodeId, PotentialEdge,
+    TerminalId, TimeWindow,
+};
+use caching::LruCache;
+use chrono::{DateTime, Duration, Utc};
 use serde::{Deserialize, Serialize};
-use std::collections::{HashMap, HashSet, BinaryHeap};
 use std::cmp::Ordering;
+use std::collections::{BinaryHeap, HashMap, HashSet};
 
 /// Cache key for spatiotemporal routes.
 /// Time is bucketed into 5-minute windows so routes valid within the same
@@ -62,10 +62,10 @@ impl SpatiotemporalRouter {
         }
         // Use modified Dijkstra for spatiotemporal graph
         let start_time = topology.horizon_start;
-        
+
         let mut visited: HashSet<(NodeId, DateTime<Utc>)> = HashSet::new();
         let mut heap = BinaryHeap::new();
-        
+
         // Initial state
         heap.push(RouteState {
             cost: 0.0,
@@ -79,7 +79,7 @@ impl SpatiotemporalRouter {
 
         while let Some(state) = heap.pop() {
             let state_key = (state.current_node.clone(), state.current_time);
-            
+
             if visited.contains(&state_key) {
                 continue;
             }
@@ -88,7 +88,7 @@ impl SpatiotemporalRouter {
             // Check if we reached destination
             if state.current_node == *destination {
                 let route = self.build_route(state, source, destination)?;
-                
+
                 // Validate against constraints
                 if self.satisfies_constraints(&route, constraints) {
                     best_route = Some(route);
@@ -98,7 +98,7 @@ impl SpatiotemporalRouter {
 
             // Explore neighbors in time-varying graph
             let snapshot = topology.query_at(state.current_time);
-            
+
             for edge in &snapshot.potential_edges {
                 if edge.endpoints.0 != state.current_node {
                     continue;
@@ -110,15 +110,17 @@ impl SpatiotemporalRouter {
                 }
 
                 // Calculate PAT overhead
-                let pat_overhead = self.cost_model.pat_overhead_weight * 
-                    edge.required_pointing_accuracy_rad;
+                let pat_overhead =
+                    self.cost_model.pat_overhead_weight * edge.required_pointing_accuracy_rad;
 
                 // Calculate hop cost
                 let hop_cost = self.calculate_hop_cost(edge, state.current_time, &state.cost_model);
 
                 let new_cost = state.cost + hop_cost;
                 let new_time = state.current_time + Duration::seconds(30); // Assume 30s per hop
-                let new_confidence = ConfidenceScore::new(state.confidence.0 * edge.geometric_quality.overall_quality());
+                let new_confidence = ConfidenceScore::new(
+                    state.confidence.0 * edge.geometric_quality.overall_quality(),
+                );
 
                 let mut new_hops = state.hops.clone();
                 new_hops.push(RoutedHop {
@@ -172,8 +174,10 @@ impl SpatiotemporalRouter {
         cost_model: &CostModel,
     ) -> f64 {
         let latency_cost = cost_model.latency_weight * 0.1; // Simplified
-        let capacity_cost = cost_model.capacity_weight * (1.0 / (edge.expected_capacity.0 as f64 + 1.0));
-        let reliability_cost = cost_model.reliability_weight * (1.0 - edge.geometric_quality.overall_quality());
+        let capacity_cost =
+            cost_model.capacity_weight * (1.0 / (edge.expected_capacity.0 as f64 + 1.0));
+        let reliability_cost =
+            cost_model.reliability_weight * (1.0 - edge.geometric_quality.overall_quality());
         let pat_cost = cost_model.pat_overhead_weight * edge.required_pointing_accuracy_rad;
 
         latency_cost + capacity_cost + reliability_cost + pat_cost
@@ -182,10 +186,12 @@ impl SpatiotemporalRouter {
     fn satisfies_constraints(&self, route: &Route, constraints: &IntentConstraints) -> bool {
         // Check latency constraint
         if let Some(max_latency) = constraints.max_latency {
-            let route_latency = route.hops.iter()
+            let route_latency = route
+                .hops
+                .iter()
                 .map(|h| h.use_window.duration())
                 .sum::<Duration>();
-            
+
             if route_latency > max_latency {
                 return false;
             }
@@ -259,7 +265,10 @@ impl Eq for RouteState {}
 
 impl Ord for RouteState {
     fn cmp(&self, other: &Self) -> Ordering {
-        other.cost.partial_cmp(&self.cost).unwrap_or(Ordering::Equal)
+        other
+            .cost
+            .partial_cmp(&self.cost)
+            .unwrap_or(Ordering::Equal)
     }
 }
 
@@ -274,10 +283,10 @@ impl PartialOrd for RouteState {
 pub enum RoutingError {
     #[error("No route found from {source} to {destination}")]
     NoRouteFound { source: NodeId, destination: NodeId },
-    
+
     #[error("Topology forecast insufficient for routing")]
     InsufficientForecast,
-    
+
     #[error("Constraints cannot be satisfied: {0}")]
     ConstraintsNotSatisfied(String),
 }

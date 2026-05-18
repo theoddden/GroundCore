@@ -1,8 +1,8 @@
 #[cfg(test)]
 mod proptests {
+    use chrono::{DateTime, Duration, Utc};
+    use ground_station_oisl::{ConfidenceScore, Priority, TimeWindow};
     use proptest::prelude::*;
-    use ground_station_oisl::{TimeWindow, ConfidenceScore, Priority};
-    use chrono::{DateTime, Utc, Duration};
 
     proptest! {
         #[test]
@@ -15,12 +15,12 @@ mod proptests {
         fn test_confidence_score_properties(a in 0.0f64..1.0f64, b in 0.0f64..1.0f64) {
             let score_a = ConfidenceScore::new(a);
             let score_b = ConfidenceScore::new(b);
-            
+
             // High threshold
             if score_a.0 >= 0.8 {
                 assert!(score_a.is_high());
             }
-            
+
             // Low threshold
             if score_b.0 < 0.5 {
                 assert!(score_b.is_low());
@@ -36,15 +36,15 @@ mod proptests {
                 Priority::Low,
                 Priority::Background,
             ];
-            
+
             if (a as usize) < priorities.len() && (b as usize) < priorities.len() {
                 let prio_a = priorities[a as usize];
                 let prio_b = priorities[b as usize];
-                
+
                 // Reflexivity
                 assert!(prio_a >= prio_a);
                 assert!(prio_a <= prio_a);
-                
+
                 // Antisymmetry
                 if prio_a <= prio_b && prio_b <= prio_a {
                     assert_eq!(prio_a, prio_b);
@@ -57,24 +57,24 @@ mod proptests {
             let start = Utc::now() + Duration::seconds(start_offset);
             let end = start + Duration::seconds(duration);
             let window = TimeWindow::new(start, end);
-            
+
             // Duration should match
             assert_eq!(window.duration(), Duration::seconds(duration));
-            
+
             // Start should be contained
             assert!(window.contains(start));
-            
+
             // End should be contained
             assert!(window.contains(end));
-            
+
             // Midpoint should be contained
             let midpoint = start + Duration::seconds(duration / 2);
             assert!(window.contains(midpoint));
-            
+
             // Time before start should not be contained
             let before = start - Duration::seconds(1);
             assert!(!window.contains(before));
-            
+
             // Time after end should not be contained
             let after = end + Duration::seconds(1);
             assert!(!window.contains(after));
@@ -96,10 +96,10 @@ mod proptests {
                 base + Duration::seconds(start2),
                 base + Duration::seconds(start2 + duration2),
             );
-            
+
             // Overlap should be symmetric
             assert_eq!(window1.overlaps(&window2), window2.overlaps(&window1));
-            
+
             // If windows overlap, there should be a common time
             if window1.overlaps(&window2) {
                 let mid1 = window1.start + window1.duration() / 2;

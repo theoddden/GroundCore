@@ -24,16 +24,16 @@ pub enum LossReason {
 pub enum RecoveryStrategy {
     /// Retry with wider beam divergence
     RetryWithWiderBeam { new_divergence_mrad: f64 },
-    
+
     /// Retry at a later time when geometry is more favorable
     RetryAtLaterTime { retry_at: DateTime<Utc> },
-    
+
     /// Use an alternative terminal on the same satellite
     UseAlternativeTerminal { terminal_id: String },
-    
+
     /// Abort and report failure
     Abort,
-    
+
     /// Full re-acquisition with new search pattern
     FullReacquisition { new_search_pattern: String },
 }
@@ -41,7 +41,9 @@ pub enum RecoveryStrategy {
 impl RecoveryStrategy {
     pub fn for_loss_reason(reason: &LossReason) -> Self {
         match reason {
-            LossReason::PatTimeout => Self::RetryWithWiderBeam { new_divergence_mrad: 0.2 },
+            LossReason::PatTimeout => Self::RetryWithWiderBeam {
+                new_divergence_mrad: 0.2,
+            },
             LossReason::SignalDegraded => Self::FullReacquisition {
                 new_search_pattern: "raster".to_string(),
             },

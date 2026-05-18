@@ -4,12 +4,11 @@
 // Standard at the optical layer. They differ at the management interface.
 // This trait abstracts the management interface, not the optical layer.
 
-use crate::{
-    TerminalId, SerialNumber, OctConfiguration, OctStandardVersion,
-    topology::link_state::LinkPhase,
-};
-use crate::physical::vendors::Vendor;
 use crate::physical::terminal::ResetLevel;
+use crate::physical::vendors::Vendor;
+use crate::{
+    OctConfiguration, OctStandardVersion, SerialNumber, TerminalId, topology::link_state::LinkPhase,
+};
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use std::pin::Pin;
@@ -95,9 +94,15 @@ pub trait OpticalTerminal: Send + Sync {
     async fn calibrate(&mut self) -> Result<CalibrationReport, TerminalError>;
 
     // PAT
-    async fn schedule_acquisition(&mut self, schedule: AcquisitionSchedule) -> Result<(), TerminalError>;
+    async fn schedule_acquisition(
+        &mut self,
+        schedule: AcquisitionSchedule,
+    ) -> Result<(), TerminalError>;
     async fn begin_pat(&mut self) -> Result<PatHandle, TerminalError>;
-    async fn cancel_pat(&mut self, acquisition_id: crate::AcquisitionId) -> Result<(), TerminalError>;
+    async fn cancel_pat(
+        &mut self,
+        acquisition_id: crate::AcquisitionId,
+    ) -> Result<(), TerminalError>;
 
     // Operations
     async fn data_path(&self) -> Result<EthernetEndpoint, TerminalError>;

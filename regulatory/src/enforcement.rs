@@ -34,7 +34,11 @@ pub enum ViolationType {
     /// License expired
     ExpiredLicense { holder: CustomerId, band: String },
     /// Power exceeds license limit
-    PowerExceedsLimit { band: String, requested_dbm: f64, allowed_dbm: f64 },
+    PowerExceedsLimit {
+        band: String,
+        requested_dbm: f64,
+        allowed_dbm: f64,
+    },
     /// Coordination not obtained
     MissingCoordination { band: String },
     /// Transmitting outside licensed band
@@ -59,7 +63,7 @@ impl ComplianceChecker {
     pub fn new(license_store: LicenseStore) -> Self {
         Self { license_store }
     }
-    
+
     /// Check if a holder can transmit on a specific band
     pub fn check_transmit_permission<B: Band>(
         &self,
@@ -68,10 +72,10 @@ impl ComplianceChecker {
         power_dbm: f64,
     ) -> ComplianceResult {
         let mut violations = Vec::new();
-        
+
         // Check if license exists and is valid
         let license = self.license_store.get_license::<B>(holder);
-        
+
         if license.is_none() {
             violations.push(ComplianceViolation {
                 violation_type: ViolationType::MissingLicense {
@@ -82,7 +86,7 @@ impl ComplianceChecker {
             });
         } else {
             let license = license.unwrap();
-            
+
             if !license.is_valid() {
                 violations.push(ComplianceViolation {
                     violation_type: ViolationType::ExpiredLicense {
@@ -93,7 +97,7 @@ impl ComplianceChecker {
                     severity: Severity::Critical,
                 });
             }
-            
+
             if !license.power_allowed(power_dbm) {
                 violations.push(ComplianceViolation {
                     violation_type: ViolationType::PowerExceedsLimit {
@@ -109,7 +113,7 @@ impl ComplianceChecker {
                 });
             }
         }
-        
+
         // Check if frequency is within band
         if frequency < B::MIN_FREQUENCY || frequency > B::MAX_FREQUENCY {
             violations.push(ComplianceViolation {
@@ -119,23 +123,26 @@ impl ComplianceChecker {
                 },
                 description: format!(
                     "Frequency {} Hz is outside {} band ({}-{} Hz)",
-                    frequency, B::NAME, B::MIN_FREQUENCY, B::MAX_FREQUENCY
+                    frequency,
+                    B::NAME,
+                    B::MIN_FREQUENCY,
+                    B::MAX_FREQUENCY
                 ),
                 severity: Severity::Critical,
             });
         }
-        
+
         ComplianceResult {
             compliant: violations.is_empty(),
             violations,
             checked_at: Utc::now(),
         }
     }
-    
+
     /// Get compliance report for a holder across all bands
     pub fn get_holder_compliance(&self, holder: &CustomerId) -> ComplianceReport {
         let license_keys = self.license_store.get_holder_licenses(holder);
-        
+
         let mut total_licenses = 0;
         let mut valid_licenses = 0;
         let mut expired_licenses = 0;
@@ -152,7 +159,7 @@ impl ComplianceChecker {
         }
 
         let overall_compliant = total_licenses > 0 && expired_licenses == 0 && valid_licenses > 0;
-        
+
         ComplianceReport {
             holder: holder.clone(),
             total_licenses,
@@ -188,32 +195,32 @@ mod tests {
     fn test_compliance_check_success() {
         let mut store = LicenseStore::new();
         let holder: CustomerId = "test".to_string();
-        
+
         let license = License::<LBand>::new(
             holder.clone(),
             Utc::now(),
             Utc::now() + chrono::Duration::hours(24),
             30.0,
         );
-        
+
         let key = format!("{}:{}", holder, LBand::NAME);
         store.add_license(key, serde_json::to_value(&license).unwrap());
-        
+
         let checker = ComplianceChecker::new(store);
         let result = checker.check_transmit_permission::<LBand>(&holder, 1_500_000_000, 20.0);
-        
+
         assert!(result.compliant);
         assert!(result.violations.is_empty());
     }
-    
+
     #[test]
     fn test_compliance_check_missing_license() {
         let store = LicenseStore::new();
         let holder: CustomerId = "test".to_string();
-        
+
         let checker = ComplianceChecker::new(store);
         let result = checker.check_transmit_permission::<LBand>(&holder, 1_500_000_000, 20.0);
-        
+
         assert!(!result.compliant);
         assert_eq!(result.violations.len(), 1);
         assert!(matches!(

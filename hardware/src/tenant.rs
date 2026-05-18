@@ -42,7 +42,7 @@ impl ProtectedMemoryRegion {
             protection,
         }
     }
-    
+
     /// In a real implementation, this would use mprotect() or equivalent
     /// to set memory protection at the OS level
     pub fn apply_protection(&self) -> Result<()> {
@@ -73,14 +73,14 @@ impl TenantCrypto {
             key_rotation: Utc::now(),
         }
     }
-    
+
     /// In a real implementation, this would encrypt data with tenant-specific key
     pub fn encrypt(&self, data: &[u8]) -> Result<Vec<u8>> {
         // In production: use actual encryption (AES-GCM, etc.)
         tracing::debug!("Encrypting {} bytes with key {}", data.len(), self.key_id);
         Ok(data.to_vec()) // Placeholder
     }
-    
+
     /// In a real implementation, this would decrypt data with tenant-specific key
     pub fn decrypt(&self, data: &[u8]) -> Result<Vec<u8>> {
         // In production: use actual decryption
@@ -114,7 +114,7 @@ impl TenantShard {
         crypto: TenantCrypto,
     ) -> Self {
         let base_address = 0; // Would be actual address in production
-        
+
         Self {
             tenant_id,
             arena: Bump::with_capacity(arena_size),
@@ -124,27 +124,27 @@ impl TenantShard {
             created_at: Utc::now(),
         }
     }
-    
+
     /// Allocate within tenant shard
     pub fn allocate_tenant<T>(&self, value: T) -> &T {
         self.arena.alloc(value)
     }
-    
+
     /// Get tenant ID
     pub fn tenant_id(&self) -> &CustomerId {
         &self.tenant_id
     }
-    
+
     /// Get memory region
     pub fn memory_region(&self) -> &ProtectedMemoryRegion {
         &self.memory_region
     }
-    
+
     /// Get crypto context
     pub fn crypto(&self) -> &TenantCrypto {
         &self.crypto_context
     }
-    
+
     /// Reset the shard (clears all allocations)
     pub fn reset(&mut self) {
         self.arena.reset();
@@ -166,7 +166,7 @@ impl TenantShardManager {
             default_shard_size,
         }
     }
-    
+
     /// Get or create a tenant shard
     pub fn get_or_create(&mut self, tenant_id: CustomerId) -> Result<&TenantShard> {
         if !self.shards.contains_key(&tenant_id) {
@@ -179,20 +179,20 @@ impl TenantShardManager {
             );
             self.shards.insert(tenant_id.clone(), shard);
         }
-        
+
         Ok(self.shards.get(&tenant_id).unwrap())
     }
-    
+
     /// Get a tenant shard
     pub fn get(&self, tenant_id: &CustomerId) -> Option<&TenantShard> {
         self.shards.get(tenant_id)
     }
-    
+
     /// Remove a tenant shard
     pub fn remove(&mut self, tenant_id: &CustomerId) -> Option<TenantShard> {
         self.shards.remove(tenant_id)
     }
-    
+
     /// Get all tenant IDs
     pub fn tenant_ids(&self) -> Vec<CustomerId> {
         self.shards.keys().cloned().collect()

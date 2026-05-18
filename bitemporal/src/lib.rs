@@ -12,12 +12,12 @@
 //! - Regulatory compliance (Problem 5)
 //! - Incident analysis and debugging
 
-pub mod timestamp;
 pub mod log;
 pub mod provenance;
 pub mod snapshot;
+pub mod timestamp;
 
-pub use timestamp::{BiTemporal, EventTime, ReceptionTime};
 pub use log::{BitemporalLog, LogEntry, LogEntryType};
 pub use provenance::{ProvenanceChain, ProvenanceVerifier};
 pub use snapshot::{LogSnapshot, SnapshotManager};
+pub use timestamp::{BiTemporal, EventTime, ReceptionTime};

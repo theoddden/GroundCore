@@ -8,15 +8,15 @@
 //! - Confirmation tracking with ACK/NACK and retry logic
 
 pub mod command;
+pub mod confirmation;
 pub mod crypto;
 pub mod queue;
 pub mod scheduler;
 pub mod transmitter;
-pub mod confirmation;
 
-pub use command::{Command, CommandId, CommandType, CommandPriority, CommandState};
-pub use crypto::{CryptoBackend, AesGcmBackend, CryptoError};
+pub use command::{Command, CommandId, CommandPriority, CommandState, CommandType};
+pub use confirmation::{CommandOutcome, ConfirmationTracker};
+pub use crypto::{AesGcmBackend, CryptoBackend, CryptoError};
 pub use queue::{CommandQueue, QueuedCommand};
 pub use scheduler::{TransmissionScheduler, TransmissionWindow};
 pub use transmitter::{Transmitter, TransmitterId, TransmitterStatus};
-pub use confirmation::{ConfirmationTracker, CommandOutcome};

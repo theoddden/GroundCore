@@ -1,9 +1,9 @@
 // Optical Terminal trait - vendor abstraction over SDA OCT
 
-use crate::pat::{AcquisitionPlan, AcquisitionResult};
 use crate::oct::OctConfiguration;
-use crate::terminal::{TelemetryStream, HealthReport};
+use crate::pat::{AcquisitionPlan, AcquisitionResult};
 use crate::terminal::telemetry::ResetLevel;
+use crate::terminal::{HealthReport, TelemetryStream};
 use async_trait::async_trait;
 use chrono::DateTime;
 use thiserror::Error;
@@ -68,22 +68,22 @@ pub trait OpticalTerminal: Send + Sync {
     fn model(&self) -> &str;
     fn serial_number(&self) -> &str;
     fn capabilities(&self) -> &crate::terminal::TerminalCapability;
-    
+
     // Configuration
     async fn configure(&mut self, config: OctConfiguration) -> Result<(), TerminalError>;
     async fn calibrate(&mut self) -> Result<CalibrationReport, TerminalError>;
-    
+
     // PAT operations
     async fn schedule_acquisition(&mut self, plan: AcquisitionPlan) -> Result<(), TerminalError>;
     async fn execute_acquisition(&mut self) -> Result<AcquisitionResult, TerminalError>;
     async fn start_tracking(&mut self) -> Result<Box<dyn TrackingHandle>, TerminalError>;
-    
+
     // Operations
     async fn data_endpoint(&self) -> Result<EthernetEndpoint, TerminalError>;
     async fn telemetry_stream(&self) -> Result<Box<dyn TelemetryStream>, TerminalError>;
     async fn health(&self) -> Result<HealthReport, TerminalError>;
     async fn status(&self) -> Result<TerminalStatus, TerminalError>;
-    
+
     // Recovery
     async fn reset(&mut self, level: ResetLevel) -> Result<(), TerminalError>;
     async fn enter_safe_mode(&mut self) -> Result<(), TerminalError>;
@@ -93,7 +93,11 @@ pub trait OpticalTerminal: Send + Sync {
 #[async_trait]
 pub trait TrackingHandle: Send + Sync {
     async fn get_metrics(&self) -> Result<TrackingMetrics, TerminalError>;
-    async fn adjust_pointing(&mut self, azimuth_urad: f64, elevation_urad: f64) -> Result<(), TerminalError>;
+    async fn adjust_pointing(
+        &mut self,
+        azimuth_urad: f64,
+        elevation_urad: f64,
+    ) -> Result<(), TerminalError>;
     async fn stop(&mut self) -> Result<(), TerminalError>;
 }
 

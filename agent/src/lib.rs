@@ -13,12 +13,12 @@
 //! For routine actions the agent can act autonomously (with logging).
 //! For consequential actions it proposes and waits for operator approval.
 
-pub mod observation;
-pub mod synthesis;
-pub mod proposal;
 pub mod context;
+pub mod observation;
+pub mod proposal;
+pub mod synthesis;
 
-pub use observation::{ObservationTool, SystemState, TelemetrySnapshot};
-pub use synthesis::{AnomalySynthesizer, AnomalyAlert, WeakSignal};
-pub use proposal::{ActionProposal, ProposalType, ApprovalStatus};
 pub use context::{AgentContext, QueryResult};
+pub use observation::{ObservationTool, SystemState, TelemetrySnapshot};
+pub use proposal::{ActionProposal, ApprovalStatus, ProposalType};
+pub use synthesis::{AnomalyAlert, AnomalySynthesizer, WeakSignal};

@@ -12,13 +12,13 @@ use serde::{Deserialize, Serialize};
 pub enum HandoffStrategy {
     /// Seamless handoff with zero packet loss
     Seamless { overlap_ms: u64 },
-    
+
     /// Make-before-break handoff
     MakeBeforeBreak { overlap_ms: u64 },
-    
+
     /// Break-before-make handoff
     BreakBeforeMake { gap_ms: u64 },
-    
+
     /// No handoff - let link fail naturally
     NoHandoff,
 }
@@ -50,16 +50,16 @@ impl HandoffStrategy {
 pub enum HandoffTrigger {
     /// Trigger based on link quality degradation
     QualityThreshold { ber: f64, snr_db: f64 },
-    
+
     /// Trigger based on time to link loss
     TimeToLoss { remaining_ms: u64 },
-    
+
     /// Trigger based on scheduled maintenance
     Scheduled { at: DateTime<Utc> },
-    
+
     /// Manual trigger
     Manual { reason: String },
-    
+
     /// Trigger based on better alternative link
     BetterLinkAvailable { improvement_factor: f64 },
 }

@@ -1,10 +1,10 @@
 #[cfg(test)]
 mod tests {
     use ground_station_optical::link::state_machine::{
-        LinkPhase, LinkQuality, DegradationReason, DegradationAction,
-        RecoveryStrategy, TerminationReason, FailureCause, OpticalLink, LinkMetrics,
+        DegradationAction, DegradationReason, FailureCause, LinkMetrics, LinkPhase, LinkQuality,
+        OpticalLink, RecoveryStrategy, TerminationReason,
     };
-    use ground_station_optical::oct::{OctConfiguration, LinkType};
+    use ground_station_optical::oct::{LinkType, OctConfiguration};
     use uuid::Uuid;
 
     #[test]
@@ -41,14 +41,14 @@ mod tests {
         );
 
         assert!(!link.is_established());
-        
+
         link.transition_to_established(LinkQuality::good());
         assert!(link.is_established());
         assert!(link.is_healthy());
 
         link.transition_to_degrading(
             DegradationReason::AtmosphericTurbulence {
-                severity: "moderate".to_string()
+                severity: "moderate".to_string(),
             },
             DegradationAction::Monitor,
         );
@@ -76,10 +76,12 @@ mod tests {
     fn test_link_metrics_control_plane() {
         let mut metrics = LinkMetrics::default();
         assert!(!metrics.control_plane_traffic.is_enabled());
-        
-        metrics.enable_control_plane(ground_station_optical::link::state_machine::TrafficPriority::Critical);
+
+        metrics.enable_control_plane(
+            ground_station_optical::link::state_machine::TrafficPriority::Critical,
+        );
         assert!(metrics.control_plane_traffic.is_enabled());
-        
+
         metrics.update_control_plane_metrics(1_000_000, 5.0, 1000);
         assert_eq!(metrics.control_plane_traffic.data_rate_actual, 1_000_000);
         assert_eq!(metrics.control_plane_traffic.latency_ms, 5.0);

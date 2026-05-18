@@ -14,7 +14,8 @@ pub fn negotiate_version(
     local: &[OctStandardVersion],
     peer: &[OctStandardVersion],
 ) -> Result<OctStandardVersion, NegotiationError> {
-    local.iter()
+    local
+        .iter()
         .filter(|v| peer.contains(v))
         .max()
         .copied()
@@ -32,11 +33,8 @@ mod tests {
             OctStandardVersion::V3_1_0,
             OctStandardVersion::V4_0_0,
         ];
-        let peer = vec![
-            OctStandardVersion::V3_1_0,
-            OctStandardVersion::V3_2_0,
-        ];
-        
+        let peer = vec![OctStandardVersion::V3_1_0, OctStandardVersion::V3_2_0];
+
         let result = negotiate_version(&local, &peer).unwrap();
         assert_eq!(result, OctStandardVersion::V3_1_0);
     }
@@ -45,7 +43,7 @@ mod tests {
     fn test_negotiate_version_no_common() {
         let local = vec![OctStandardVersion::V3_0_0];
         let peer = vec![OctStandardVersion::V4_0_0];
-        
+
         let result = negotiate_version(&local, &peer);
         assert!(result.is_err());
     }
@@ -63,7 +61,7 @@ mod tests {
             OctStandardVersion::V3_2_0,
             OctStandardVersion::V4_0_0,
         ];
-        
+
         let result = negotiate_version(&local, &peer).unwrap();
         assert_eq!(result, OctStandardVersion::V4_0_0);
     }

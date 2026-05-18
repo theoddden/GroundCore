@@ -4,8 +4,10 @@
 // when a link fails at 14:32:18 UTC, the answer requires knowing both when the
 // system observed the failure and when the failure actually occurred.
 
-use crate::{LinkId, TerminalId, DataRate, BiTemporal, TrackingQuality, DegradationReason, LossCause};
-use chrono::{DateTime, Utc, Duration};
+use crate::{
+    BiTemporal, DataRate, DegradationReason, LinkId, LossCause, TerminalId, TrackingQuality,
+};
+use chrono::{DateTime, Duration, Utc};
 use serde::{Deserialize, Serialize};
 
 /// Link phase with bi-temporal timestamps
@@ -13,7 +15,9 @@ use serde::{Deserialize, Serialize};
 #[serde(tag = "phase")]
 pub enum LinkPhase {
     Idle,
-    PatScheduled { acquisition_start: DateTime<Utc> },
+    PatScheduled {
+        acquisition_start: DateTime<Utc>,
+    },
     Acquiring {
         since: BiTemporal<DateTime<Utc>>,
         peer_attestation: Option<PeerHandshake>,
@@ -139,7 +143,10 @@ impl ActiveLink {
 
     /// Check if link is active (tracking or communicating)
     pub fn is_active(&self) -> bool {
-        matches!(self.phase, LinkPhase::Tracking { .. } | LinkPhase::Communicating { .. })
+        matches!(
+            self.phase,
+            LinkPhase::Tracking { .. } | LinkPhase::Communicating { .. }
+        )
     }
 
     /// Check if link is in failure state

@@ -126,16 +126,16 @@ pub enum LogLevel {
 pub trait ObservationTool: Send + Sync {
     /// Get current system state
     fn get_system_state(&self) -> Result<SystemState>;
-    
+
     /// Get state for a specific pass
     fn get_pass_state(&self, pass_id: &PassId) -> Result<PassState>;
-    
+
     /// Get hardware state
     fn get_hardware_state(&self) -> Result<HardwareState>;
-    
+
     /// Get telemetry
     fn get_telemetry(&self) -> Result<TelemetrySnapshot>;
-    
+
     /// Query historical data
     fn query_historical(&self, query: HistoricalQuery) -> Result<Vec<SystemState>>;
 }
@@ -199,7 +199,7 @@ impl ObservationTool for DefaultObservationTool {
             recent_logs: Vec::new(),
         })
     }
-    
+
     fn get_pass_state(&self, _pass_id: &PassId) -> Result<PassState> {
         // Placeholder implementation
         Ok(PassState {
@@ -212,7 +212,7 @@ impl ObservationTool for DefaultObservationTool {
             hardware_allocated: vec!["sdr-0".to_string()],
         })
     }
-    
+
     fn get_hardware_state(&self) -> Result<HardwareState> {
         Ok(HardwareState {
             sdr_devices: vec![],
@@ -221,7 +221,7 @@ impl ObservationTool for DefaultObservationTool {
             emergency_shards_available: 3,
         })
     }
-    
+
     fn get_telemetry(&self) -> Result<TelemetrySnapshot> {
         Ok(TelemetrySnapshot {
             signal_metrics: SignalMetrics {
@@ -243,7 +243,7 @@ impl ObservationTool for DefaultObservationTool {
             },
         })
     }
-    
+
     fn query_historical(&self, _query: HistoricalQuery) -> Result<Vec<SystemState>> {
         // Placeholder implementation
         Ok(Vec::new())

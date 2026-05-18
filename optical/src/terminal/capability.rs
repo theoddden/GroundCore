@@ -43,7 +43,10 @@ impl TerminalCapability {
             max_data_rate_bps: 10_000_000_000,
             min_elevation_deg: 5.0,
             field_of_regard: FieldOfRegard::new(120.0, 120.0),
-            power_profile: PowerProfile { operating_watts: 150.0, standby_watts: 30.0 },
+            power_profile: PowerProfile {
+                operating_watts: 150.0,
+                standby_watts: 30.0,
+            },
             supported_standards: vec!["OCT 4.0.0".to_string()],
             max_range_km: 5000.0,
         }
@@ -56,7 +59,10 @@ impl TerminalCapability {
             max_data_rate_bps: 5_000_000_000,
             min_elevation_deg: 10.0,
             field_of_regard: FieldOfRegard::new(90.0, 90.0),
-            power_profile: PowerProfile { operating_watts: 120.0, standby_watts: 25.0 },
+            power_profile: PowerProfile {
+                operating_watts: 120.0,
+                standby_watts: 25.0,
+            },
             supported_standards: vec!["OCT 3.2.0".to_string()],
             max_range_km: 3000.0,
         }
@@ -69,7 +75,10 @@ impl TerminalCapability {
             max_data_rate_bps: 10_000_000_000,
             min_elevation_deg: 5.0,
             field_of_regard: FieldOfRegard::new(110.0, 110.0),
-            power_profile: PowerProfile { operating_watts: 180.0, standby_watts: 35.0 },
+            power_profile: PowerProfile {
+                operating_watts: 180.0,
+                standby_watts: 35.0,
+            },
             supported_standards: vec!["OCT 4.0.0".to_string()],
             max_range_km: 5000.0,
         }

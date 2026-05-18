@@ -74,17 +74,20 @@ impl PassProcess {
             state_handle,
         }
     }
-    
+
     /// Check if this process is still running
     pub fn is_running(&self) -> bool {
         matches!(self.process.state, ProcessState::Running)
     }
-    
+
     /// Check if this process can be safely terminated
     pub fn can_terminate(&self) -> bool {
-        matches!(self.process.state, ProcessState::Completed | ProcessState::Failed)
+        matches!(
+            self.process.state,
+            ProcessState::Completed | ProcessState::Failed
+        )
     }
-    
+
     /// Get the binary version
     pub fn version(&self) -> Version {
         self.process.binary_version
@@ -102,27 +105,27 @@ impl ProcessManager {
             processes: HashMap::new(),
         }
     }
-    
+
     /// Add a process
     pub fn add_process(&mut self, process: PassProcess) {
         self.processes.insert(process.pass_id.clone(), process);
     }
-    
+
     /// Get a process
     pub fn get_process(&self, pass_id: &PassId) -> Option<&PassProcess> {
         self.processes.get(pass_id)
     }
-    
+
     /// Remove a process
     pub fn remove_process(&mut self, pass_id: &PassId) -> Option<PassProcess> {
         self.processes.remove(pass_id)
     }
-    
+
     /// Get all processes
     pub fn all_processes(&self) -> Vec<&PassProcess> {
         self.processes.values().collect()
     }
-    
+
     /// Get processes running on a specific binary version
     pub fn processes_on_version(&self, version: Version) -> Vec<&PassProcess> {
         self.processes
@@ -130,7 +133,7 @@ impl ProcessManager {
             .filter(|p| p.process.binary_version == version)
             .collect()
     }
-    
+
     /// Get processes that can be terminated
     pub fn terminatable_processes(&self) -> Vec<&PassProcess> {
         self.processes
@@ -138,15 +141,11 @@ impl ProcessManager {
             .filter(|p| p.can_terminate())
             .collect()
     }
-    
+
     /// Get process statistics
     pub fn stats(&self) -> ProcessStats {
         let total = self.processes.len();
-        let running = self
-            .processes
-            .values()
-            .filter(|p| p.is_running())
-            .count();
+        let running = self.processes.values().filter(|p| p.is_running()).count();
         let completed = self
             .processes
             .values()
@@ -157,14 +156,14 @@ impl ProcessManager {
             .values()
             .filter(|p| matches!(p.process.state, ProcessState::Failed))
             .count();
-        
+
         // Count by version
         let mut by_version: HashMap<String, usize> = HashMap::new();
         for process in self.processes.values() {
             let version = process.process.binary_version.as_string();
             *by_version.entry(version).or_insert(0) += 1;
         }
-        
+
         ProcessStats {
             total,
             running,

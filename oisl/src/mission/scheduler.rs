@@ -1,10 +1,8 @@
 // Tasking Scheduler - places tasks on timeline considering dependencies and constraints
 
-use crate::{
-    TaskId, SatelliteId, TenantId, Priority, TimeWindow,
-};
-use crate::mission::{SatelliteTask, TaskType, LinkReservation};
-use chrono::{DateTime, Utc, Duration};
+use crate::mission::{LinkReservation, SatelliteTask, TaskType};
+use crate::{Priority, SatelliteId, TaskId, TenantId, TimeWindow};
+use chrono::{DateTime, Duration, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, VecDeque};
 
@@ -78,7 +76,9 @@ impl TaskingScheduler {
 
     fn schedule_single_task(&mut self, task: SatelliteTask) -> Result<(), ScheduleError> {
         // Check if dependencies are satisfied
-        let deps_satisfied = task.dependencies.iter()
+        let deps_satisfied = task
+            .dependencies
+            .iter()
             .all(|dep_id| self.scheduled_tasks.contains_key(dep_id));
 
         if !deps_satisfied {
@@ -102,13 +102,17 @@ impl TaskingScheduler {
             self.resolve_conflict(conflict)?;
         }
 
-        self.scheduled_tasks.insert(scheduled.task.task_id, scheduled);
+        self.scheduled_tasks
+            .insert(scheduled.task.task_id, scheduled);
         Ok(())
     }
 
-    fn calculate_task_timing(&self, task: &SatelliteTask) -> Result<(DateTime<Utc>, DateTime<Utc>), ScheduleError> {
+    fn calculate_task_timing(
+        &self,
+        task: &SatelliteTask,
+    ) -> Result<(DateTime<Utc>, DateTime<Utc>), ScheduleError> {
         let window = &task.scheduled_window;
-        
+
         // Default task duration based on type
         let duration = match &task.task_type {
             TaskType::OpticalLinkEstablishment { .. } => Duration::seconds(30), // PAT + establishment
@@ -128,12 +132,14 @@ impl TaskingScheduler {
             window.start
         } else {
             // Start after latest dependency
-            let latest_dep = task.dependencies.iter()
+            let latest_dep = task
+                .dependencies
+                .iter()
                 .filter_map(|dep_id| self.scheduled_tasks.get(dep_id))
                 .map(|st| st.scheduled_end)
                 .max()
                 .unwrap_or(window.start);
-            
+
             latest_dep.max(window.start)
         };
 
@@ -152,10 +158,20 @@ impl TaskingScheduler {
 
     fn detect_conflicts(&self, scheduled: &ScheduledTask) -> Option<ConflictResolution> {
         // Check for terminal contention
-        if let TaskType::OpticalLinkEstablishment { peer_terminal, .. } = &scheduled.task.task_type {
+        if let TaskType::OpticalLinkEstablishment { peer_terminal, .. } = &scheduled.task.task_type
+        {
             for existing in self.scheduled_tasks.values() {
-                if let TaskType::OpticalLinkEstablishment { peer_terminal: existing_peer, .. } = &existing.task.task_type {
-                    if peer_terminal == existing_peer && scheduled.task.scheduled_window.overlaps(&existing.task.scheduled_window) {
+                if let TaskType::OpticalLinkEstablishment {
+                    peer_terminal: existing_peer,
+                    ..
+                } = &existing.task.task_type
+                {
+                    if peer_terminal == existing_peer
+                        && scheduled
+                            .task
+                            .scheduled_window
+                            .overlaps(&existing.task.scheduled_window)
+                    {
                         return Some(ConflictResolution {
                             conflict_type: ConflictType::TerminalContention {
                                 terminal_id: peer_terminal.clone(),
@@ -179,7 +195,8 @@ impl TaskingScheduler {
 
     /// Get scheduled tasks for a satellite
     pub fn get_satellite_tasks(&self, satellite_id: &SatelliteId) -> Vec<&ScheduledTask> {
-        self.scheduled_tasks.values()
+        self.scheduled_tasks
+            .values()
             .filter(|st| st.task.satellite_id == *satellite_id)
             .collect()
     }
@@ -200,11 +217,15 @@ impl Default for TaskingScheduler {
 #[derive(Debug, Clone, thiserror::Error)]
 pub enum ScheduleError {
     #[error("Task {task_id} cannot fit in window: required {required:?}, available {available:?}")]
-    WindowExceeded { task_id: TaskId, required: Duration, available: Duration },
-    
+    WindowExceeded {
+        task_id: TaskId,
+        required: Duration,
+        available: Duration,
+    },
+
     #[error("Dependency not satisfied for task {0}")]
     DependencyNotSatisfied(TaskId),
-    
+
     #[error("Resource conflict: {0}")]
     ResourceConflict(String),
 }

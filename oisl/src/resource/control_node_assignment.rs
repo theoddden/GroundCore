@@ -5,8 +5,8 @@
 // distances to control nodes over a future time window, triggering
 // handoffs based on distance thresholds.
 
-use crate::{NodeId, SatelliteId, Position3D};
-use chrono::{DateTime, Utc, Duration};
+use crate::{NodeId, Position3D, SatelliteId};
+use chrono::{DateTime, Duration, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -90,7 +90,8 @@ impl ControlNodeAssignmentAlgorithm {
             if let Some(prev_node) = current_node {
                 if prev_node != nearest {
                     // Check if handoff threshold is met
-                    let current_distance = point.distances.get(&prev_node).copied().unwrap_or(f64::MAX);
+                    let current_distance =
+                        point.distances.get(&prev_node).copied().unwrap_or(f64::MAX);
                     let new_distance = point.distances.get(&nearest).copied().unwrap_or(0.0);
 
                     if new_distance < current_distance * (1.0 - self.handoff_threshold_ratio) {
@@ -113,24 +114,30 @@ impl ControlNodeAssignmentAlgorithm {
     }
 
     /// Predict satellite position from TLE data at specific time using SGP4
-    fn predict_position_from_tle(&self, tle: &TleData, time: DateTime<Utc>) -> Result<Position3D, AssignmentError> {
+    fn predict_position_from_tle(
+        &self,
+        tle: &TleData,
+        time: DateTime<Utc>,
+    ) -> Result<Position3D, AssignmentError> {
         // Convert TLE data to sgp4 format
-        let tle_elements = sgp4::Elements::from_tle(
-            &tle.tle_line1,
-            &tle.tle_line2,
-        ).map_err(|e| AssignmentError::PredictionFailed(format!("SGP4 parse error: {}", e)))?;
-        
+        let tle_elements = sgp4::Elements::from_tle(&tle.tle_line1, &tle.tle_line2)
+            .map_err(|e| AssignmentError::PredictionFailed(format!("SGP4 parse error: {}", e)))?;
+
         // Create propagator
-        let propagator = sgp4::Propagator::new(tle_elements)
-            .map_err(|e| AssignmentError::PredictionFailed(format!("SGP4 propagator error: {}", e)))?;
-        
+        let propagator = sgp4::Propagator::new(tle_elements).map_err(|e| {
+            AssignmentError::PredictionFailed(format!("SGP4 propagator error: {}", e))
+        })?;
+
         // Calculate time since epoch
         let time_since_epoch = time.timestamp() as f64 - tle.epoch.timestamp() as f64;
-        
+
         // Propagate to target time
-        let prediction = propagator.propagate(time_since_epoch / 60.0) // SGP4 expects minutes
-            .map_err(|e| AssignmentError::PredictionFailed(format!("SGP4 propagation error: {}", e)))?;
-        
+        let prediction = propagator
+            .propagate(time_since_epoch / 60.0) // SGP4 expects minutes
+            .map_err(|e| {
+                AssignmentError::PredictionFailed(format!("SGP4 propagation error: {}", e))
+            })?;
+
         // Convert to Position3D (ECI coordinates)
         Ok(Position3D {
             x_km: prediction.position[0],

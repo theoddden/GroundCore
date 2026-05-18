@@ -3,15 +3,15 @@
 // Link lifecycle management for optical links includes state machine,
 // metrics tracking, degradation detection, and failover/handoff.
 
-pub mod state_machine;
-pub mod metrics;
 pub mod degradation;
 pub mod failover;
+pub mod metrics;
+pub mod state_machine;
 
-pub use state_machine::{
-    LinkPhase, LinkQuality, DegradationReason, DegradationAction, RecoveryStrategy,
-    TerminationReason, FailureCause, OpticalLink, LinkMetrics,
-};
-pub use metrics::{MetricSnapshot, BoundedHistory};
 pub use degradation::DegradationDetector;
-pub use failover::{FailoverStrategy, HandoffStrategy, HandoffExecution, FailoverManager};
+pub use failover::{FailoverManager, FailoverStrategy, HandoffExecution, HandoffStrategy};
+pub use metrics::{BoundedHistory, MetricSnapshot};
+pub use state_machine::{
+    DegradationAction, DegradationReason, FailureCause, LinkMetrics, LinkPhase, LinkQuality,
+    OpticalLink, RecoveryStrategy, TerminationReason,
+};

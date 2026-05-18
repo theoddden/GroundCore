@@ -76,12 +76,12 @@ impl ChallengeSchedule {
             interval_hours: 24,
         }
     }
-    
+
     /// Add a challenge pass
     pub fn add_challenge(&mut self, challenge: ChallengePass) {
         self.challenges.push(challenge);
     }
-    
+
     /// Get pending challenges
     pub fn pending_challenges(&self) -> Vec<&ChallengePass> {
         self.challenges
@@ -89,7 +89,7 @@ impl ChallengeSchedule {
             .filter(|c| !c.completed && c.scheduled_time > Utc::now())
             .collect()
     }
-    
+
     /// Get overdue challenges
     pub fn overdue_challenges(&self) -> Vec<&ChallengePass> {
         self.challenges
@@ -196,7 +196,11 @@ impl AttestationVerification {
         if len == 0 {
             return 1.0;
         }
-        let matching = a_chars.iter().zip(b_chars.iter()).filter(|(x, y)| x == y).count();
+        let matching = a_chars
+            .iter()
+            .zip(b_chars.iter())
+            .filter(|(x, y)| x == y)
+            .count();
         matching as f64 / len as f64
     }
 
@@ -285,14 +289,14 @@ pub fn update_peer_from_verification(
             details: verification.details.clone(),
         },
     };
-    
+
     peer.add_attestation(record);
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_verification_exact_match() {
         // Same hex SHA-256 digest → 1.0 match rate
@@ -310,8 +314,8 @@ mod tests {
 
     #[test]
     fn test_verification_mismatch() {
-        let local  = "a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3";
-        let peer   = "b665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3";
+        let local = "a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3";
+        let peer = "b665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3";
         let verification = AttestationVerification::new(
             "pass1".to_string(),
             Some(local.to_string()),
@@ -334,7 +338,9 @@ mod tests {
             first_event_time: t0,
             first_reception_time: t0 + chrono::Duration::milliseconds(100),
             last_event_time: t0 + chrono::Duration::seconds(300),
-            last_reception_time: t0 + chrono::Duration::seconds(300) + chrono::Duration::milliseconds(100),
+            last_reception_time: t0
+                + chrono::Duration::seconds(300)
+                + chrono::Duration::milliseconds(100),
             sample_count: 1000,
         };
         assert!(AttestationVerification::proof_internally_consistent(&proof));
