@@ -149,6 +149,7 @@ pub struct DopplerPredictor {
     /// TLE epoch used when the constants were loaded (required for MinutesSinceEpoch)
     tle_epoch: Option<DateTime<Utc>>,
     /// Station geodetic coordinates (lat, lon, alt in km)
+    #[allow(dead_code)]
     station: (f64, f64, f64),
     /// Carrier frequency in Hz (for Doppler conversion)
     carrier_frequency: f64,
@@ -191,6 +192,7 @@ impl DopplerPredictor {
     }
 
     /// Predict Doppler shift for a time window using SGP4 propagation
+    #[allow(clippy::too_many_arguments)]
     pub fn predict_doppler(
         &self,
         satellite_id: &str,

@@ -61,7 +61,7 @@ impl SdrHandle {
         // In a real implementation, this would read from the actual SDR hardware
         // For now, we simulate sample generation
         let count = buffer.len();
-        for (_i, sample) in buffer.iter_mut().enumerate() {
+        for sample in buffer.iter_mut() {
             let id = self.sample_counter.fetch_add(1, Ordering::SeqCst);
             let now = Utc::now();
             *sample = Sample {
@@ -157,9 +157,9 @@ impl SampleRingBuffer {
         let available = head - tail;
 
         let count = buffer.len().min(available as usize);
-        for i in 0..count {
+        for (i, item) in buffer.iter_mut().enumerate().take(count) {
             let idx = ((tail + i as u64) % self.capacity) as usize;
-            buffer[i] = self.buffer[idx];
+            *item = self.buffer[idx];
         }
 
         self.tail.fetch_add(count as u64, Ordering::Release);

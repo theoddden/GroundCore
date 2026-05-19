@@ -67,6 +67,13 @@ impl DemodState {
             midpoint_i: 0.0,
         }
     }
+}
+
+impl Default for DemodState {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
     /// Create a demodulator state pre-configured for a known baud rate.
     pub fn with_baud_rate(sample_rate_hz: u32, baud_rate_hz: u32) -> Self {
@@ -179,6 +186,12 @@ impl SymbolSyncState {
             clock_phase: 0.0,
             error_accumulator: 0.0,
         }
+    }
+}
+
+impl Default for SymbolSyncState {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

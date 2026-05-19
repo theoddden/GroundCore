@@ -232,6 +232,12 @@ impl ShadowTracker {
     }
 }
 
+impl Default for ShadowTracker {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
