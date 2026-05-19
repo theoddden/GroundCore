@@ -192,5 +192,4 @@ impl Default for TrackingTone {
     }
 }
 
-impl TrackingTone {
-}
+impl TrackingTone {}

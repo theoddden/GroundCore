@@ -107,8 +107,7 @@ impl Default for RouteConstraints {
     }
 }
 
-impl RouteConstraints {
-}
+impl RouteConstraints {}
 
 /// Optical route
 #[derive(Debug, Clone, Serialize, Deserialize)]
