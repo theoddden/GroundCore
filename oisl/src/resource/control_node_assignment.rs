@@ -120,12 +120,11 @@ impl ControlNodeAssignmentAlgorithm {
         time: DateTime<Utc>,
     ) -> Result<Position3D, AssignmentError> {
         // Convert TLE data to sgp4 format
-        let tle_elements = sgp4::Elements::from_tle(
-            None,
-            tle.tle_line1.as_bytes(),
-            tle.tle_line2.as_bytes(),
-        )
-        .map_err(|e| AssignmentError::PredictionFailed(format!("SGP4 parse error: {}", e)))?;
+        let tle_elements =
+            sgp4::Elements::from_tle(None, tle.tle_line1.as_bytes(), tle.tle_line2.as_bytes())
+                .map_err(|e| {
+                    AssignmentError::PredictionFailed(format!("SGP4 parse error: {}", e))
+                })?;
 
         // Create propagator
         let propagator = sgp4::Propagator::new(tle_elements).map_err(|e| {
