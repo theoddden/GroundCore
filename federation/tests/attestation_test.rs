@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use ed25519_dalek::{SigningKey, VerifyingKey, Signer};
+    use ed25519_dalek::{Signer, SigningKey, VerifyingKey};
     use federation::attestation::{Attestation, SignedData};
     use federation::peer::{FederationPeer, PeerId};
 
