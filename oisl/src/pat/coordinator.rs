@@ -5,7 +5,7 @@
 // timestamps. The bi-temporal log proves that the timestamps were agreed correctly.
 
 use crate::pat::{ClockConfidence, PrecisionClock, PrecisionTimestamp};
-use crate::{AcquisitionId, OctConfiguration, TerminalId};
+use crate::{AcquisitionId, OctConfiguration, TerminalId, TimeReference};
 use chrono::{DateTime, Duration, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;

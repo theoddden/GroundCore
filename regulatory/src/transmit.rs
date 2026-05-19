@@ -8,7 +8,7 @@
 
 use crate::license::License;
 use crate::types::{Band, CoordinationProof, Frequency, Power};
-use ground_core::{GroundStationError, Result};
+use ground_core::Result;
 use thiserror::Error;
 
 #[derive(Error, Debug)]

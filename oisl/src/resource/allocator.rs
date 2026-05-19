@@ -1,9 +1,9 @@
 // Resource Allocator - multi-tenant resource allocation
 
-use crate::resource::{ResourceAllocation, ResourceClaim};
-use crate::{Bytes, DataRate, Priority, SatelliteId, TaskId, TenantId, TerminalId, TimeWindow};
+use crate::{AllocationId, Bytes, DataRate, Priority, SatelliteId, TaskId, TenantId, TerminalId, TimeWindow};
 use chrono::{DateTime, Duration, Utc};
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use uuid::Uuid;
 
 /// Resource claim

@@ -4,6 +4,7 @@
 // environments), satellite clocks drift. The PAT coordinator needs to know
 // clock confidence and reduce acquisition attempts when clocks are degraded.
 
+use crate::TimeReference;
 use chrono::{DateTime, Duration, Utc};
 use serde::{Deserialize, Serialize};
 

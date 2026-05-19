@@ -231,11 +231,11 @@ impl TrustScore {
         Self(score.clamp(0.0, 1.0))
     }
 
-    pub fn is_high() -> bool {
+    pub fn is_high(&self) -> bool {
         self.0 >= 0.8
     }
 
-    pub fn is_low() -> bool {
+    pub fn is_low(&self) -> bool {
         self.0 < 0.5
     }
 }
@@ -325,7 +325,7 @@ impl AttestationEngine {
     pub fn attest_peer(
         &mut self,
         operator_id: &OperatorId,
-    ) -> Result<AttestationRecord, AttestationError> {
+    ) -> Result<AttestationRecord, FederationError> {
         // Check cache
         if let Some(record) = self.attestation_cache.get(operator_id) {
             if record.is_valid() {

@@ -4,9 +4,12 @@
 // of the OpticalTerminal trait.
 
 use crate::physical::OpticalTerminal;
-use crate::physical::terminal::{TelemetryFrame, TerminalCapability, TerminalError};
+use crate::physical::terminal::{
+    AcquisitionSchedule, CalibrationReport, EthernetEndpoint, HealthReport, PatHandle,
+    TelemetryFrame, TelemetryStream, TerminalCapability, TerminalError, TerminalStatus,
+};
 use crate::topology::link_state::LinkPhase;
-use crate::{DataRate, OctConfiguration, OctStandardVersion, TerminalId};
+use crate::{DataRate, OctConfiguration, OctStandardVersion, ResetLevel, TerminalId};
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use std::pin::Pin;

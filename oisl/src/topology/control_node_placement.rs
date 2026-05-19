@@ -6,8 +6,8 @@
 //
 // This minimizes maximum satellite-to-ground latency across constellation operation.
 
-use crate::topology::forecast::{GraphSnapshot, TopologyForecast};
-use crate::{NodeId, NodeType, Position3D};
+use crate::topology::forecast::{GraphSnapshot, NodeType, Position3D, TopologyForecast};
+use crate::NodeId;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 
