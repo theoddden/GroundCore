@@ -84,7 +84,10 @@ impl RfPipeline {
 
                 // 3. Feed to demodulator (Costas loop + Gardner timing recovery)
                 let mut demod = self.demodulator.write().await;
-                if let Some(byte) = demod.process_sample(&corrected_sample)? {
+                let byte = demod.process_sample(&corrected_sample)?;
+                drop(demod); // Drop lock before calling flush_batch
+
+                if let Some(byte) = byte {
                     // 4. Output decoded byte with bi-temporal timestamps
                     let bi_temporal = BiTemporal::new(
                         byte,

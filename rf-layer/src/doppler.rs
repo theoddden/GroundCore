@@ -332,7 +332,7 @@ impl DopplerPredictor {
         observed_doppler: FrequencyOffset,
         predicted_doppler: FrequencyOffset,
         observation_time: DateTime<Utc>,
-    ) {
+    ) -> FrequencyOffset {
         let residual = observed_doppler - predicted_doppler;
         tracing::debug!(
             "Doppler residual at {:?}: {} Hz",
