@@ -63,7 +63,6 @@ pub type NodeId = String;
 pub type OperatorId = String;
 pub type TenantId = String;
 pub type AssetId = String;
-pub type SerialNumber = String;
 
 // Common newtypes for type safety
 /// Data rate in bits per second

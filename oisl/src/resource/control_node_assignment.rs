@@ -52,7 +52,7 @@ impl ControlNodeAssignmentAlgorithm {
                 .iter()
                 .map(|(node_id, location)| {
                     let distance = self.distance_3d(satellite_pos, location.position);
-                    (*node_id, distance)
+                    (node_id.clone(), distance)
                 })
                 .collect();
 
@@ -62,7 +62,7 @@ impl ControlNodeAssignmentAlgorithm {
             predictions.push(AssignmentPoint {
                 timestamp: current_time,
                 satellite_position: satellite_pos,
-                nearest_node: distances[0].0,
+                nearest_node: distances[0].0.clone(),
                 distances: distances.into_iter().collect(),
             });
 
@@ -86,23 +86,22 @@ impl ControlNodeAssignmentAlgorithm {
         let mut current_node = None;
 
         for (i, point) in predictions.iter().enumerate() {
-            let nearest = point.nearest_node;
+            let nearest = point.nearest_node.clone();
 
-            if let Some(prev_node) = current_node {
-                if prev_node != nearest {
+            if let Some(ref prev_node) = current_node {
+                if prev_node != &nearest {
                     // Check if handoff threshold is met
                     let current_distance =
-                        point.distances.get(&prev_node).copied().unwrap_or(f64::MAX);
+                        point.distances.get(prev_node).copied().unwrap_or(f64::MAX);
                     let new_distance = point.distances.get(&nearest).copied().unwrap_or(0.0);
 
                     if new_distance < current_distance * (1.0 - self.handoff_threshold_ratio) {
                         events.push(HandoffEvent {
-                            handoff_time: point.timestamp,
-                            from_node: prev_node,
-                            to_node: nearest,
-                            estimated_distance_reduction: current_distance - new_distance,
-                            prediction_index: i,
+                            timestamp: point.timestamp,
+                            from_node: prev_node.clone(),
+                            to_node: nearest.clone(),
                         });
+
                         current_node = Some(nearest);
                     }
                 }
@@ -121,8 +120,12 @@ impl ControlNodeAssignmentAlgorithm {
         time: DateTime<Utc>,
     ) -> Result<Position3D, AssignmentError> {
         // Convert TLE data to sgp4 format
-        let tle_elements = sgp4::Elements::from_tle(&tle.tle_line1, &tle.tle_line2)
-            .map_err(|e| AssignmentError::PredictionFailed(format!("SGP4 parse error: {}", e)))?;
+        let tle_elements = sgp4::Elements::from_tle(
+            None,
+            tle.tle_line1.as_bytes(),
+            tle.tle_line2.as_bytes(),
+        )
+        .map_err(|e| AssignmentError::PredictionFailed(format!("SGP4 parse error: {}", e)))?;
 
         // Create propagator
         let propagator = sgp4::Propagator::new(tle_elements).map_err(|e| {
@@ -168,7 +171,7 @@ impl ControlNodeAssignmentAlgorithm {
                 let dist_b = self.distance_3d(satellite_position, b.1.position);
                 dist_a.partial_cmp(&dist_b).unwrap()
             })
-            .map(|(node_id, _)| *node_id)
+            .map(|(node_id, _)| node_id.clone())
     }
 }
 

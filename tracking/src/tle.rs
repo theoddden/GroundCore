@@ -244,6 +244,12 @@ pub struct ValidationResult {
     pub max_drift_meters: f64,
 }
 
+impl Default for ValidationResult {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ValidationResult {
     pub fn new() -> Self {
         Self {
@@ -251,11 +257,5 @@ impl ValidationResult {
             drift_detected: 0,
             max_drift_meters: 0.0,
         }
-    }
-}
-
-impl Default for ValidationResult {
-    fn default() -> Self {
-        Self::new()
     }
 }

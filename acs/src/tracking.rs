@@ -82,8 +82,13 @@ impl TrackingAlgorithm for OpenLoopTracking {
     ) -> PointingTarget {
         // Convert satellite ECI position to station-relative azimuth/elevation
         // This is a simplified implementation
+        let pos_array: [f64; 3] = [
+            satellite_state.position[0],
+            satellite_state.position[1],
+            satellite_state.position[2],
+        ];
         let (azimuth, elevation) = self.eci_to_az_el(
-            &satellite_state.position,
+            &pos_array,
             station.latitude,
             station.longitude,
             station.altitude,

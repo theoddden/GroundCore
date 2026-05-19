@@ -124,7 +124,8 @@ impl OpticalTerminal for CondorMk3 {
             serde_json::to_string(&schedule).map_err(|e| TerminalError::PatError(e.to_string()))?;
 
         self.send_command(&format!("schedule_acquisition {}", schedule_json))
-            .await
+            .await?;
+        Ok(())
     }
 
     async fn begin_pat(&mut self) -> Result<PatHandle, TerminalError> {
@@ -141,7 +142,8 @@ impl OpticalTerminal for CondorMk3 {
         acquisition_id: crate::AcquisitionId,
     ) -> Result<(), TerminalError> {
         self.send_command(&format!("cancel_pat {}", acquisition_id))
-            .await
+            .await?;
+        Ok(())
     }
 
     async fn data_path(&self) -> Result<EthernetEndpoint, TerminalError> {
@@ -189,11 +191,13 @@ impl OpticalTerminal for CondorMk3 {
     }
 
     async fn reset(&mut self, level: ResetLevel) -> Result<(), TerminalError> {
-        self.send_command(&format!("reset {:?}", level)).await
+        self.send_command(&format!("reset {:?}", level)).await?;
+        Ok(())
     }
 
     async fn safe_mode(&mut self) -> Result<(), TerminalError> {
-        self.send_command("safe_mode").await
+        self.send_command("safe_mode").await?;
+        Ok(())
     }
 
     async fn get_status(&self) -> Result<TerminalStatus, TerminalError> {
@@ -290,7 +294,8 @@ impl OpticalTerminal for Scot80 {
         let schedule_bytes =
             serde_json::to_vec(&schedule).map_err(|e| TerminalError::PatError(e.to_string()))?;
 
-        self.send_command(&schedule_bytes).await
+        self.send_command(&schedule_bytes).await?;
+        Ok(())
     }
 
     async fn begin_pat(&mut self) -> Result<PatHandle, TerminalError> {
@@ -307,7 +312,8 @@ impl OpticalTerminal for Scot80 {
         acquisition_id: crate::AcquisitionId,
     ) -> Result<(), TerminalError> {
         let cmd = format!("CANCEL_PAT:{}", acquisition_id);
-        self.send_command(cmd.as_bytes()).await
+        self.send_command(cmd.as_bytes()).await?;
+        Ok(())
     }
 
     async fn data_path(&self) -> Result<EthernetEndpoint, TerminalError> {
@@ -355,11 +361,13 @@ impl OpticalTerminal for Scot80 {
 
     async fn reset(&mut self, level: ResetLevel) -> Result<(), TerminalError> {
         let cmd = format!("RESET:{:?}", level);
-        self.send_command(cmd.as_bytes()).await
+        self.send_command(cmd.as_bytes()).await?;
+        Ok(())
     }
 
     async fn safe_mode(&mut self) -> Result<(), TerminalError> {
-        self.send_command(b"SAFE_MODE").await
+        self.send_command(b"SAFE_MODE").await?;
+        Ok(())
     }
 
     async fn get_status(&self) -> Result<TerminalStatus, TerminalError> {

@@ -72,7 +72,7 @@ impl SatelliteScheduler for DefaultSatelliteScheduler {
 
         let allocation_id = self
             .allocator
-            .allocate(claim.clone(), task_id, tenant_id, priority, valid_window)
+            .allocate(claim.clone(), task_id, tenant_id.clone(), priority, valid_window)
             .map_err(|e| ScheduleError::AllocationFailed(e.to_string()))?;
 
         // Update satellite state

@@ -37,7 +37,7 @@ impl ControlPlaneHandoff {
         let transition = HandoffStateTransition {
             from_state: std::mem::replace(&mut self.state, new_state.clone()),
             to_state: new_state,
-            transition_time: BiTemporal::new(now, now),
+            transition_time: BiTemporal::new(now, now.into(), now.into()),
             trigger,
         };
         self.state_history.push(transition);
@@ -57,13 +57,13 @@ impl ControlPlaneHandoff {
     pub fn is_in_progress(&self) -> bool {
         matches!(
             self.state,
-            HandoffState::Initiated | HandoffState::Processing
+            HandoffState::Initiated { .. } | HandoffState::Processing { .. }
         )
     }
 
     /// Check if handoff is complete
     pub fn is_complete(&self) -> bool {
-        matches!(self.state, HandoffState::Complete)
+        matches!(self.state, HandoffState::Complete { .. })
     }
 
     /// Check if handoff failed
@@ -193,7 +193,7 @@ impl HandoffManager {
         let mut handoff = ControlPlaneHandoff::new(satellite_id, source_node, target_node);
         handoff.transition_to(
             HandoffState::Initiated {
-                initiated_at: BiTemporal::new(Utc::now(), Utc::now()),
+                initiated_at: BiTemporal::new(Utc::now(), Utc::now().into(), Utc::now().into()),
             },
             HandoffTrigger::SatelliteInitiated,
         );
@@ -224,7 +224,7 @@ impl HandoffManager {
 
         let new_state = HandoffState::Processing {
             step: next_step,
-            started_at: BiTemporal::new(Utc::now(), Utc::now()),
+            started_at: BiTemporal::new(Utc::now(), Utc::now().into(), Utc::now().into()),
         };
 
         handoff.transition_to(new_state, HandoffTrigger::SatelliteInitiated);
@@ -232,7 +232,7 @@ impl HandoffManager {
         if next_step == HandoffStep::HandoffComplete {
             handoff.transition_to(
                 HandoffState::Complete {
-                    completed_at: BiTemporal::new(Utc::now(), Utc::now()),
+                    completed_at: BiTemporal::new(Utc::now(), Utc::now().into(), Utc::now().into()),
                 },
                 HandoffTrigger::SatelliteInitiated,
             );
@@ -258,7 +258,7 @@ impl HandoffManager {
         handoff.update_metrics(metrics);
         handoff.transition_to(
             HandoffState::Complete {
-                completed_at: BiTemporal::new(Utc::now(), Utc::now()),
+                completed_at: BiTemporal::new(Utc::now(), Utc::now().into(), Utc::now().into()),
             },
             HandoffTrigger::SatelliteInitiated,
         );
@@ -283,7 +283,7 @@ impl HandoffManager {
         handoff.transition_to(
             HandoffState::Failed {
                 reason: reason.clone(),
-                failed_at: BiTemporal::new(Utc::now(), Utc::now()),
+                failed_at: BiTemporal::new(Utc::now(), Utc::now().into(), Utc::now().into()),
             },
             HandoffTrigger::Error(reason),
         );

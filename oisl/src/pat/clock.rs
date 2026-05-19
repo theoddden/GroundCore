@@ -52,6 +52,12 @@ impl Default for PrecisionTimestamp {
     }
 }
 
+impl From<DateTime<Utc>> for PrecisionTimestamp {
+    fn from(dt: DateTime<Utc>) -> Self {
+        Self::from_datetime(dt)
+    }
+}
+
 /// Clock confidence - microseconds of uncertainty
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub struct ClockConfidence {

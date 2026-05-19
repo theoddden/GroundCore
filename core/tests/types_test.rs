@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use ground_station_core::types::{Bytes, DataRate, Frequency, FrequencyBand};
+    use crate::types::{Bytes, DataRate, Frequency, FrequencyBand};
 
     #[test]
     fn test_frequency_band_names() {

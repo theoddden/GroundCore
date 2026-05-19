@@ -265,7 +265,7 @@ impl DefaultIntentCompiler {
             })?;
 
         // Convert route to satellite tasks
-        let mut satellite_tasks = Vec::new();
+        let mut satellite_tasks: Vec<SatelliteTask> = Vec::new();
         let mut link_reservations = Vec::new();
 
         for (i, hop) in route.hops.iter().enumerate() {

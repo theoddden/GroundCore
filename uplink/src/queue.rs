@@ -48,6 +48,12 @@ pub struct CommandQueue {
     dependencies: RwLock<HashMap<CommandId, Vec<CommandId>>>,
 }
 
+impl Default for CommandQueue {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl CommandQueue {
     /// Create a new command queue
     pub fn new() -> Self {

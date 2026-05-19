@@ -7,7 +7,7 @@ use aes_gcm::{
 use ed25519_dalek::{Signature, Signer, SigningKey, Verifier, VerifyingKey};
 use rand::RngCore;
 use serde::{Deserialize, Serialize};
-use sha2::{Digest, Sha256};
+use sha2::Sha256;
 use thiserror::Error;
 
 #[derive(Debug, Error)]

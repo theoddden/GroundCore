@@ -122,7 +122,7 @@ impl SafetyInterlock {
 
     /// Check watchdog timeout
     pub fn check_watchdog(&self) -> bool {
-        let last = self.last_heartbeat.load(Ordering::Relaxed);
+        let last = self.last_heartbeat.load(Ordering::Relaxed) as i64;
         let now = Utc::now().timestamp_millis();
         (now - last) < self.watchdog_timeout_ms as i64
     }

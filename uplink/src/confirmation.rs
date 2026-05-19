@@ -48,6 +48,7 @@ pub struct ConfirmationTracker {
     /// Tracking entries (command_id -> entry)
     entries: RwLock<HashMap<CommandId, ConfirmationEntry>>,
     /// Retry backoff base (exponential backoff)
+    #[allow(dead_code)]
     backoff_base: StdDuration,
     /// Default timeout
     default_timeout: Duration,
@@ -140,8 +141,9 @@ impl ConfirmationTracker {
     }
 
     /// Calculate retry delay with exponential backoff
+    #[allow(dead_code)]
     fn retry_delay(&self, retry_count: u32) -> StdDuration {
-        let delay_ms = (2_u64.pow(retry_count.min(6)) * 1000) as u64;
+        let delay_ms = 2_u64.pow(retry_count.min(6)) * 1000;
         StdDuration::from_millis(delay_ms)
     }
 

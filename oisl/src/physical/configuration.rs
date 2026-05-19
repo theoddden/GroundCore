@@ -117,7 +117,7 @@ impl OctConfiguration {
         Self {
             standard_version: OctStandardVersion::V4_0_0,
             link_type: LinkType::S2T,
-            modulation: Modulation::Manchester,
+            modulation: Modulation::Manchester { rate: BaudRate(10_000_000) },
             fec_config: FecConfiguration {
                 enabled: true,
                 code: FecCode::Ldpc5gNr {

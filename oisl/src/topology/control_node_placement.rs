@@ -210,7 +210,7 @@ impl ControlNodePlacementAlgorithm {
             let best_station =
                 self.select_best_station(topologies, &selected, candidates, &candidates_vec);
             if let Some(best) = best_station {
-                selected.insert(best);
+                selected.insert(best.clone());
                 candidates_vec.retain(|s| s != &best);
             } else {
                 break;
@@ -251,7 +251,7 @@ impl ControlNodePlacementAlgorithm {
 
     /// Evaluate placement: maximum satellite-to-ground distance
     fn evaluate_placement(&self, topologies: &[GraphSnapshot], selected: &HashSet<NodeId>) -> f64 {
-        let mut max_distance = 0.0;
+        let mut max_distance: f64 = 0.0;
 
         for topology in topologies {
             for (node_id, node_state) in &topology.nodes {
@@ -278,8 +278,7 @@ impl ControlNodePlacementAlgorithm {
             .filter_map(|node_id| topology.nodes.get(node_id))
             .map(|node_state| self.distance_3d(satellite_pos, node_state.position))
             .filter(|&d| d < f64::MAX)
-            .min()
-            .unwrap_or(f64::MAX)
+            .fold(f64::MAX, |acc, d| acc.min(d))
     }
 
     /// 3D distance between two positions

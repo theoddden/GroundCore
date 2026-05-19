@@ -20,9 +20,9 @@ pub use forecast::{
 pub use routing::{CostModel, CostScore, Route, RoutedHop, SpatiotemporalRouter};
 
 pub use link_state::{
-    ActiveLink, DegradationReason, LinkMetrics, LinkPhase, LossCause, PhaseTransition,
-    TrackingQuality,
+    ActiveLink, LinkMetrics, LinkPhase, PhaseTransition,
 };
+pub use crate::{DegradationReason, LossCause, TrackingQuality};
 
 pub use control_node_placement::{
     ControlNodePlacementAlgorithm, PlacementError, PlacementEvaluation,

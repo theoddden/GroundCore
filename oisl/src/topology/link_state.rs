@@ -125,7 +125,7 @@ impl ActiveLink {
         let transition = PhaseTransition {
             from_phase: std::mem::replace(&mut self.phase, new_phase.clone()),
             to_phase: new_phase,
-            transition_time: BiTemporal::new(now, now),
+            transition_time: BiTemporal::new(now, now.into(), now.into()),
             trigger,
         };
         self.phase_history.push(transition);

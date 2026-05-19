@@ -73,6 +73,7 @@ impl SpatiotemporalRouter {
             current_node: source.clone(),
             current_time: start_time,
             hops: vec![],
+            cost_model: self.cost_model.clone(),
         });
 
         let mut best_route: Option<Route> = None;
@@ -139,6 +140,7 @@ impl SpatiotemporalRouter {
                     current_node: edge.endpoints.1.clone(),
                     current_time: new_time,
                     hops: new_hops,
+                    cost_model: state.cost_model.clone(),
                 });
             }
         }
@@ -220,7 +222,7 @@ pub struct RoutedHop {
 }
 
 /// Cost score
-#[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Serialize, Deserialize)]
 pub struct CostScore(pub f64);
 
 /// Cost model for routing
@@ -253,6 +255,7 @@ struct RouteState {
     current_node: NodeId,
     current_time: DateTime<Utc>,
     hops: Vec<RoutedHop>,
+    cost_model: CostModel,
 }
 
 impl PartialEq for RouteState {
@@ -282,11 +285,17 @@ impl PartialOrd for RouteState {
 #[derive(Debug, Clone, thiserror::Error)]
 pub enum RoutingError {
     #[error("No route found from {source} to {destination}")]
-    NoRouteFound { source: NodeId, destination: NodeId },
+    NoRouteFound {
+        source: NodeId,
+        destination: NodeId,
+    },
 
-    #[error("Topology forecast insufficient for routing")]
-    InsufficientForecast,
+    #[error("Topology forecast unavailable")]
+    TopologyUnavailable,
 
-    #[error("Constraints cannot be satisfied: {0}")]
-    ConstraintsNotSatisfied(String),
+    #[error("Route computation failed: {0}")]
+    ComputationFailed(String),
+
+    #[error("Invalid route parameters: {0}")]
+    InvalidParameters(String),
 }

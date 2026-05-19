@@ -294,11 +294,5 @@ pub enum AllocationError {
     InsufficientResources(String),
 }
 
-/// Preemption reason
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub enum PreemptionReason {
-    HigherPriorityTask,
-    EmergencyResponse,
-    RegulatoryCompliance,
-    ResourceExhaustion,
-}
+// Re-export PreemptionReason from crate root
+pub use crate::PreemptionReason;

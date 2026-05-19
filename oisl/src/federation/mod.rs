@@ -68,7 +68,7 @@ impl FederationPlane {
             satellite_id: satellite_id.clone(),
             control_node_id,
             state: ControlPlaneBindingState::Bound,
-            bound_at: BiTemporal::new(Utc::now(), Utc::now()),
+            bound_at: BiTemporal::new(Utc::now(), Utc::now().into(), Utc::now().into()),
             handover_history: vec![],
         };
 
@@ -126,7 +126,7 @@ impl FederationPlane {
         let handover_record = HandoverRecord {
             from_node: binding.control_node_id.clone(),
             to_node: request.target_control_node_id.clone(),
-            handover_at: BiTemporal::new(Utc::now(), Utc::now()),
+            handover_at: BiTemporal::new(Utc::now(), Utc::now().into(), Utc::now().into()),
             duration_ms: request
                 .completed_at
                 .map(|t| (t - request.created_at).num_milliseconds() as u64),
@@ -134,7 +134,7 @@ impl FederationPlane {
 
         binding.control_node_id = request.target_control_node_id.clone();
         binding.state = ControlPlaneBindingState::Bound;
-        binding.bound_at = BiTemporal::new(Utc::now(), Utc::now());
+        binding.bound_at = BiTemporal::new(Utc::now(), Utc::now().into(), Utc::now().into());
         binding.handover_history.push(handover_record);
 
         Ok(())

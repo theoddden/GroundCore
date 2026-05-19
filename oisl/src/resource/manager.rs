@@ -159,7 +159,7 @@ impl SatelliteNode {
 
         // Check compute availability
         if let Some(cycles) = claim.compute_cycles {
-            if cycles > (self.compute.cpu_cores as u64 * 1e9) {
+            if cycles > (self.compute.cpu_cores as u64 * 1_000_000_000) {
                 return false;
             }
         }

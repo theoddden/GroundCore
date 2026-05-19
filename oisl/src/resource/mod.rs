@@ -18,7 +18,8 @@ pub use control_node_assignment::{
     HandoffEvent, TleData,
 };
 pub use manager::{DegradationForecast, HealthMetrics, SatelliteNode, StorageResources};
-pub use scheduler::{AllocationId, PreemptionReason, RebalanceReport, SatelliteScheduler};
+pub use scheduler::{RebalanceReport, SatelliteScheduler};
+pub use crate::{AllocationId, PreemptionReason};
 
 use crate::{Bytes, DataRate, Priority, SatelliteId, TaskId, TenantId, TerminalId, TimeWindow};
 use chrono::{DateTime, Duration, Utc};

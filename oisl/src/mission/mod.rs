@@ -11,11 +11,13 @@ pub mod state_machine;
 pub mod validator;
 
 pub use compiler::{
-    CompilationError, IntentCompiler, IntentConstraints, MissionIntent, ObjectiveType,
-    PlanExplanation, ServiceLevelAgreement, TaskingPlan, ValidationWarning,
+    IntentCompiler, PlanExplanation, SatelliteTask, ServiceLevelAgreement, TaskType, TaskingPlan,
+};
+pub use mission::{
+    CompilationError, IntentConstraints, MissionIntent, ObjectiveType, ValidationWarning,
 };
 
-pub use scheduler::{LinkReservation, SatelliteTask, TaskingScheduler};
+pub use scheduler::{LinkReservation, TaskingScheduler};
 pub use state_machine::{ConstellationState, SatelliteState};
 pub use validator::{PlanValidator, ValidationReport};
 
@@ -203,8 +205,8 @@ pub enum CompilationError {
     #[error("Intent deadline cannot be met: required {required}s, available {available}s")]
     DeadlineMissed { required: u64, available: u64 },
 
-    #[error("Invalid intent: {reason}")]
-    InvalidIntent { reason: String },
+    #[error("Invalid intent: {0}")]
+    InvalidIntent(String),
 
     #[error("Topology forecast unavailable for horizon {horizon:?}")]
     TopologyUnavailable { horizon: chrono::Duration },
@@ -229,7 +231,7 @@ pub enum ValidationWarningType {
     RegulatoryConcern,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ValidationSeverity {
     Info,
     Warning,

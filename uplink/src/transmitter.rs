@@ -68,6 +68,7 @@ pub trait Transmitter: Send + Sync {
 
 /// SDR-based transmitter implementation
 pub struct SdrTransmitter {
+    #[allow(dead_code)]
     id: TransmitterId,
     status: RwLock<TransmitterStatus>,
     frequency: AtomicU64,
@@ -158,7 +159,7 @@ impl Transmitter for SdrTransmitter {
     }
 
     async fn set_power(&mut self, power: f64) -> Result<()> {
-        if power < 0.0 || power > 1000.0 {
+        if !(0.0..=1000.0).contains(&power) {
             return Err(GroundStationError::Validation(
                 "Power out of range".to_string(),
             ));
@@ -180,6 +181,7 @@ impl Transmitter for SdrTransmitter {
 
 /// Satellite modem transmitter implementation (via serial/ethernet)
 pub struct ModemTransmitter {
+    #[allow(dead_code)]
     id: TransmitterId,
     status: RwLock<TransmitterStatus>,
     frequency: AtomicU64,
@@ -268,7 +270,7 @@ impl Transmitter for ModemTransmitter {
     }
 
     async fn set_power(&mut self, power: f64) -> Result<()> {
-        if power < 0.0 || power > 1000.0 {
+        if !(0.0..=1000.0).contains(&power) {
             return Err(GroundStationError::Validation(
                 "Power out of range".to_string(),
             ));

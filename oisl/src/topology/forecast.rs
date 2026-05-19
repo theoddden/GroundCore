@@ -128,6 +128,36 @@ pub trait TopologyForecaster: Send + Sync {
     fn query_window(&self, window: &TimeWindow) -> Vec<GraphSnapshot>;
 }
 
+impl TopologyForecaster for TopologyForecast {
+    fn forecast(&self, _horizon: Duration, _resolution: Duration) -> TopologyForecast {
+        self.clone()
+    }
+
+    fn refine(&mut self, _new_observations: Vec<LinkObservation>) -> RefinementReport {
+        RefinementReport {
+            observations_processed: 0,
+            snapshots_updated: 0,
+            forecast_confidence_delta: 0.0,
+        }
+    }
+
+    fn query_at(&self, timestamp: DateTime<Utc>) -> GraphSnapshot {
+        self.get_at(timestamp).unwrap_or_else(|| GraphSnapshot {
+            timestamp,
+            nodes: HashMap::new(),
+            potential_edges: Vec::new(),
+            active_links: Vec::new(),
+        })
+    }
+
+    fn query_window(&self, window: &TimeWindow) -> Vec<GraphSnapshot> {
+        self.snapshots
+            .range(window.start..=window.end)
+            .map(|(_, snapshot)| snapshot.clone())
+            .collect()
+    }
+}
+
 impl TopologyForecast {
     pub fn new(horizon_start: DateTime<Utc>, horizon_end: DateTime<Utc>) -> Self {
         Self {

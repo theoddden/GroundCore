@@ -1,6 +1,6 @@
 // Tasking Scheduler - places tasks on timeline considering dependencies and constraints
 
-use crate::mission::{LinkReservation, SatelliteTask, TaskType};
+use crate::mission::{LinkReservation, TaskType};
 use crate::{Priority, SatelliteId, TaskId, TenantId, TimeWindow};
 use chrono::{DateTime, Duration, Utc};
 use serde::{Deserialize, Serialize};
