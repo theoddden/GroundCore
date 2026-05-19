@@ -96,14 +96,21 @@ pub struct RouteConstraints {
     pub require_redundancy: bool,
 }
 
-impl RouteConstraints {
-    pub fn default() -> Self {
+impl Default for RouteConstraints {
+    fn default() -> Self {
         Self {
             max_hops: 5,
             min_data_rate: 1_000_000_000,
             max_latency_ms: 100,
             require_redundancy: false,
         }
+    }
+}
+
+impl RouteConstraints {
+    #[allow(clippy::should_implement_trait)]
+    pub fn default() -> Self {
+        Self::default()
     }
 }
 

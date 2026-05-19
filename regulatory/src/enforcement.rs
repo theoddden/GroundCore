@@ -7,7 +7,7 @@
 use crate::license::LicenseStore;
 use crate::types::Band;
 use chrono::Utc;
-use ground_core::{CustomerId, Result};
+use ground_core::CustomerId;
 use serde::{Deserialize, Serialize};
 
 /// Compliance check result

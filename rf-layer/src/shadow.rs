@@ -35,6 +35,12 @@ pub struct PassAcquisition {
     pub doppler_schedule: DopplerSchedule,
     /// Pass-isolated memory shard for no-heap allocations
     shard: PassShard,
+    /// Shadow last sample counter (for detecting if shadow is receiving samples)
+    shadow_last_sample_counter: std::sync::atomic::AtomicU64,
+    /// Primary last sample counter (for comparison)
+    primary_last_sample_counter: std::sync::atomic::AtomicU64,
+    /// Health check timestamp (for detecting stale shadows)
+    last_health_check: std::sync::atomic::AtomicU64,
 }
 
 impl PassAcquisition {
@@ -63,6 +69,9 @@ impl PassAcquisition {
             snapshot_manager,
             doppler_schedule,
             shard,
+            shadow_last_sample_counter: std::sync::atomic::AtomicU64::new(0),
+            primary_last_sample_counter: std::sync::atomic::AtomicU64::new(0),
+            last_health_check: std::sync::atomic::AtomicU64::new(0),
         }
     }
 
@@ -81,6 +90,9 @@ impl PassAcquisition {
         // Update demodulator state
         let result = state.process_sample(&sample)?;
         self.last_committed_sample = sample.id;
+
+        // Increment primary sample counter for health monitoring
+        self.primary_last_sample_counter.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
 
         // Sync shadow state if shadow is active.
         // Arc::get_mut would silently return None whenever any other clone exists;
@@ -151,20 +163,82 @@ impl PassAcquisition {
             return false;
         }
 
-        // In a real implementation, we'd check:
-        // - Shadow SDR is still receiving samples
-        // - Shadow demodulator state is in sync with primary
-        // - Shadow NCO phase is within tolerance
+        // Update health check timestamp
+        let now = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_secs();
+        self.last_health_check.store(now, std::sync::atomic::Ordering::SeqCst);
+
+        // Check 1: Shadow SDR is still receiving samples
+        let primary_count = self.primary_last_sample_counter.load(std::sync::atomic::Ordering::SeqCst);
+        let shadow_count = self.shadow_last_sample_counter.load(std::sync::atomic::Ordering::SeqCst);
+
+        // Shadow should be within 1000 samples of primary (allowing for some skew)
+        let sample_delta = (primary_count as i64 - shadow_count as i64).abs();
+        if sample_delta > 1000 {
+            tracing::warn!(
+                "Shadow sample lag detected: primary={}, shadow={}, delta={}",
+                primary_count,
+                shadow_count,
+                sample_delta
+            );
+            return false;
+        }
+
+        // Check 2: Shadow demodulator state is in sync with primary
+        let primary_state = self.primary_state.read().await;
+        let shadow_state = self.shadow_state.read().await;
+
+        // Compare NCO phase (should be within 0.01 cycles)
+        let phase_diff = (primary_state.nco_phase - shadow_state.nco_phase).abs();
+        if phase_diff > 0.01 {
+            tracing::warn!(
+                "Shadow NCO phase drift detected: primary={}, shadow={}, diff={}",
+                primary_state.nco_phase,
+                shadow_state.nco_phase,
+                phase_diff
+            );
+            return false;
+        }
+
+        // Compare frequency offset (should be within 100 Hz)
+        let freq_diff = (primary_state.frequency_offset - shadow_state.frequency_offset).abs();
+        if freq_diff > 100 {
+            tracing::warn!(
+                "Shadow frequency offset drift detected: primary={}, shadow={}, diff={} Hz",
+                primary_state.frequency_offset,
+                shadow_state.frequency_offset,
+                freq_diff
+            );
+            return false;
+        }
+
+        // Check 3: Shadow NCO phase is within tolerance (already checked above)
+        // Additional check: carrier lock status should match
+        if primary_state.carrier_locked != shadow_state.carrier_locked {
+            tracing::warn!(
+                "Shadow carrier lock mismatch: primary={}, shadow={}",
+                primary_state.carrier_locked,
+                shadow_state.carrier_locked
+            );
+            return false;
+        }
 
         true
     }
 
+    /// Update shadow sample counter (called when shadow SDR processes samples)
+    pub fn update_shadow_sample_counter(&self, count: u64) {
+        self.shadow_last_sample_counter.store(count, std::sync::atomic::Ordering::SeqCst);
+    }
+
     /// Get current failover status
-    pub fn failover_status(&self) -> FailoverStatus {
+    pub async fn failover_status(&self) -> FailoverStatus {
         FailoverStatus {
             shadow_available: self.shadow.is_some(),
             shadow_active: self.shadow_active,
-            shadow_healthy: self.shadow_active, // Would be async check in real impl
+            shadow_healthy: self.shadow_healthy().await,
             last_snapshot_sample: self.snapshot_manager.latest().map(|s| s.sample_id),
             snapshot_count: self.snapshot_manager.snapshot_count(),
         }

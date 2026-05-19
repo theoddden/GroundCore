@@ -14,6 +14,7 @@ pub struct DegradationDetector {
     threshold_ber: f64,
     threshold_snr_db: f64,
     threshold_pointing_urad: f64,
+    #[allow(dead_code)]
     observation_window: Duration,
 }
 

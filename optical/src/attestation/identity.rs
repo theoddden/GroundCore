@@ -225,7 +225,7 @@ impl ControlPlaneCertificateManager {
         let key_pair = self
             .shared_key_pair
             .as_ref()
-            .ok_or_else(|| CertificateError::KeyPairNotInitialized)?;
+            .ok_or(CertificateError::KeyPairNotInitialized)?;
 
         if !key_pair.is_valid() {
             return Err(CertificateError::KeyPairExpired);
@@ -263,7 +263,7 @@ impl ControlPlaneCertificateManager {
         let _key_pair = self
             .shared_key_pair
             .as_ref()
-            .ok_or_else(|| CertificateError::KeyPairNotInitialized)?;
+            .ok_or(CertificateError::KeyPairNotInitialized)?;
 
         let root_cert = IdentityCertificate::new(
             "GroundCore Root CA".to_string(),

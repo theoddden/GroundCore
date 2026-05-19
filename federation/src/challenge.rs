@@ -1,6 +1,7 @@
 //! Challenge pass management
 
 use crate::peer::PeerId;
+use crate::verification::{ChallengePass, ChallengeResult};
 use chrono::{DateTime, Utc};
 use ground_core::PassId;
 
@@ -65,7 +66,7 @@ impl ChallengePassManager {
         &mut self,
         pass_id: &PassId,
         results: Vec<ChallengeResult>,
-    ) -> Result<()> {
+    ) -> ground_core::Result<()> {
         if let Some(challenge) = self.challenges.iter_mut().find(|c| &c.pass_id == pass_id) {
             challenge.results = results;
             challenge.completed = true;

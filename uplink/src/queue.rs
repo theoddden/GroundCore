@@ -1,6 +1,6 @@
 //! Command queuing with priority and persistence
 
-use crate::command::{Command, CommandId, CommandPriority, CommandState};
+use crate::command::{Command, CommandId, CommandState};
 use chrono::{DateTime, Utc};
 use ground_core::{GroundStationError, Result};
 use priority_queue::PriorityQueue;
@@ -41,7 +41,7 @@ impl QueuedCommand {
 /// Command queue with priority
 pub struct CommandQueue {
     /// Priority queue for commands
-    queue: RwLock<PriorityQueue<CommandId, QueuedCommand, i64>>,
+    queue: RwLock<PriorityQueue<CommandId, QueuedCommand>>,
     /// Command lookup by ID
     commands: RwLock<HashMap<CommandId, QueuedCommand>>,
     /// Dependencies (command_id -> depends_on_command_ids)
@@ -63,12 +63,10 @@ impl CommandQueue {
         let id = command.id;
         let queued = QueuedCommand::new(command);
 
-        let priority = -(queued.command.priority as i64); // Higher priority = lower value
-
         let mut queue = self.queue.write().await;
         let mut commands = self.commands.write().await;
 
-        queue.push(id, queued.clone(), priority);
+        queue.push(id, queued.clone());
         commands.insert(id, queued);
 
         Ok(id)
@@ -83,13 +81,11 @@ impl CommandQueue {
         let id = command.id;
         let queued = QueuedCommand::new(command);
 
-        let priority = -(queued.command.priority as i64);
-
         let mut queue = self.queue.write().await;
         let mut commands = self.commands.write().await;
         let mut dependencies = self.dependencies.write().await;
 
-        queue.push(id, queued.clone(), priority);
+        queue.push(id, queued.clone());
         commands.insert(id, queued);
         dependencies.insert(id, depends_on);
 
@@ -103,7 +99,7 @@ impl CommandQueue {
         let dependencies = self.dependencies.read().await;
 
         // Find the highest priority command with satisfied dependencies
-        while let Some((id, queued, _)) = queue.pop() {
+        while let Some((id, queued)) = queue.pop() {
             // Check dependencies
             if let Some(deps) = dependencies.get(&id) {
                 let all_deps_satisfied = deps.iter().all(|dep_id| {
@@ -115,8 +111,7 @@ impl CommandQueue {
 
                 if !all_deps_satisfied {
                     // Put it back and continue
-                    let priority = -(queued.command.priority as i64);
-                    queue.push(id, queued, priority);
+                    queue.push(id, queued);
                     continue;
                 }
             }

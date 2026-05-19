@@ -1,7 +1,7 @@
 //! Cryptographic backend abstraction and implementations
 
 use aes_gcm::{
-    aead::{Aead, AeadCore, OsRng},
+    aead::{Aead, AeadCore, KeyInit, OsRng},
     Aes256Gcm, Key, Nonce,
 };
 use ed25519_dalek::{Signature, Signer, SigningKey, Verifier, VerifyingKey};
@@ -156,14 +156,14 @@ pub struct HmacSha256Backend;
 
 #[async_trait::async_trait]
 impl CryptoBackend for HmacSha256Backend {
-    async fn encrypt(&self, plaintext: &[u8], key: &EncryptionKey) -> Result<Vec<u8>> {
+    async fn encrypt(&self, _plaintext: &[u8], _key: &EncryptionKey) -> Result<Vec<u8>> {
         // HMAC-SHA256 doesn't provide encryption, use AES-GCM instead
         Err(CryptoError::EncryptionFailed(
             "HMAC-SHA256 does not support encryption".to_string(),
         ))
     }
 
-    async fn decrypt(&self, ciphertext: &[u8], key: &EncryptionKey) -> Result<Vec<u8>> {
+    async fn decrypt(&self, _ciphertext: &[u8], _key: &EncryptionKey) -> Result<Vec<u8>> {
         Err(CryptoError::DecryptionFailed(
             "HMAC-SHA256 does not support decryption".to_string(),
         ))

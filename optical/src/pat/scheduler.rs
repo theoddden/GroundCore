@@ -157,6 +157,7 @@ impl AcquisitionQueue {
         self.scheduler.queue(plan, priority)
     }
 
+    #[allow(clippy::should_implement_trait)]
     pub fn next(&mut self) -> Option<AcquisitionPlan> {
         self.scheduler.schedule_next(Utc::now())
     }

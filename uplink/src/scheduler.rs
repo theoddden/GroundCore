@@ -6,6 +6,7 @@ use ground_core::{GroundStationError, PassId, Result};
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, VecDeque};
 use tokio::sync::RwLock;
+use tracking::ukf::UkfRefiner;
 
 /// Transmission window (when satellite is visible)
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -69,6 +70,8 @@ pub struct TransmissionScheduler {
     pending: RwLock<VecDeque<Command>>,
     /// Conflict resolution strategy
     conflict_strategy: ConflictStrategy,
+    /// UKF refiner for Doppler prediction (optional)
+    ukf_refiner: Option<UkfRefiner>,
 }
 
 /// Conflict resolution strategy
@@ -214,7 +217,7 @@ impl TransmissionScheduler {
     async fn can_override(&self, command: &Command) -> bool {
         let scheduled_map = self.scheduled.read().await;
 
-        if let Some(existing) = scheduled_map.get(&command.id) {
+        if let Some(_existing) = scheduled_map.get(&command.id) {
             return false; // Can't override self
         }
 

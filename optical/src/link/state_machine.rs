@@ -18,9 +18,10 @@ pub type LinkId = Uuid;
 
 /// Link phase
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[allow(clippy::large_enum_variant)]
 pub enum LinkPhase {
     Scheduled {
-        acquisition_plan: AcquisitionPlan,
+        acquisition_plan: Box<AcquisitionPlan>,
     },
     Acquiring {
         since: DateTime<Utc>,
@@ -285,8 +286,8 @@ impl ControlPlaneTraffic {
     }
 }
 
-impl LinkMetrics {
-    pub fn default() -> Self {
+impl Default for LinkMetrics {
+    fn default() -> Self {
         Self {
             data_rate_actual: 0,
             data_rate_capacity: 10_000_000_000,
@@ -297,6 +298,13 @@ impl LinkMetrics {
             pointing_error_urad: 0.0,
             control_plane_traffic: ControlPlaneTraffic::disabled(),
         }
+    }
+}
+
+impl LinkMetrics {
+    #[allow(clippy::should_implement_trait)]
+    pub fn default() -> Self {
+        Self::default()
     }
 
     pub fn utilization(&self) -> f64 {

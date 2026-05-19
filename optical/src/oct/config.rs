@@ -154,6 +154,17 @@ pub struct ArqConfiguration {
     pub max_retries: u32,
 }
 
+impl Default for ArqConfiguration {
+    fn default() -> Self {
+        Self {
+            enabled: true,
+            window_size: 1024,
+            timeout_ms: 100,
+            max_retries: 5,
+        }
+    }
+}
+
 impl ArqConfiguration {
     pub fn disabled() -> Self {
         Self {
@@ -164,13 +175,9 @@ impl ArqConfiguration {
         }
     }
 
+    #[allow(clippy::should_implement_trait)]
     pub fn default() -> Self {
-        Self {
-            enabled: true,
-            window_size: 1024,
-            timeout_ms: 100,
-            max_retries: 5,
-        }
+        Self::default()
     }
 }
 
@@ -181,11 +188,18 @@ pub struct TrackingTone {
     pub power_dbm: f64,
 }
 
-impl TrackingTone {
-    pub fn default() -> Self {
+impl Default for TrackingTone {
+    fn default() -> Self {
         Self {
             frequency_hz: 10_000_000, // 10 MHz
             power_dbm: -10.0,
         }
+    }
+}
+
+impl TrackingTone {
+    #[allow(clippy::should_implement_trait)]
+    pub fn default() -> Self {
+        Self::default()
     }
 }

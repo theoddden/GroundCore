@@ -8,6 +8,7 @@ use bitemporal::timestamp::{BiTemporal, EventTime, ReceptionTime};
 use chrono::{DateTime, Utc};
 use ground_core::Result;
 use serde::{Deserialize, Serialize};
+use std::collections::VecDeque;
 
 use crate::sdr::{Sample, SampleId};
 
@@ -249,7 +250,7 @@ impl DemodulatorSnapshot {
 
 /// Snapshot manager for periodic state capture
 pub struct SnapshotManager {
-    snapshots: Vec<DemodulatorSnapshot>,
+    snapshots: VecDeque<DemodulatorSnapshot>,
     max_snapshots: usize,
     snapshot_interval_samples: u64,
     last_snapshot_sample: SampleId,
@@ -258,7 +259,7 @@ pub struct SnapshotManager {
 impl SnapshotManager {
     pub fn new(max_snapshots: usize, interval_samples: u64) -> Self {
         Self {
-            snapshots: Vec::with_capacity(max_snapshots),
+            snapshots: VecDeque::with_capacity(max_snapshots),
             max_snapshots,
             snapshot_interval_samples: interval_samples,
             last_snapshot_sample: SampleId::new(0),
@@ -285,14 +286,14 @@ impl SnapshotManager {
     }
 
     fn add_snapshot(&mut self, snapshot: DemodulatorSnapshot) {
-        self.snapshots.push(snapshot);
+        self.snapshots.push_back(snapshot);
         if self.snapshots.len() > self.max_snapshots {
-            self.snapshots.remove(0);
+            self.snapshots.pop_front();
         }
     }
 
     pub fn latest(&self) -> Option<&DemodulatorSnapshot> {
-        self.snapshots.last()
+        self.snapshots.back()
     }
 
     pub fn find_closest(&self, sample_id: SampleId) -> Option<&DemodulatorSnapshot> {

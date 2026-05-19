@@ -89,14 +89,20 @@ pub struct TrackingHandle {
     pub is_active: bool,
 }
 
-impl TrackingHandle {
-    pub fn new() -> Self {
+impl Default for TrackingHandle {
+    fn default() -> Self {
         Self {
             tracking_id: uuid::Uuid::new_v4(),
             started_at: chrono::Utc::now(),
             current_metrics: TrackingMetrics::from_quality(TrackingQuality::new(50.0, 15.0, 0.95)),
             is_active: true,
         }
+    }
+}
+
+impl TrackingHandle {
+    pub fn new() -> Self {
+        Self::default()
     }
 
     pub fn update_metrics(&mut self, metrics: TrackingMetrics) {

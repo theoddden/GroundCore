@@ -5,7 +5,7 @@
 
 use crate::types::Band;
 use chrono::{DateTime, Utc};
-use ground_core::{CustomerId, Result};
+use ground_core::CustomerId;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::marker::PhantomData;

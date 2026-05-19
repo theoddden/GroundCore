@@ -45,14 +45,21 @@ pub struct VisibilityConstraints {
     pub solar_exclusion_angle_deg: f64,
 }
 
-impl VisibilityConstraints {
-    pub fn default() -> Self {
+impl Default for VisibilityConstraints {
+    fn default() -> Self {
         Self {
             min_elevation_deg: 5.0,
             max_range_km: 5000.0,
             forbidden_zones: Vec::new(),
             solar_exclusion_angle_deg: 10.0,
         }
+    }
+}
+
+impl VisibilityConstraints {
+    #[allow(clippy::should_implement_trait)]
+    pub fn default() -> Self {
+        Self::default()
     }
 
     pub fn with_solar_exclusion(angle_deg: f64) -> Self {

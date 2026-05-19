@@ -6,10 +6,11 @@
 
 use crate::drf::DominantResourceFairness;
 use crate::reputation::ReputationTracker;
-use crate::schedule::{PassRequest, Schedule, ScheduledPass};
+use crate::schedule::{PassRequest, Schedule, ScheduledPass, Priority};
 use caching::ScheduleFragmentCache;
 use chrono::{DateTime, Utc};
-use ground_core::PassId;
+use ground_core::{GroundStationError, PassId, Result};
+use serde::{Deserialize, Serialize};
 use snapshotting::ScheduleSnapshotter;
 use std::time::Duration;
 
@@ -170,14 +171,35 @@ impl ScheduleOptimizer {
         score -= conflicts.len() as f64 * 200.0;
 
         // Request fulfillment component
-        let fulfilled_ratio = if schedule.passes.is_empty() {
-            0.0
-        } else {
-            1.0 // Would be computed from actual request fulfillment
-        };
+        let fulfilled_ratio = self.compute_fulfilled_ratio(schedule);
         score += fulfilled_ratio * 30.0;
 
         score
+    }
+
+    /// Compute the ratio of scheduled passes that meet their requirements
+    fn compute_fulfilled_ratio(&self, schedule: &Schedule) -> f64 {
+        if schedule.passes.is_empty() {
+            return 0.0;
+        }
+
+        let mut fulfilled = 0usize;
+        let mut total = schedule.passes.len();
+
+        for pass in &schedule.passes {
+            // Check if pass meets minimum duration requirement
+            let duration = (pass.scheduled_window.end - pass.scheduled_window.start)
+                .num_seconds()
+                .abs() as u64;
+
+            // Assume minimum duration of 300 seconds (5 minutes) for all passes
+            // In a real implementation, this would be derived from the original request
+            if duration >= 300 {
+                fulfilled += 1;
+            }
+        }
+
+        fulfilled as f64 / total as f64
     }
 
     /// Generate neighbor schedule by making a small change
@@ -191,15 +213,97 @@ impl ScheduleOptimizer {
                 neighbor.add_pass(pass);
             }
         } else if !neighbor.passes.is_empty() {
-            // Modify an existing pass
+            // Modify an existing pass with real time-slot reassignment
             let len = neighbor.passes.len();
             let idx = rand::random::<usize>() % len;
-            // In a real implementation, this would adjust timing or allocation
-            // For now, we just shuffle
-            neighbor.passes.swap(idx, (idx + 1) % len);
+
+            // Choose a neighbor operation type
+            let operation = rand::random::<usize>() % 4;
+
+            match operation {
+                0 => self.shift_time_slot(&mut neighbor.passes[idx]),
+                1 => self.reallocate_hardware(&mut neighbor.passes[idx]),
+                2 => self.try_preemption(&mut neighbor, idx),
+                3 => self.add_unscheduled_request(&mut neighbor, requests),
+                _ => self.shift_time_slot(&mut neighbor.passes[idx]),
+            }
         }
 
         neighbor
+    }
+
+    /// Shift a pass's time window within its acceptable range
+    fn shift_time_slot(&self, pass: &mut ScheduledPass) {
+        use chrono::Duration;
+
+        // Shift the window by ±1 to ±5 minutes randomly
+        let shift_minutes = (rand::random::<i64>() % 10 + 1).abs();
+        let shift = Duration::minutes(shift_minutes);
+
+        let direction = rand::random::<bool>();
+        let new_start = if direction {
+            pass.scheduled_window.start + shift
+        } else {
+            pass.scheduled_window.start - shift
+        };
+
+        // Ensure the new window is still within the original request's acceptable range
+        // (In a real implementation, we'd track the original request window)
+        let new_end = new_start + (pass.scheduled_window.end - pass.scheduled_window.start);
+
+        // Don't shift before now or beyond horizon
+        let now = Utc::now();
+        if new_start > now && new_end < pass.scheduled_window.end + Duration::hours(1) {
+            pass.scheduled_window.start = new_start;
+            pass.scheduled_window.end = new_end;
+        }
+    }
+
+    /// Reallocate hardware for a pass (try different SDR/antenna)
+    fn reallocate_hardware(&self, pass: &mut ScheduledPass) {
+        // Try a different SDR device
+        let sdr_options = vec!["sdr-0", "sdr-1", "sdr-2", "sdr-3"];
+        let current_idx = pass.hardware_allocation.sdr_devices
+            .iter()
+            .position(|s| *s == "sdr-0")
+            .unwrap_or(0);
+
+        let new_idx = (current_idx + 1) % sdr_options.len();
+        pass.hardware_allocation.sdr_devices = vec![sdr_options[new_idx].to_string()];
+
+        // Try a different antenna
+        let antenna_options = vec!["antenna-0", "antenna-1", "antenna-2"];
+        let ant_idx = rand::random::<usize>() % antenna_options.len();
+        pass.hardware_allocation.antenna_id = antenna_options[ant_idx].to_string();
+    }
+
+    /// Try to preempt a lower-priority pass to make room
+    fn try_preemption(&self, schedule: &mut Schedule, idx: usize) {
+        if idx == 0 {
+            return;
+        }
+
+        // For now, just swap to explore different orderings
+        // In a real implementation, this would check actual priority from requests
+        schedule.passes.swap(idx, idx - 1);
+    }
+
+    /// Add an unscheduled request to the schedule if space exists
+    fn add_unscheduled_request(&self, schedule: &mut Schedule, requests: &[PassRequest]) {
+        if requests.is_empty() {
+            return;
+        }
+
+        // Find a request that's not already scheduled
+        let scheduled_ids: std::collections::HashSet<_> = schedule.passes
+            .iter()
+            .map(|p| &p.request_id)
+            .collect();
+
+        if let Some(request) = requests.iter().find(|r| !scheduled_ids.contains(&r.request_id)) {
+            let pass = self.create_pass_from_request(request);
+            schedule.add_pass(pass);
+        }
     }
 
     /// Create a scheduled pass from a request

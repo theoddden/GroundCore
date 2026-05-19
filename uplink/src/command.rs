@@ -29,7 +29,7 @@ pub enum CommandType {
 }
 
 /// Command state in the lifecycle
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub enum CommandState {
     Queued,
     Scheduled,
@@ -42,7 +42,7 @@ pub enum CommandState {
 }
 
 /// Satellite command
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Command {
     /// Unique command identifier
     pub id: CommandId,

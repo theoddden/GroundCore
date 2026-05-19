@@ -148,6 +148,7 @@ pub struct PatCoordinator {
     clock_source: Box<dyn PrecisionClock>,
     acquisition_schedules: BTreeMap<DateTime<Utc>, AcquisitionPlan>,
     current_phase: PatPhase,
+    #[allow(dead_code)]
     event_log: Vec<PatEvent>,
     /// Per-acquisition shard for memory isolation (no-heap allocations in real-time path)
     shard: PassShard,
@@ -319,6 +320,7 @@ impl PatCoordinator {
             .ok_or(PatError::NotFound(plan_id))
     }
 
+    #[allow(dead_code)]
     fn log_event(&mut self, event: PatEvent) {
         self.event_log.push(event);
     }

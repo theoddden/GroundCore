@@ -9,6 +9,7 @@ use ground_core::{Result, SatelliteId};
 use nalgebra::Vector3;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::f64::consts::PI;
 
 /// Orbital state at a specific time
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -74,28 +75,31 @@ fn geodetic_to_eci(lat: f64, lon: f64, alt: f64, time: DateTime<Utc>) -> Vector3
     Vector3::new(x, y, z)
 }
 
-/// Greenwich Mean Sidereal Time
+/// Greenwich Mean Sidereal Time for a given UTC instant (radians).
+/// Uses IAU 1982 mean sidereal time formula (matches ukf.rs implementation).
 fn gmst(time: DateTime<Utc>) -> f64 {
-    // Simplified GMST calculation
-    // In production, use a more precise algorithm
-    let j2000 = DateTime::from_timestamp(946684800, 0)
-        .unwrap()
-        .with_timezone(&Utc);
-    let days_since_j2000 = (time - j2000).num_seconds() as f64 / 86400.0;
-    let gmst = 1.753368559 + 0.017202791805 * days_since_j2000;
-    gmst % (2.0 * std::f64::consts::PI)
+    // Julian date of J2000.0 epoch = 2451545.0
+    let jd = 2_451_545.0 + (time.timestamp() as f64 - 946_727_935.816) / 86_400.0;
+    let t_ut1 = (jd - 2_451_545.0) / 36_525.0;
+    // GMST in seconds
+    let gmst_sec =
+        67_310.548_41 + (8_640_184.812_866 + (0.093_104 - 6.2e-6 * t_ut1) * t_ut1) * t_ut1;
+    (gmst_sec * PI / 43_200.0).rem_euclid(2.0 * PI)
 }
 
 /// SGP4 Propagator
 pub struct Propagator {
     /// SGP4 elements for each satellite with their TLE epoch
     elements: HashMap<SatelliteId, (sgp4::Elements, DateTime<Utc>)>,
+    /// Cached constants for each satellite (avoids expensive reconstruction per-call)
+    constants: HashMap<SatelliteId, sgp4::Constants>,
 }
 
 impl Propagator {
     pub fn new() -> Self {
         Self {
             elements: HashMap::new(),
+            constants: HashMap::new(),
         }
     }
 }
@@ -114,8 +118,14 @@ impl Propagator {
             ground_core::GroundStationError::Tracking(format!("SGP4 parse error: {}", e))
         })?;
 
+        // Cache the constants at load time (expensive operation, do once)
+        let constants = sgp4::Constants::from_elements(&elements).map_err(|e| {
+            ground_core::GroundStationError::Tracking(format!("SGP4 constants error: {}", e))
+        })?;
+
         self.elements
             .insert(tle.satellite_id.clone(), (elements, tle.epoch));
+        self.constants.insert(tle.satellite_id.clone(), constants);
         Ok(())
     }
 
@@ -125,19 +135,23 @@ impl Propagator {
         satellite_id: &SatelliteId,
         time: DateTime<Utc>,
     ) -> Result<OrbitalState> {
-        let (elements, tle_epoch) = self.elements.get(satellite_id).ok_or_else(|| {
+        let (_elements, tle_epoch) = self.elements.get(satellite_id).ok_or_else(|| {
             ground_core::GroundStationError::Tracking(format!(
                 "Satellite {} not loaded",
                 satellite_id
             ))
         })?;
 
+        // Use cached constants instead of reconstructing per-call
+        let constants = self.constants.get(satellite_id).ok_or_else(|| {
+            ground_core::GroundStationError::Tracking(format!(
+                "Satellite {} constants not cached",
+                satellite_id
+            ))
+        })?;
+
         // Compute minutes from epoch
         let minutes_since_epoch = (time - tle_epoch).num_seconds() as f64 / 60.0;
-
-        let constants = sgp4::Constants::from_elements(elements).map_err(|e| {
-            ground_core::GroundStationError::Tracking(format!("SGP4 constants error: {}", e))
-        })?;
 
         let state = constants
             .propagate(sgp4::MinutesSinceEpoch(minutes_since_epoch))
