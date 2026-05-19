@@ -5,12 +5,6 @@ use ground_core::{GroundStationError, Result};
 use serde::{Deserialize, Serialize};
 use std::sync::atomic::{AtomicU64, Ordering};
 
-#[cfg(feature = "soapysdr-backend")]
-use soapysdr::{Device, Direction, StreamFormat};
-
-#[cfg(feature = "uhd-backend")]
-use uhd_sys::{uhd_rx_streamer_make, uhd_rx_streamer_recv, uhd_usrp_make};
-
 /// Unique identifier for a sample in the stream
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub struct SampleId(u64);
