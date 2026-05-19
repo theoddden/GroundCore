@@ -39,6 +39,7 @@ pub struct Sample {
 pub struct SdrHandle {
     device_id: String,
     sample_counter: AtomicU64,
+    #[allow(dead_code)]
     backend_type: SdrBackendType,
 }
 

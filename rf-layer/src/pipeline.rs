@@ -26,6 +26,7 @@ pub struct RfPipeline {
     /// NCO controller for Doppler correction
     nco: NcoController,
     /// Doppler schedule for this pass
+    #[allow(dead_code)]
     doppler_schedule: DopplerSchedule,
     /// Batcher for output symbols
     batcher: DemodulatorBatcher,
