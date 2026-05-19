@@ -38,7 +38,15 @@ impl FederationSnapshotter {
             snapshots: Vec::new(),
         }
     }
+}
 
+impl Default for FederationSnapshotter {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl FederationSnapshotter {
     /// Take a snapshot from pre-converted peer states.
     /// Callers are responsible for extracting `PeerState` from their peer types,
     /// keeping snapshotting fully decoupled from federation internals.

@@ -35,7 +35,15 @@ impl DemodulatorSnapshotter {
             snapshots: Vec::new(),
         }
     }
+}
 
+impl Default for DemodulatorSnapshotter {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl DemodulatorSnapshotter {
     /// Take a snapshot of any serializable demodulator state.
     pub fn snapshot<T: Serialize>(
         &mut self,
