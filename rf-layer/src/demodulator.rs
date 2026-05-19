@@ -6,7 +6,7 @@
 use batching::DemodulatorBatcher;
 use bitemporal::timestamp::{BiTemporal, EventTime, ReceptionTime};
 use chrono::{DateTime, Utc};
-use ground_core::{GroundStationError, Result};
+use ground_core::Result;
 use serde::{Deserialize, Serialize};
 
 use crate::sdr::{Sample, SampleId};
