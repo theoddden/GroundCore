@@ -22,7 +22,7 @@ bumpalo = { workspace = true, optional = true }
 
 # SDR hardware backends (optional - requires native libraries)
 soapysdr = { version = "0.4", optional = true }
-uhd-sys = { version = "0.2", optional = true }
+uhd-sys = { version = "0.1", optional = true }
 
 [features]
 default = []
