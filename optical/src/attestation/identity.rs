@@ -232,15 +232,15 @@ impl ControlPlaneCertificateManager {
         }
 
         // Reconstruct the CA keypair from stored bytes so we can sign with it
-        let private_key_array: [u8; 32] = key_pair.private_key
-            .as_slice()
-            .try_into()
-            .map_err(|_| CertificateError::ValidationFailed("Invalid private key length".to_string()))?;
+        let private_key_array: [u8; 32] =
+            key_pair.private_key.as_slice().try_into().map_err(|_| {
+                CertificateError::ValidationFailed("Invalid private key length".to_string())
+            })?;
         let signing_key = SigningKey::from_bytes(&private_key_array);
-        let public_key_array: [u8; 32] = key_pair.public_key
-            .as_slice()
-            .try_into()
-            .map_err(|_| CertificateError::ValidationFailed("Invalid public key length".to_string()))?;
+        let public_key_array: [u8; 32] =
+            key_pair.public_key.as_slice().try_into().map_err(|_| {
+                CertificateError::ValidationFailed("Invalid public key length".to_string())
+            })?;
         let verifying_key = VerifyingKey::from_bytes(&public_key_array);
         let keypair = (signing_key, verifying_key);
 
