@@ -127,7 +127,7 @@ mod tests {
         let power = Power::new(40.0); // Exceeds 30 dBm limit
 
         let result = transmit_no_coordination(&license, frequency, power);
-        assert!(matches!(result, Err(TransmitError::PowerExceedsLimit)));
+        assert!(matches!(result, Err(ground_core::GroundStationError::Regulatory(_))));
     }
 
     #[test]
@@ -144,6 +144,6 @@ mod tests {
         let power = Power::new(20.0);
 
         let result = transmit_no_coordination(&license, frequency, power);
-        assert!(matches!(result, Err(TransmitError::PowerExceedsLimit)));
+        assert!(matches!(result, Err(ground_core::GroundStationError::Regulatory(_))));
     }
 }

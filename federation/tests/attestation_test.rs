@@ -3,7 +3,6 @@ mod tests {
     use ed25519_dalek::{Signer, SigningKey, Verifier};
     use federation::attestation::SignedData;
     use federation::peer::{FederationPeer, PeerId};
-    use hex;
 
     #[test]
     fn test_peer_creation() {

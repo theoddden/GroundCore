@@ -120,7 +120,7 @@ impl ConstellationState {
         &self,
         satellite: &SatelliteId,
         window: &TimeWindow,
-        constraints: &crate::mission::IntentConstraints,
+        _constraints: &crate::mission::IntentConstraints,
     ) -> Option<AssetId> {
         let sat_state = self.satellites.get(satellite)?;
 
