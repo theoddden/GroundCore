@@ -189,7 +189,7 @@ impl ScheduleOptimizer {
             // Check if pass meets minimum duration requirement
             let duration = (pass.scheduled_window.end - pass.scheduled_window.start)
                 .num_seconds()
-                .abs() as u64;
+                .unsigned_abs();
 
             // Assume minimum duration of 300 seconds (5 minutes) for all passes
             // In a real implementation, this would be derived from the original request
@@ -261,7 +261,7 @@ impl ScheduleOptimizer {
     /// Reallocate hardware for a pass (try different SDR/antenna)
     fn reallocate_hardware(&self, pass: &mut ScheduledPass) {
         // Try a different SDR device
-        let sdr_options = vec!["sdr-0", "sdr-1", "sdr-2", "sdr-3"];
+        let sdr_options = ["sdr-0", "sdr-1", "sdr-2", "sdr-3"];
         let current_idx = pass
             .hardware_allocation
             .sdr_devices
@@ -273,7 +273,7 @@ impl ScheduleOptimizer {
         pass.hardware_allocation.sdr_devices = vec![sdr_options[new_idx].to_string()];
 
         // Try a different antenna
-        let antenna_options = vec!["antenna-0", "antenna-1", "antenna-2"];
+        let antenna_options = ["antenna-0", "antenna-1", "antenna-2"];
         let ant_idx = rand::random::<usize>() % antenna_options.len();
         pass.hardware_allocation.antenna_id = antenna_options[ant_idx].to_string();
     }

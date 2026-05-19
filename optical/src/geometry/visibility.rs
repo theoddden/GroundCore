@@ -58,9 +58,10 @@ impl Default for VisibilityConstraints {
 
 impl VisibilityConstraints {
     pub fn with_solar_exclusion(angle_deg: f64) -> Self {
-        let mut constraints = Self::default();
-        constraints.solar_exclusion_angle_deg = angle_deg;
-        constraints
+        Self {
+            solar_exclusion_angle_deg: angle_deg,
+            ..Default::default()
+        }
     }
 }
 
