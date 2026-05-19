@@ -69,8 +69,6 @@ pub struct TransmissionScheduler {
     pending: RwLock<VecDeque<Command>>,
     /// Conflict resolution strategy
     conflict_strategy: ConflictStrategy,
-    /// UKF refiner for Doppler prediction (optional)
-    ukf_refiner: Option<UkfRefiner>,
 }
 
 /// Conflict resolution strategy
@@ -92,14 +90,7 @@ impl TransmissionScheduler {
             scheduled: RwLock::new(HashMap::new()),
             pending: RwLock::new(VecDeque::new()),
             conflict_strategy,
-            ukf_refiner: None,
         }
-    }
-
-    /// Set the UKF refiner for Doppler prediction
-    pub fn with_ukf_refiner(mut self, ukf_refiner: UkfRefiner) -> Self {
-        self.ukf_refiner = Some(ukf_refiner);
-        self
     }
 
     /// Add a transmission window

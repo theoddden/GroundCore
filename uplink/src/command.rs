@@ -18,7 +18,7 @@ pub enum CommandPriority {
 }
 
 /// Command execution timing
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub enum CommandType {
     /// Execute immediately
     Immediate,
