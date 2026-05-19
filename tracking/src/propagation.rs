@@ -98,7 +98,15 @@ impl Propagator {
             elements: HashMap::new(),
         }
     }
+}
 
+impl Default for Propagator {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl Propagator {
     /// Load TLE into the propagator
     pub fn load_tle(&mut self, tle: &TleData) -> Result<()> {
         let elements = sgp4::Elements::from_tle(None, tle.line1.as_bytes(), tle.line2.as_bytes())

@@ -113,7 +113,15 @@ impl TleSet {
             fetched_at: Utc::now(),
         }
     }
+}
 
+impl Default for TleSet {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl TleSet {
     /// Add a TLE to the set
     pub fn add(&mut self, tle: TleData) {
         self.tles.insert(tle.satellite_id.clone(), tle);
@@ -167,10 +175,10 @@ impl TleSet {
                     batcher.add_tle(satellite_id.clone(), tle_data);
 
                     // Flush if batch is ready
-                    if batcher.is_ready() {
-                        if let Some(batch) = batcher.flush() {
-                            self.apply_batch(batch);
-                        }
+                    if batcher.is_ready()
+                        && let Some(batch) = batcher.flush()
+                    {
+                        self.apply_batch(batch);
                     }
                 }
                 Err(e) => {
@@ -243,5 +251,11 @@ impl ValidationResult {
             drift_detected: 0,
             max_drift_meters: 0.0,
         }
+    }
+}
+
+impl Default for ValidationResult {
+    fn default() -> Self {
+        Self::new()
     }
 }
