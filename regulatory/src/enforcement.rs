@@ -84,9 +84,7 @@ impl ComplianceChecker {
                 description: format!("No license found for {} band", B::NAME),
                 severity: Severity::Critical,
             });
-        } else {
-            let license = license.unwrap();
-
+        } else if let Some(license) = license {
             if !license.is_valid() {
                 violations.push(ComplianceViolation {
                     violation_type: ViolationType::ExpiredLicense {

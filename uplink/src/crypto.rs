@@ -173,7 +173,7 @@ impl CryptoBackend for HmacSha256Backend {
         use hmac::{Hmac, Mac};
         type HmacSha256 = Hmac<Sha256>;
 
-        let mut mac = HmacSha256::new_from_slice(&key.private_key)
+        let mut mac = <HmacSha256 as Mac>::new_from_slice(&key.private_key)
             .map_err(|e| CryptoError::KeyGenerationFailed(e.to_string()))?;
         mac.update(data);
         Ok(mac.finalize().into_bytes().to_vec())
@@ -183,7 +183,7 @@ impl CryptoBackend for HmacSha256Backend {
         use hmac::{Hmac, Mac};
         type HmacSha256 = Hmac<Sha256>;
 
-        let mut mac = HmacSha256::new_from_slice(&key.private_key)
+        let mut mac = <HmacSha256 as Mac>::new_from_slice(&key.private_key)
             .map_err(|e| CryptoError::KeyGenerationFailed(e.to_string()))?;
         mac.update(data);
         Ok(mac.verify_slice(signature).is_ok())

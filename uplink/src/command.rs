@@ -18,7 +18,7 @@ pub enum CommandPriority {
 }
 
 /// Command execution timing
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum CommandType {
     /// Execute immediately
     Immediate,
@@ -42,7 +42,7 @@ pub enum CommandState {
 }
 
 /// Satellite command
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct Command {
     /// Unique command identifier
     pub id: CommandId,

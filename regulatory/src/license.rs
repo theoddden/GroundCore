@@ -63,6 +63,12 @@ pub struct LicenseStore {
     licenses: HashMap<String, serde_json::Value>,
 }
 
+impl Default for LicenseStore {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl LicenseStore {
     pub fn new() -> Self {
         Self {

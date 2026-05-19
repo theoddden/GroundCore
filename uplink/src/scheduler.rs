@@ -1,12 +1,11 @@
 //! Transmission scheduling with pass window integration
 
-use crate::command::{Command, CommandId, CommandPriority};
+use crate::command::{Command, CommandId};
 use chrono::{DateTime, Duration, Utc};
 use ground_core::{GroundStationError, PassId, Result};
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, VecDeque};
 use tokio::sync::RwLock;
-use tracking::ukf::UkfRefiner;
 
 /// Transmission window (when satellite is visible)
 #[derive(Debug, Clone, Serialize, Deserialize)]
