@@ -9,7 +9,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use soapysdr::{Device, Direction, StreamFormat};
 
 #[cfg(feature = "uhd-backend")]
-use uhd_sys::{uhd_usrp_make, uhd_rx_streamer_make, uhd_rx_streamer_recv};
+use uhd_sys::{uhd_rx_streamer_make, uhd_rx_streamer_recv, uhd_usrp_make};
 
 /// Unique identifier for a sample in the stream
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
@@ -74,8 +74,9 @@ impl SdrHandle {
 
     #[cfg(feature = "soapysdr-backend")]
     pub fn new_soapysdr(device_id: String, driver: &str) -> Result<Self> {
-        let device = Device::new(driver)
-            .map_err(|e| GroundStationError::Hardware(format!("Failed to open SoapySDR device: {}", e)))?;
+        let device = Device::new(driver).map_err(|e| {
+            GroundStationError::Hardware(format!("Failed to open SoapySDR device: {}", e))
+        })?;
 
         Ok(Self {
             device_id,
@@ -91,7 +92,9 @@ impl SdrHandle {
     pub fn new_uhd(device_args: &str) -> Result<Self> {
         // In a real implementation, this would use uhd-sys to create a USRP handle
         // For now, we'll use a placeholder since uhd-sys requires complex setup
-        tracing::warn!("UHD backend selected but not fully implemented - falling back to simulated");
+        tracing::warn!(
+            "UHD backend selected but not fully implemented - falling back to simulated"
+        );
         Ok(Self::new(device_args.to_string()))
     }
 
@@ -118,17 +121,23 @@ impl SdrHandle {
     #[cfg(feature = "soapysdr-backend")]
     fn read_samples_soapysdr(&self, buffer: &mut [Sample]) -> Result<usize> {
         if let Some(device) = &self.soapysdr_device {
-            let mut stream = device.rx_stream(Direction::Rx)
-                .map_err(|e| GroundStationError::Hardware(format!("Failed to create RX stream: {}", e)))?;
+            let mut stream = device.rx_stream(Direction::Rx).map_err(|e| {
+                GroundStationError::Hardware(format!("Failed to create RX stream: {}", e))
+            })?;
 
             let format = StreamFormat::ComplexFloat32;
-            stream.setup(&format, buffer.len() as u32)
-                .map_err(|e| GroundStationError::Hardware(format!("Failed to setup stream: {}", e)))?;
+            stream.setup(&format, buffer.len() as u32).map_err(|e| {
+                GroundStationError::Hardware(format!("Failed to setup stream: {}", e))
+            })?;
 
-            let samples_read = stream.activate(None)
+            let samples_read = stream
+                .activate(None)
                 .and_then(|_| stream.read(&mut vec![0.0; buffer.len() * 2]))
-                .map_err(|e| GroundStationError::Hardware(format!("Failed to read samples: {}", e)))?
-                .len() / 2;
+                .map_err(|e| {
+                    GroundStationError::Hardware(format!("Failed to read samples: {}", e))
+                })?
+                .len()
+                / 2;
 
             // Convert interleaved I/Q to Sample structs
             let iq_data: Vec<f32> = vec![0.0; buffer.len() * 2]; // Would come from actual read
@@ -180,22 +189,31 @@ impl SdrHandle {
             #[cfg(feature = "soapysdr-backend")]
             SdrBackendType::SoapySDR => {
                 if let Some(device) = &self.soapysdr_device {
-                    device.set_frequency(Direction::Rx, 0, frequency_hz as f64)
-                        .map_err(|e| GroundStationError::Hardware(format!("Failed to tune: {}", e)))?;
+                    device
+                        .set_frequency(Direction::Rx, 0, frequency_hz as f64)
+                        .map_err(|e| {
+                            GroundStationError::Hardware(format!("Failed to tune: {}", e))
+                        })?;
                     tracing::debug!("Tuned SoapySDR {} to {} Hz", self.device_id, frequency_hz);
                 }
             }
             #[cfg(feature = "uhd-backend")]
             SdrBackendType::UHD => {
                 // UHD tuning implementation would go here
-                tracing::debug!("UHD tuning to {} Hz (not fully implemented)", frequency_hz);
+                tracing::debug!(
+                    "UHD tuning to {} Hz (not fully implemented)",
+                    frequency_hz
+                );
             }
             SdrBackendType::Simulated => {
                 tracing::debug!("Simulated tuning to {} Hz", frequency_hz);
             }
             #[cfg(not(feature = "soapysdr-backend"))]
             SdrBackendType::SoapySDR => {
-                tracing::debug!("Simulated tuning to {} Hz (SoapySDR not enabled)", frequency_hz);
+                tracing::debug!(
+                    "Simulated tuning to {} Hz (SoapySDR not enabled)",
+                    frequency_hz
+                );
             }
             #[cfg(not(feature = "uhd-backend"))]
             SdrBackendType::UHD => {
@@ -211,9 +229,19 @@ impl SdrHandle {
             #[cfg(feature = "soapysdr-backend")]
             SdrBackendType::SoapySDR => {
                 if let Some(device) = &self.soapysdr_device {
-                    device.set_sample_rate(Direction::Rx, 0, rate_hz as f64)
-                        .map_err(|e| GroundStationError::Hardware(format!("Failed to set sample rate: {}", e)))?;
-                    tracing::debug!("Set SoapySDR {} sample rate to {} Hz", self.device_id, rate_hz);
+                    device
+                        .set_sample_rate(Direction::Rx, 0, rate_hz as f64)
+                        .map_err(|e| {
+                            GroundStationError::Hardware(format!(
+                                "Failed to set sample rate: {}",
+                                e
+                            ))
+                        })?;
+                    tracing::debug!(
+                        "Set SoapySDR {} sample rate to {} Hz",
+                        self.device_id,
+                        rate_hz
+                    );
                 }
             }
             #[cfg(feature = "uhd-backend")]

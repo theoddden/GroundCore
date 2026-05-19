@@ -9,7 +9,7 @@
 
 use crate::demodulator::{DemodState, DemodulatorOutput};
 use crate::doppler::{DopplerSchedule, NcoController};
-use crate::sdr::{Sample, SdrHandle, SampleId};
+use crate::sdr::{Sample, SampleId, SdrHandle};
 use batching::DemodulatorBatcher;
 use chrono::{DateTime, Utc};
 use ground_core::{GroundStationError, Result};
@@ -58,7 +58,8 @@ impl RfPipeline {
 
     /// Start the real-time processing pipeline
     pub async fn start(&self) -> Result<()> {
-        self.running.store(true, std::sync::atomic::Ordering::SeqCst);
+        self.running
+            .store(true, std::sync::atomic::Ordering::SeqCst);
         tracing::info!("Starting RF pipeline for pass");
 
         let mut sample_buffer = vec![Sample::default(); 4096]; // 4K sample buffer
@@ -82,7 +83,8 @@ impl RfPipeline {
                 let mut demod = self.demodulator.write().await;
                 if let Some(byte) = demod.process_sample(&corrected_sample)? {
                     // 4. Output decoded byte
-                    self.batcher.add_symbol(byte, sample.id, sample.reception_time);
+                    self.batcher
+                        .add_symbol(byte, sample.id, sample.reception_time);
 
                     // Flush batch if full
                     if self.batcher.size() >= 1000 {
@@ -100,7 +102,8 @@ impl RfPipeline {
 
     /// Stop the processing pipeline
     pub fn stop(&self) {
-        self.running.store(false, std::sync::atomic::Ordering::SeqCst);
+        self.running
+            .store(false, std::sync::atomic::Ordering::SeqCst);
         tracing::info!("Stopping RF pipeline");
     }
 

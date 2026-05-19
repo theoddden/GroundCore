@@ -10,12 +10,12 @@
 
 pub mod demodulator;
 pub mod doppler;
+pub mod pipeline;
 pub mod sdr;
 pub mod shadow;
-pub mod pipeline;
 
 pub use demodulator::{DemodState, DemodulatorSnapshot};
 pub use doppler::{DopplerSchedule, NcoController};
+pub use pipeline::{PipelineStats, RfPipeline};
 pub use sdr::{Sample, SampleId, SdrHandle};
 pub use shadow::{PassAcquisition, ShadowTracker};
-pub use pipeline::{RfPipeline, PipelineStats};
