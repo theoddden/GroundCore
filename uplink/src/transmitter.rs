@@ -8,6 +8,7 @@ use tokio::sync::RwLock;
 use uuid::Uuid;
 
 /// Transmission identifier
+pub type TransmissionId = Uuid;
 pub type TransmitterId = Uuid;
 
 /// Transmitter status

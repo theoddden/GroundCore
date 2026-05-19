@@ -9,7 +9,7 @@ use std::collections::HashMap;
 use tokio::sync::RwLock;
 
 /// Queued command with metadata
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
 pub struct QueuedCommand {
     /// The command
     pub command: Command,

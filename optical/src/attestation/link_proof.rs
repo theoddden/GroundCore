@@ -5,7 +5,7 @@
 
 use crate::{BiTemporal, EventTime, ReceptionTime};
 use chrono::{DateTime, Utc};
-use ed25519_dalek::{Signer, SigningKey, VerifyingKey};
+use ed25519_dalek::{Signer, SigningKey, Verifier, VerifyingKey};
 use rand::rngs::OsRng;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -119,7 +119,11 @@ impl LinkAttestation {
             Err(_) => return false,
         };
 
-        let public_key = match ed25519_dalek::VerifyingKey::from_bytes(&pub_bytes) {
+        let pub_array: [u8; 32] = match pub_bytes.as_slice().try_into() {
+            Ok(arr) => arr,
+            Err(_) => return false,
+        };
+        let public_key = match ed25519_dalek::VerifyingKey::from_bytes(&pub_array) {
             Ok(k) => k,
             Err(_) => return false,
         };
