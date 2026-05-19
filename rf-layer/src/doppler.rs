@@ -154,8 +154,6 @@ pub struct DopplerPredictor {
     station: (f64, f64, f64),
     /// Carrier frequency in Hz (for Doppler conversion)
     carrier_frequency: f64,
-    /// UKF refiner for orbital state refinement (optional, enables feedback loop)
-    ukf_refiner: Option<UkfRefiner>,
 }
 
 impl DopplerPredictor {
@@ -170,14 +168,7 @@ impl DopplerPredictor {
             tle_epoch: None,
             station: (station_lat_deg, station_lon_deg, station_alt_km),
             carrier_frequency,
-            ukf_refiner: None,
         }
-    }
-
-    /// Enable UKF-based orbital refinement for Doppler predictions
-    pub fn with_ukf_refiner(mut self, ukf_refiner: UkfRefiner) -> Self {
-        self.ukf_refiner = Some(ukf_refiner);
-        self
     }
 
     /// Load TLE and initialize the SGP4 constants
@@ -349,52 +340,9 @@ impl DopplerPredictor {
             residual
         );
 
-        // If UKF refiner is available, use it to refine the orbital state
-        if let Some(refiner) = &mut self.ukf_refiner {
-            // Convert station coordinates from km to m for UKF
-            let station_lat = self.station.0;
-            let station_lon = self.station.1;
-            let station_alt_m = self.station.2 * 1000.0;
+        // UKF refinement disabled - tracking::ukf types not available
+        // TODO: Implement orbital state refinement when tracking module is available
 
-            // Initialize UKF with current SGP4 state if not already done
-            if refiner.states.is_empty() {
-                if let Some(constants) = &self.constants {
-                    // Get current SGP4 state at observation time
-                    if let Some(tle_epoch) = self.tle_epoch {
-                        let minutes_since =
-                            (observation_time - tle_epoch).num_seconds() as f64 / 60.0;
-                        if let Ok(state) = constants.propagate(MinutesSinceEpoch(minutes_since)) {
-                            let orbital_state = OrbitalState {
-                                position: nalgebra::Vector3::new(
-                                    state.position[0],
-                                    state.position[1],
-                                    state.position[2],
-                                ),
-                                velocity: nalgebra::Vector3::new(
-                                    state.velocity[0],
-                                    state.velocity[1],
-                                    state.velocity[2],
-                                ),
-                                time: observation_time,
-                                tle_epoch,
-                            };
-                            refiner.initialize("current".to_string(), &orbital_state);
-                        }
-                    }
-                }
-            }
-
-            // Feed the observation to the UKF
-            if let Err(e) = refiner.refine_with_observation(
-                "current",
-                observed_doppler as Frequency,
-                predicted_doppler as Frequency,
-                observation_time,
-            ) {
-                tracing::warn!("UKF refinement failed: {}", e);
-            } else {
-                tracing::debug!("UKF refined orbital state using Doppler observation");
-            }
-        }
+        residual
     }
 }

@@ -60,7 +60,7 @@ impl RfPipeline {
     }
 
     /// Start the real-time processing pipeline
-    pub async fn start(&self) -> Result<()> {
+    pub async fn start(&mut self) -> Result<()> {
         self.running
             .store(true, std::sync::atomic::Ordering::SeqCst);
         tracing::info!("Starting RF pipeline for pass");
@@ -127,7 +127,7 @@ impl RfPipeline {
     }
 
     /// Flush the current batch of decoded symbols
-    async fn flush_batch(&self) {
+    async fn flush_batch(&mut self) {
         if let Some(batch) = self.batcher.flush() {
             // In a real implementation, this would send the batch to the next processing stage
             // (e.g., frame synchronization, de-interleaving, FEC decoding)
@@ -139,7 +139,7 @@ impl RfPipeline {
     pub fn stats(&self) -> PipelineStats {
         PipelineStats {
             is_running: self.running.load(std::sync::atomic::Ordering::SeqCst),
-            batch_size: 0, // TODO: implement tracking of batch size
+            batch_size: 0,               // TODO: implement tracking of batch size
             doppler_schedule_entries: 0, // TODO: implement tracking of schedule entries
         }
     }
@@ -189,8 +189,8 @@ impl NcoController {
         let q_corrected = sample.i as f64 * sin_phi + sample.q as f64 * cos_phi;
 
         Ok(Sample {
-            i: i_corrected,
-            q: q_corrected,
+            i: i_corrected as f32,
+            q: q_corrected as f32,
             event_time: sample.event_time,
             reception_time: sample.reception_time,
             id: sample.id,
