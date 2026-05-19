@@ -200,10 +200,7 @@ impl SdrHandle {
             #[cfg(feature = "uhd-backend")]
             SdrBackendType::UHD => {
                 // UHD tuning implementation would go here
-                tracing::debug!(
-                    "UHD tuning to {} Hz (not fully implemented)",
-                    frequency_hz
-                );
+                tracing::debug!("UHD tuning to {} Hz (not fully implemented)", frequency_hz);
             }
             SdrBackendType::Simulated => {
                 tracing::debug!("Simulated tuning to {} Hz", frequency_hz);
