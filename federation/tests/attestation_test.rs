@@ -62,7 +62,8 @@ mod tests {
         let data = b"test data".to_vec();
         let signature = hex::encode([0u8; 64]);
 
-        let signed_data = SignedData::sign(data.clone(), signature.clone(), "public_key".to_string());
+        let signed_data =
+            SignedData::sign(data.clone(), signature.clone(), "public_key".to_string());
 
         let serialized = serde_json::to_string(&signed_data).unwrap();
         let deserialized: SignedData = serde_json::from_str(&serialized).unwrap();
