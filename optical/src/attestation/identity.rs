@@ -241,7 +241,8 @@ impl ControlPlaneCertificateManager {
             key_pair.public_key.as_slice().try_into().map_err(|_| {
                 CertificateError::ValidationFailed("Invalid public key length".to_string())
             })?;
-        let verifying_key = VerifyingKey::from_bytes(&public_key_array);
+        let verifying_key = VerifyingKey::from_bytes(&public_key_array)
+            .map_err(|e| CertificateError::ValidationFailed(e.to_string()))?;
         let keypair = (signing_key, verifying_key);
 
         let certificate = IdentityCertificate::signed_by(

@@ -168,9 +168,7 @@ impl DominantResourceFairness {
 
     /// Get or create tenant allocation
     pub fn get_or_create_allocation(&mut self, tenant_id: CustomerId) -> &mut ResourceAllocation {
-        self.allocations
-            .entry(tenant_id)
-            .or_insert_with(ResourceAllocation::new)
+        self.allocations.entry(tenant_id).or_default()
     }
 
     /// Get tenant allocation
