@@ -81,7 +81,7 @@ impl ScheduleOptimizer {
         horizon_start: DateTime<Utc>,
         horizon_end: DateTime<Utc>,
         existing_schedule: Option<&Schedule>,
-    ) -> Result<Schedule> {
+    ) -> Result<Schedule, ground_core::GroundStationError> {
         let mut schedule = Schedule::new(horizon_start, horizon_end);
 
         // Start with existing schedule if provided
@@ -237,7 +237,7 @@ impl ScheduleOptimizer {
         &mut self,
         schedule: &Schedule,
         new_requests: &[PassRequest],
-    ) -> Result<Schedule> {
+    ) -> Result<Schedule, ground_core::GroundStationError> {
         let now = Utc::now();
 
         // Partition: stable passes (committed) vs mutable tail (future)

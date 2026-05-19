@@ -70,7 +70,7 @@ impl IdentityCertificate {
     pub fn new(issuer: String, subject: String, validity_days: u64) -> Self {
         let mut csprng = OsRng;
         let signing_key = SigningKey::generate(&mut csprng);
-        let keypair = (signing_key, VerifyingKey::from(&signing_key));
+        let keypair = (signing_key.clone(), VerifyingKey::from(&signing_key));
         Self::signed_by(issuer, subject, validity_days, &keypair)
     }
 
@@ -232,11 +232,11 @@ impl ControlPlaneCertificateManager {
         }
 
         // Reconstruct the CA keypair from stored bytes so we can sign with it
-        let secret = SecretKey::from_bytes(&key_pair.private_key)
+        let signing_key = SigningKey::from_bytes(&key_pair.private_key)
             .map_err(|e| CertificateError::ValidationFailed(e.to_string()))?;
-        let public = ed25519_dalek::PublicKey::from_bytes(&key_pair.public_key)
+        let verifying_key = VerifyingKey::from_bytes(&key_pair.public_key)
             .map_err(|e| CertificateError::ValidationFailed(e.to_string()))?;
-        let keypair = Keypair { secret, public };
+        let keypair = (signing_key, verifying_key);
 
         let certificate = IdentityCertificate::signed_by(
             "GroundCore Control Plane".to_string(),

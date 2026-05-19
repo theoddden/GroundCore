@@ -71,7 +71,7 @@ impl PatAttestation {
             Ok(b) => b,
             Err(_) => return false,
         };
-        let public_key = match ed25519_dalek::PublicKey::from_bytes(&pub_bytes) {
+        let public_key = match ed25519_dalek::VerifyingKey::from_bytes(&pub_bytes) {
             Ok(k) => k,
             Err(_) => return false,
         };
