@@ -6,7 +6,7 @@
 //! - Coordination proofs are type-checked
 
 use crate::rules::{FrequencyBand, LicenseRequirement, RegulatoryPolicy};
-use quote::{format_ident, quote, ToTokens};
+use quote::{ToTokens, format_ident, quote};
 use syn::{Item, parse_quote};
 
 /// Generated Rust types for a regulatory policy

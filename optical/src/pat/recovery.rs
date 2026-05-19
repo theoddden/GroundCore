@@ -23,10 +23,14 @@ pub enum LossReason {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum RecoveryStrategy {
     /// Retry with wider beam divergence
-    RetryWithWiderBeam { new_divergence_mrad: f64 },
+    RetryWithWiderBeam {
+        new_divergence_mrad: f64,
+    },
 
     /// Retry at a later time when geometry is more favorable
-    RetryAtLaterTime { retry_at: DateTime<Utc> },
+    RetryAtLaterTime {
+        retry_at: DateTime<Utc>,
+    },
 
     /// Use an alternative terminal on the same satellite
     UseAlternativeTerminal { terminal_id: String },
