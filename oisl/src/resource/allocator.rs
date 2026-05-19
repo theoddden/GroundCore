@@ -1,6 +1,8 @@
 // Resource Allocator - multi-tenant resource allocation
 
-use crate::{AllocationId, Bytes, DataRate, Priority, SatelliteId, TaskId, TenantId, TerminalId, TimeWindow};
+use crate::{
+    AllocationId, Bytes, DataRate, Priority, SatelliteId, TaskId, TenantId, TerminalId, TimeWindow,
+};
 use chrono::{DateTime, Duration, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;

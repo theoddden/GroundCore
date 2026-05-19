@@ -4,8 +4,8 @@
 // Standard at the optical layer. They differ at the management interface.
 // This trait abstracts the management interface, not the optical layer.
 
-use crate::physical::vendors::Vendor;
 use crate::ResetLevel;
+use crate::physical::vendors::Vendor;
 use crate::{
     OctConfiguration, OctStandardVersion, SerialNumber, TerminalId, topology::link_state::LinkPhase,
 };

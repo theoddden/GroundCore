@@ -5,8 +5,8 @@
 // distances to control nodes over a future time window, triggering
 // handoffs based on distance thresholds.
 
-use crate::{NodeId, SatelliteId};
 use crate::topology::forecast::Position3D;
+use crate::{NodeId, SatelliteId};
 use chrono::{DateTime, Duration, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
