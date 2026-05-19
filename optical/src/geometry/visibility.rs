@@ -57,11 +57,6 @@ impl Default for VisibilityConstraints {
 }
 
 impl VisibilityConstraints {
-    #[allow(clippy::should_implement_trait)]
-    pub fn default() -> Self {
-        Self::default()
-    }
-
     pub fn with_solar_exclusion(angle_deg: f64) -> Self {
         let mut constraints = Self::default();
         constraints.solar_exclusion_angle_deg = angle_deg;

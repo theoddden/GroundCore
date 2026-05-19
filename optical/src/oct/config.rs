@@ -174,11 +174,6 @@ impl ArqConfiguration {
             max_retries: 0,
         }
     }
-
-    #[allow(clippy::should_implement_trait)]
-    pub fn default() -> Self {
-        Self::default()
-    }
 }
 
 /// Tracking tone
@@ -198,8 +193,4 @@ impl Default for TrackingTone {
 }
 
 impl TrackingTone {
-    #[allow(clippy::should_implement_trait)]
-    pub fn default() -> Self {
-        Self::default()
-    }
 }

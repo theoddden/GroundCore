@@ -6,11 +6,10 @@
 
 use crate::drf::DominantResourceFairness;
 use crate::reputation::ReputationTracker;
-use crate::schedule::{PassRequest, Priority, Schedule, ScheduledPass};
+use crate::schedule::{PassRequest, Schedule, ScheduledPass};
 use caching::ScheduleFragmentCache;
 use chrono::{DateTime, Utc};
-use ground_core::{GroundStationError, PassId, Result};
-use serde::{Deserialize, Serialize};
+use ground_core::{PassId, Result};
 use snapshotting::ScheduleSnapshotter;
 use std::time::Duration;
 
@@ -82,7 +81,7 @@ impl ScheduleOptimizer {
         horizon_start: DateTime<Utc>,
         horizon_end: DateTime<Utc>,
         existing_schedule: Option<&Schedule>,
-    ) -> Result<Schedule, ground_core::GroundStationError> {
+    ) -> Result<Schedule> {
         let mut schedule = Schedule::new(horizon_start, horizon_end);
 
         // Start with existing schedule if provided
@@ -184,7 +183,7 @@ impl ScheduleOptimizer {
         }
 
         let mut fulfilled = 0usize;
-        let mut total = schedule.passes.len();
+        let total = schedule.passes.len();
 
         for pass in &schedule.passes {
             // Check if pass meets minimum duration requirement
@@ -344,7 +343,7 @@ impl ScheduleOptimizer {
         &mut self,
         schedule: &Schedule,
         new_requests: &[PassRequest],
-    ) -> Result<Schedule, ground_core::GroundStationError> {
+    ) -> Result<Schedule> {
         let now = Utc::now();
 
         // Partition: stable passes (committed) vs mutable tail (future)

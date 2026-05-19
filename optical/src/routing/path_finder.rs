@@ -108,10 +108,6 @@ impl Default for RouteConstraints {
 }
 
 impl RouteConstraints {
-    #[allow(clippy::should_implement_trait)]
-    pub fn default() -> Self {
-        Self::default()
-    }
 }
 
 /// Optical route

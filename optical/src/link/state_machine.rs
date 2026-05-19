@@ -158,7 +158,9 @@ impl OpticalLink {
     }
 
     pub fn schedule(&mut self, acquisition_plan: AcquisitionPlan) {
-        self.phase = LinkPhase::Scheduled { acquisition_plan };
+        self.phase = LinkPhase::Scheduled {
+            acquisition_plan: Box::new(acquisition_plan),
+        };
     }
 
     pub fn transition_to_acquiring(&mut self) {
@@ -302,11 +304,6 @@ impl Default for LinkMetrics {
 }
 
 impl LinkMetrics {
-    #[allow(clippy::should_implement_trait)]
-    pub fn default() -> Self {
-        Self::default()
-    }
-
     pub fn utilization(&self) -> f64 {
         if self.data_rate_capacity > 0 {
             self.data_rate_actual as f64 / self.data_rate_capacity as f64
