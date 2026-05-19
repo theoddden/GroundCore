@@ -8,7 +8,7 @@
 // certificates to eliminate certificate retrieval latency during handoffs.
 
 use chrono::{DateTime, Utc};
-use ed25519_dalek::{Keypair, SecretKey, Signer};
+use ed25519_dalek::{SigningKey, Signer, VerifyingKey};
 use rand::rngs::OsRng;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -69,7 +69,8 @@ impl IdentityCertificate {
     /// In production, use `signed_by` with the CA's long-term keypair.
     pub fn new(issuer: String, subject: String, validity_days: u64) -> Self {
         let mut csprng = OsRng;
-        let keypair = Keypair::generate(&mut csprng);
+        let signing_key = SigningKey::generate(&mut csprng);
+        let keypair = (signing_key, VerifyingKey::from(&signing_key));
         Self::signed_by(issuer, subject, validity_days, &keypair)
     }
 
@@ -78,7 +79,7 @@ impl IdentityCertificate {
         issuer: String,
         subject: String,
         validity_days: u64,
-        keypair: &Keypair,
+        keypair: &(SigningKey, VerifyingKey),
     ) -> Self {
         let now = Utc::now();
         let certificate_id = Uuid::new_v4();
@@ -93,7 +94,7 @@ impl IdentityCertificate {
         hasher.update(expires_at.to_rfc3339().as_bytes());
         let hash_bytes = hasher.finalize();
 
-        let sig_bytes = keypair.sign(&hash_bytes).to_bytes();
+        let sig_bytes = keypair.0.sign(&hash_bytes).to_bytes();
 
         Self {
             certificate_id,
@@ -102,7 +103,7 @@ impl IdentityCertificate {
             issuer,
             subject,
             signature: hex::encode(sig_bytes),
-            signer_public_key: hex::encode(keypair.public.to_bytes()),
+            signer_public_key: hex::encode(keypair.1.as_bytes()),
         }
     }
 
@@ -129,13 +130,14 @@ pub struct ControlPlaneKeyPair {
 impl ControlPlaneKeyPair {
     pub fn new(validity_days: u64) -> Self {
         let mut csprng = rand::rngs::OsRng;
-        let keypair = ed25519_dalek::Keypair::generate(&mut csprng);
+        let signing_key = ed25519_dalek::SigningKey::generate(&mut csprng);
+        let verifying_key = ed25519_dalek::VerifyingKey::from(&signing_key);
 
         let now = Utc::now();
         Self {
             key_pair_id: Uuid::new_v4(),
-            public_key: keypair.public.to_bytes().to_vec(),
-            private_key: keypair.secret.to_bytes().to_vec(),
+            public_key: verifying_key.as_bytes().to_vec(),
+            private_key: signing_key.to_bytes().to_vec(),
             created_at: now,
             expires_at: now + chrono::Duration::days(validity_days as i64),
         }

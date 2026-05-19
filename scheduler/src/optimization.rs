@@ -4,13 +4,12 @@
 //! across the 24-48 hour horizon. This is a computationally intensive
 //! operation that runs every few minutes.
 
-use crate::drf::{DominantResourceFairness, ResourceType};
-use crate::reputation::{ReputationTracker, TenantReputation};
+use crate::drf::DominantResourceFairness;
+use crate::reputation::ReputationTracker;
 use crate::schedule::{PassRequest, Schedule, ScheduledPass};
 use caching::ScheduleFragmentCache;
 use chrono::{DateTime, Utc};
-use ground_core::{CustomerId, PassId, Result};
-use rand::Rng;
+use ground_core::PassId;
 use snapshotting::ScheduleSnapshotter;
 use std::time::Duration;
 
@@ -265,7 +264,7 @@ impl ScheduleOptimizer {
         tail_schedule.passes = tail_passes;
 
         // Quick annealing pass on the tail only (200 iterations vs full 10,000)
-        let mut temperature = 100.0;
+        let mut _temperature = 100.0;
         for _ in 0..200 {
             let neighbor = self.generate_neighbor(&tail_schedule, new_requests);
             let current_score = self.evaluate_schedule(&tail_schedule);
@@ -275,7 +274,7 @@ impl ScheduleOptimizer {
                 tail_schedule = neighbor;
             }
 
-            temperature *= 0.95;
+            _temperature *= 0.95;
         }
 
         // Reconstruct: stable passes (unchanged) + optimised tail

@@ -18,7 +18,7 @@ pub struct GeneratedTypes {
 
 /// Module representation
 #[derive(Debug)]
-struct ItemMod {
+pub struct ItemMod {
     pub items: Vec<Item>,
 }
 

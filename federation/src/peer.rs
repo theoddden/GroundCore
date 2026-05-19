@@ -2,7 +2,7 @@
 
 use crate::verification::ChallengeSchedule;
 use chrono::{DateTime, Utc};
-use ed25519_dalek::{Signer, SigningKey, VerifyingKey};
+use ed25519_dalek::{Signer, SigningKey};
 use ground_core::{PassId, StationId};
 use rand::rngs::OsRng;
 use serde::{Deserialize, Serialize};
@@ -98,7 +98,15 @@ impl PeerTrustScore {
             total: 0,
         }
     }
+}
 
+impl Default for PeerTrustScore {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl PeerTrustScore {
     /// Update trust score based on verification result
     pub fn update(&mut self, passed: bool, match_rate: f64) {
         self.total += 1;
@@ -222,7 +230,15 @@ impl PeerManager {
         let signature = self.secret_key.sign(data);
         hex::encode(signature.to_bytes())
     }
+}
 
+impl Default for PeerManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl PeerManager {
     /// Add a peer
     pub fn add_peer(&mut self, peer: FederationPeer) {
         self.peers.insert(peer.station_id.clone(), peer);

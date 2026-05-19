@@ -1,10 +1,8 @@
 //! Challenge pass management
 
-use crate::peer::{PeerId, VerificationResult};
-use crate::verification::{AttestationVerification, ChallengePass, ChallengeResult};
+use crate::peer::PeerId;
 use chrono::{DateTime, Utc};
-use ground_core::{PassId, Result};
-use serde::{Deserialize, Serialize};
+use ground_core::PassId;
 
 /// Challenge pass manager
 pub struct ChallengePassManager {
@@ -17,7 +15,15 @@ impl ChallengePassManager {
             challenges: Vec::new(),
         }
     }
+}
 
+impl Default for ChallengePassManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl ChallengePassManager {
     /// Schedule a challenge pass
     pub fn schedule_challenge(
         &mut self,

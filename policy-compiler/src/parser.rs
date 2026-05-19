@@ -4,9 +4,8 @@
 //! FCC, ITU, and country-specific rules) into the internal rule representation.
 
 use crate::rules::{BandRules, FrequencyBand, LicenseRequirement, PowerLimit, RegulatoryPolicy};
-use ground_core::{Frequency, Result};
+use ground_core::Result;
 use serde_json::Value;
-use std::collections::HashMap;
 
 /// Policy document parser
 pub struct PolicyParser;

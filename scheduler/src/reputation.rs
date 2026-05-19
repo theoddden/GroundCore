@@ -42,7 +42,15 @@ impl ResourceUsage {
             used: 0.0,
         }
     }
+}
 
+impl Default for ResourceUsage {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl ResourceUsage {
     pub fn utilization_rate(&self) -> f64 {
         if self.allocated > 0.0 {
             self.used / self.allocated
@@ -130,6 +138,7 @@ impl TenantReputation {
 /// Reputation tracker for all tenants
 pub struct ReputationTracker {
     tenants: HashMap<CustomerId, TenantReputation>,
+    #[allow(dead_code)]
     alpha: f64, // EMA smoothing factor
 }
 
@@ -146,7 +155,6 @@ impl ReputationTracker {
         self.tenants
             .entry(tenant_id.clone())
             .or_insert_with(|| TenantReputation::new(tenant_id))
-            .into()
     }
 
     /// Get tenant reputation

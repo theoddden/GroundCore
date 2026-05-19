@@ -1,6 +1,6 @@
 //! Cryptographic attestation for federation data
 
-use ed25519_dalek::{Signature, Verifier, VerifyingKey};
+use ed25519_dalek::{Signature, VerifyingKey};
 use ground_core::{PassId, Result};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -169,7 +169,15 @@ impl AttestationVerifier {
             public_keys: std::collections::HashMap::new(),
         }
     }
+}
 
+impl Default for AttestationVerifier {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl AttestationVerifier {
     /// Add a public key
     pub fn add_public_key(&mut self, station_id: String, public_key: String) -> Result<()> {
         let public_key_bytes = hex::decode(&public_key).map_err(|e| {

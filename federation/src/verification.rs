@@ -3,7 +3,7 @@
 use crate::attestation::{Attestation, BitemporalProof};
 use crate::peer::{AttestationRecord, FederationPeer, PeerId, VerificationResult};
 use chrono::{DateTime, Duration, Utc};
-use ground_core::{PassId, Result};
+use ground_core::PassId;
 use serde::{Deserialize, Serialize};
 
 /// Maximum believable pass duration: 20 minutes
@@ -76,7 +76,15 @@ impl ChallengeSchedule {
             interval_hours: 24,
         }
     }
+}
 
+impl Default for ChallengeSchedule {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl ChallengeSchedule {
     /// Add a challenge pass
     pub fn add_challenge(&mut self, challenge: ChallengePass) {
         self.challenges.push(challenge);
@@ -120,7 +128,7 @@ impl AttestationVerification {
         } else {
             // No local capture: only check the peer's own proof for internal sanity.
             let bt = peer_proof
-                .map(|p| Self::proof_internally_consistent(p))
+                .map(Self::proof_internally_consistent)
                 .unwrap_or(false);
             (0.0, bt)
         };

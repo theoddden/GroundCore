@@ -4,7 +4,7 @@
 //! a single shared resource. This prevents gaming because tenants can't
 //! shift their dominant resource by submitting more requests.
 
-use ground_core::{CustomerId, Result};
+use ground_core::CustomerId;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -81,7 +81,15 @@ impl ResourceAllocation {
             dominant_resource: None,
         }
     }
+}
 
+impl Default for ResourceAllocation {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl ResourceAllocation {
     /// Add a resource share
     pub fn add_share(&mut self, share: ResourceShare) {
         self.shares.insert(share.resource_type, share);
@@ -144,7 +152,15 @@ impl DominantResourceFairness {
             total_capacity: HashMap::new(),
         }
     }
+}
 
+impl Default for DominantResourceFairness {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl DominantResourceFairness {
     /// Set total capacity for a resource
     pub fn set_capacity(&mut self, resource_type: ResourceType, capacity: f64) {
         self.total_capacity.insert(resource_type, capacity);
@@ -193,7 +209,7 @@ impl DominantResourceFairness {
         fairness_threshold: f64,
     ) -> bool {
         if let Some(allocation) = self.get_allocation(tenant_id) {
-            let current_share = allocation.dominant_share();
+            let _current_share = allocation.dominant_share();
             let total_cap = self
                 .total_capacity
                 .get(&resource_type)

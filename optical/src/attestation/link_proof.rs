@@ -5,7 +5,7 @@
 
 use crate::{BiTemporal, EventTime, ReceptionTime};
 use chrono::{DateTime, Utc};
-use ed25519_dalek::{Keypair, Signer, Verifier};
+use ed25519_dalek::{SigningKey, Signer, VerifyingKey};
 use rand::rngs::OsRng;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -90,9 +90,10 @@ impl LinkAttestation {
         // Sign the hash with an ephemeral Ed25519 keypair.
         // In production, replace with the terminal's long-term signing key.
         let mut csprng = OsRng;
-        let keypair = Keypair::generate(&mut csprng);
-        let sig_bytes = keypair.sign(&hash_bytes).to_bytes();
-        let signer_public_key = hex::encode(keypair.public.to_bytes());
+        let signing_key = SigningKey::generate(&mut csprng);
+        let verifying_key = VerifyingKey::from(&signing_key);
+        let sig_bytes = signing_key.sign(&hash_bytes).to_bytes();
+        let signer_public_key = hex::encode(verifying_key.as_bytes());
         let signature = Signature::new(hex::encode(sig_bytes));
 
         Self {

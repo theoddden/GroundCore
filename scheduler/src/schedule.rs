@@ -1,7 +1,7 @@
 //! Schedule data structures and management
 
 use chrono::{DateTime, Utc};
-use ground_core::{CustomerId, PassId, Result, SatelliteId};
+use ground_core::{CustomerId, PassId, SatelliteId};
 use serde::{Deserialize, Serialize};
 
 /// Pass request from a customer
@@ -278,6 +278,7 @@ fn windows_overlap(w1: &PassWindow, w2: &PassWindow) -> bool {
 }
 
 /// Check if hardware allocations conflict
+#[allow(dead_code)]
 fn hardware_conflicts(a1: &HardwareAllocation, a2: &HardwareAllocation) -> bool {
     // Check SDR overlap
     for sdr1 in &a1.sdr_devices {
@@ -287,10 +288,10 @@ fn hardware_conflicts(a1: &HardwareAllocation, a2: &HardwareAllocation) -> bool 
     }
 
     // Check shadow SDR overlap
-    if let (Some(s1), Some(s2)) = (&a1.shadow_sdr, &a2.shadow_sdr) {
-        if s1 == s2 {
-            return true;
-        }
+    if let (Some(s1), Some(s2)) = (&a1.shadow_sdr, &a2.shadow_sdr)
+        && s1 == s2
+    {
+        return true;
     }
 
     // Check antenna overlap
