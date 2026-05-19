@@ -5,10 +5,9 @@
 //! maintaining its own demodulator state. When the primary fails, the shadow
 //! is promoted with a simple pointer swap (no re-acquisition needed).
 
-use crate::demodulator::{DemodState, DemodulatorSnapshot, SnapshotManager};
-use crate::doppler::{DopplerSchedule, NcoController};
+use crate::demodulator::{DemodState, SnapshotManager};
+use crate::doppler::DopplerSchedule;
 use crate::sdr::{Sample, SampleId, SdrHandle};
-use chrono::{DateTime, Utc};
 use ground_core::{GroundStationError, PassId, Result};
 use hardware::PassShard;
 use std::sync::Arc;

@@ -180,7 +180,7 @@ impl DopplerPredictor {
 
         // Store the TLE epoch before elements is borrowed by Constants::from_elements.
         // SGP4's MinutesSinceEpoch is relative to this epoch, not the Unix epoch.
-        self.tle_epoch = Some(elements.datetime);
+        self.tle_epoch = Some(elements.datetime.and_utc());
 
         let constants = Constants::from_elements(&elements).map_err(|e| {
             ground_core::GroundStationError::Hardware(format!("SGP4 constants error: {}", e))
