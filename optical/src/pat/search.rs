@@ -164,7 +164,11 @@ impl RasterPattern {
     pub fn position_at_step(&self, step: u32) -> (f64, f64) {
         let lines = (self.height_urad / self.line_spacing_urad) as u32;
         let line = step % lines;
-        let direction = if (step / lines).is_multiple_of(2) { 1.0 } else { -1.0 };
+        let direction = if (step / lines).is_multiple_of(2) {
+            1.0
+        } else {
+            -1.0
+        };
 
         let x = (step as f64 % (self.width_urad / self.line_spacing_urad))
             * self.line_spacing_urad

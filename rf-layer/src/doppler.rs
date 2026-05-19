@@ -7,10 +7,10 @@
 use crate::sdr::SampleId;
 use chrono::{DateTime, Utc};
 use ground_core::{Frequency, Result};
+use nalgebra::Vector3;
 use serde::{Deserialize, Serialize};
 use sgp4::{Constants, Elements, MinutesSinceEpoch};
-use tracking::ukf::{UkfRefiner, OrbitalState};
-use nalgebra::Vector3;
+use tracking::ukf::{OrbitalState, UkfRefiner};
 
 /// Frequency offset from base frequency in Hz
 pub type FrequencyOffset = i64;
@@ -362,7 +362,8 @@ impl DopplerPredictor {
                 if let Some(constants) = &self.constants {
                     // Get current SGP4 state at observation time
                     if let Some(tle_epoch) = self.tle_epoch {
-                        let minutes_since = (observation_time - tle_epoch).num_seconds() as f64 / 60.0;
+                        let minutes_since =
+                            (observation_time - tle_epoch).num_seconds() as f64 / 60.0;
                         if let Ok(state) = constants.propagate(MinutesSinceEpoch(minutes_since)) {
                             let orbital_state = OrbitalState {
                                 position: nalgebra::Vector3::new(

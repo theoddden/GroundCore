@@ -6,7 +6,7 @@
 
 use crate::drf::DominantResourceFairness;
 use crate::reputation::ReputationTracker;
-use crate::schedule::{PassRequest, Schedule, ScheduledPass, Priority};
+use crate::schedule::{PassRequest, Priority, Schedule, ScheduledPass};
 use caching::ScheduleFragmentCache;
 use chrono::{DateTime, Utc};
 use ground_core::{GroundStationError, PassId, Result};
@@ -263,7 +263,9 @@ impl ScheduleOptimizer {
     fn reallocate_hardware(&self, pass: &mut ScheduledPass) {
         // Try a different SDR device
         let sdr_options = vec!["sdr-0", "sdr-1", "sdr-2", "sdr-3"];
-        let current_idx = pass.hardware_allocation.sdr_devices
+        let current_idx = pass
+            .hardware_allocation
+            .sdr_devices
             .iter()
             .position(|s| *s == "sdr-0")
             .unwrap_or(0);
@@ -295,12 +297,13 @@ impl ScheduleOptimizer {
         }
 
         // Find a request that's not already scheduled
-        let scheduled_ids: std::collections::HashSet<_> = schedule.passes
-            .iter()
-            .map(|p| &p.request_id)
-            .collect();
+        let scheduled_ids: std::collections::HashSet<_> =
+            schedule.passes.iter().map(|p| &p.request_id).collect();
 
-        if let Some(request) = requests.iter().find(|r| !scheduled_ids.contains(&r.request_id)) {
+        if let Some(request) = requests
+            .iter()
+            .find(|r| !scheduled_ids.contains(&r.request_id))
+        {
             let pass = self.create_pass_from_request(request);
             schedule.add_pass(pass);
         }

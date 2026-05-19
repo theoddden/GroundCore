@@ -93,7 +93,14 @@ impl TransmissionScheduler {
             scheduled: RwLock::new(HashMap::new()),
             pending: RwLock::new(VecDeque::new()),
             conflict_strategy,
+            ukf_refiner: None,
         }
+    }
+
+    /// Set the UKF refiner for Doppler prediction
+    pub fn with_ukf_refiner(mut self, ukf_refiner: UkfRefiner) -> Self {
+        self.ukf_refiner = Some(ukf_refiner);
+        self
     }
 
     /// Add a transmission window
@@ -152,8 +159,18 @@ impl TransmissionScheduler {
             ((command.payload.len() as f64 / window.max_rate) * 1000.0) as i64,
         );
 
-        // Doppler compensation placeholder (would use tracking predictions)
-        let doppler_compensation = 0.0;
+        // Doppler compensation using UKF prediction if available
+        let doppler_compensation = if let Some(refiner) = &self.ukf_refiner {
+            // Predict Doppler at transmission time for the satellite
+            // Use a default satellite ID for now - in production this would come from the command
+            if let Some(doppler) = refiner.predict_doppler("current", transmission_time) {
+                doppler
+            } else {
+                0.0
+            }
+        } else {
+            0.0
+        };
 
         let scheduled = ScheduledTransmission {
             command_id: command.id,

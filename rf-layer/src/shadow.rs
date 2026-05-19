@@ -92,7 +92,8 @@ impl PassAcquisition {
         self.last_committed_sample = sample.id;
 
         // Increment primary sample counter for health monitoring
-        self.primary_last_sample_counter.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+        self.primary_last_sample_counter
+            .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
 
         // Sync shadow state if shadow is active.
         // Arc::get_mut would silently return None whenever any other clone exists;
@@ -168,11 +169,16 @@ impl PassAcquisition {
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap()
             .as_secs();
-        self.last_health_check.store(now, std::sync::atomic::Ordering::SeqCst);
+        self.last_health_check
+            .store(now, std::sync::atomic::Ordering::SeqCst);
 
         // Check 1: Shadow SDR is still receiving samples
-        let primary_count = self.primary_last_sample_counter.load(std::sync::atomic::Ordering::SeqCst);
-        let shadow_count = self.shadow_last_sample_counter.load(std::sync::atomic::Ordering::SeqCst);
+        let primary_count = self
+            .primary_last_sample_counter
+            .load(std::sync::atomic::Ordering::SeqCst);
+        let shadow_count = self
+            .shadow_last_sample_counter
+            .load(std::sync::atomic::Ordering::SeqCst);
 
         // Shadow should be within 1000 samples of primary (allowing for some skew)
         let sample_delta = (primary_count as i64 - shadow_count as i64).abs();
@@ -230,7 +236,8 @@ impl PassAcquisition {
 
     /// Update shadow sample counter (called when shadow SDR processes samples)
     pub fn update_shadow_sample_counter(&self, count: u64) {
-        self.shadow_last_sample_counter.store(count, std::sync::atomic::Ordering::SeqCst);
+        self.shadow_last_sample_counter
+            .store(count, std::sync::atomic::Ordering::SeqCst);
     }
 
     /// Get current failover status
