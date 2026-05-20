@@ -285,15 +285,15 @@ impl PartialOrd for RouteState {
 /// Routing error
 #[derive(Debug, Clone, thiserror::Error)]
 pub enum RoutingError {
-    #[error("No route found from {source} to {destination}")]
-    NoRouteFound { source: NodeId, destination: NodeId },
+    #[error("No route found")]
+    NoRouteFound,
 
     #[error("Topology forecast unavailable")]
     TopologyUnavailable,
 
     #[error("Route computation failed: {0}")]
-    ComputationFailed(anyhow::Error),
+    ComputationFailed(String),
 
     #[error("Invalid route parameters: {0}")]
-    InvalidParameters(anyhow::Error),
+    InvalidParameters(String),
 }

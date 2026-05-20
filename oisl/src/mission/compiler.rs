@@ -196,10 +196,7 @@ impl IntentCompiler for DefaultIntentCompiler {
             .satellite_tasks
             .iter()
             .filter_map(|task| {
-                if let TaskType::OpticalLinkEstablishment {
-                    peer_terminal: _,
-                    ..
-                } = &task.task_type
+                if let TaskType::OpticalLinkEstablishment { peer_terminal: _, .. } = &task.task_type
                 {
                     Some(crate::mission::RoutingDecision {
                         source: task.satellite_id.clone(),

@@ -77,9 +77,7 @@ mod tests {
         let mut metrics = LinkMetrics::default();
         assert!(!metrics.control_plane_traffic.is_enabled());
 
-        metrics.enable_control_plane(
-            optical::link::state_machine::TrafficPriority::Critical,
-        );
+        metrics.enable_control_plane(optical::link::state_machine::TrafficPriority::Critical);
         assert!(metrics.control_plane_traffic.is_enabled());
 
         metrics.update_control_plane_metrics(1_000_000, 5.0, 1000);

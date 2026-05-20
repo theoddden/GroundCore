@@ -93,7 +93,7 @@ pub struct GenericAntennaController {
     elevation_min: f64,
     elevation_max: f64,
     #[allow(dead_code)]
-    azimuth_rate_limit: f64,   // degrees per second
+    azimuth_rate_limit: f64, // degrees per second
     #[allow(dead_code)]
     elevation_rate_limit: f64, // degrees per second
     enabled: bool,
