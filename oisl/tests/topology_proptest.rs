@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod proptests {
-    use chrono::{DateTime, Duration, Utc};
+    use chrono::{Duration, Utc};
     use ground_station_oisl::{ConfidenceScore, Priority, TimeWindow};
     use proptest::prelude::*;
 

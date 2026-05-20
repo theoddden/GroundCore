@@ -53,8 +53,8 @@ impl PatCoordinator {
             event_time: acquisition.target_t0.into(),
             observed_at: self.clock_source.now(),
             spread: acquisition.target_t0.signed_duration_since(now),
-            terminal_id: acquisition.pair.0.clone(),
-            peer_terminal: acquisition.pair.1.clone(),
+            terminal_id: acquisition.pair.0,
+            peer_terminal: acquisition.pair.1,
             operator_action_chain: vec![],
             system_decision_chain: vec![],
         });

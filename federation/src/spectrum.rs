@@ -69,8 +69,7 @@ impl CoordinationBand {
         let self_hi = self.center_hz + self.bandwidth_hz / 2.0;
         let other_lo = other.center_hz - other.bandwidth_hz / 2.0;
         let other_hi = other.center_hz + other.bandwidth_hz / 2.0;
-        let overlap = (self_hi.min(other_hi) - self_lo.max(other_lo)).max(0.0);
-        overlap
+        (self_hi.min(other_hi) - self_lo.max(other_lo)).max(0.0)
     }
 }
 

@@ -131,7 +131,7 @@ impl ResourceAllocator {
         // Update terminal index
         if let Some(terminal) = &allocation.resources.optical_terminal {
             self.terminal_index
-                .entry(terminal.clone())
+                .entry(*terminal)
                 .or_default()
                 .push(allocation_id);
         }
@@ -151,17 +151,17 @@ impl ResourceAllocator {
             .allocations
             .iter()
             .position(|a| &a.allocation_id == allocation_id)
-            .ok_or_else(|| AllocationError::NotFound {
+            .ok_or(AllocationError::NotFound {
                 allocation_id: *allocation_id,
             })?;
 
         let removed = self.allocations.remove(pos);
 
         // Clean up terminal index
-        if let Some(terminal) = &removed.resources.optical_terminal {
-            if let Some(ids) = self.terminal_index.get_mut(terminal) {
-                ids.retain(|id| id != allocation_id);
-            }
+        if let Some(terminal) = &removed.resources.optical_terminal
+            && let Some(ids) = self.terminal_index.get_mut(terminal)
+        {
+            ids.retain(|id| id != allocation_id);
         }
         // Clean up tenant index
         if let Some(ids) = self.tenant_index.get_mut(&removed.tenant_id) {
@@ -181,7 +181,7 @@ impl ResourceAllocator {
             .allocations
             .iter()
             .find(|a| &a.allocation_id == allocation_id)
-            .ok_or_else(|| AllocationError::NotFound {
+            .ok_or(AllocationError::NotFound {
                 allocation_id: *allocation_id,
             })?;
 
@@ -207,18 +207,16 @@ impl ResourceAllocator {
         window: &TimeWindow,
         _tenant_id: &TenantId,
     ) -> Option<AllocationId> {
-        if let Some(terminal) = &claim.optical_terminal {
-            if let Some(ids) = self.terminal_index.get(terminal) {
-                for alloc_id in ids {
-                    if let Some(allocation) = self
-                        .allocations
-                        .iter()
-                        .find(|a| &a.allocation_id == alloc_id)
-                    {
-                        if allocation.valid_window.overlaps(window) {
-                            return Some(allocation.allocation_id);
-                        }
-                    }
+        if let Some(terminal) = &claim.optical_terminal
+            && let Some(ids) = self.terminal_index.get(terminal)
+        {
+            for alloc_id in ids {
+                if let Some(allocation) = self
+                    .allocations
+                    .iter()
+                    .find(|a| &a.allocation_id == alloc_id && a.valid_window.overlaps(window))
+                {
+                    return Some(allocation.allocation_id);
                 }
             }
         }

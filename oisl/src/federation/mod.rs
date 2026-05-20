@@ -291,6 +291,12 @@ pub struct ProvenanceChain {
     pub hops: Vec<ProvenanceHop>,
 }
 
+impl Default for ProvenanceChain {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ProvenanceChain {
     pub fn new() -> Self {
         Self { hops: vec![] }
@@ -327,10 +333,10 @@ impl AttestationEngine {
         operator_id: &OperatorId,
     ) -> Result<AttestationRecord, FederationError> {
         // Check cache
-        if let Some(record) = self.attestation_cache.get(operator_id) {
-            if record.is_valid() {
-                return Ok(record.clone());
-            }
+        if let Some(record) = self.attestation_cache.get(operator_id)
+            && record.is_valid()
+        {
+            return Ok(record.clone());
         }
 
         // Perform attestation with cryptographic hash

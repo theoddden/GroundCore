@@ -218,9 +218,7 @@ impl ControlNodePlacementAlgorithm {
         }
 
         // Local search refinement
-        let refined = self.local_search_refinement(topologies, selected, candidates, k);
-
-        refined
+        self.local_search_refinement(topologies, selected, candidates, k)
     }
 
     /// Select best station to add to selected set
@@ -254,7 +252,7 @@ impl ControlNodePlacementAlgorithm {
         let mut max_distance: f64 = 0.0;
 
         for topology in topologies {
-            for (_node_id, node_state) in &topology.nodes {
+            for node_state in topology.nodes.values() {
                 if matches!(node_state.node_type, NodeType::Satellite { .. }) {
                     let min_distance =
                         self.min_distance_to_control_nodes(node_state.position, topology, selected);

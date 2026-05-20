@@ -30,7 +30,7 @@ pub struct SerialNumber(pub String);
 
 /// Mynaric CONDOR Mk3 implementation
 pub struct CondorMk3 {
-    terminal_id: TerminalId,
+    _terminal_id: TerminalId,
     serial: SerialNumber,
     api_endpoint: String,
     config: Option<OctConfiguration>,
@@ -39,7 +39,7 @@ pub struct CondorMk3 {
 impl CondorMk3 {
     pub fn new(terminal_id: TerminalId, serial: SerialNumber, api_endpoint: String) -> Self {
         Self {
-            terminal_id,
+            _terminal_id: terminal_id,
             serial,
             api_endpoint,
             config: None,
@@ -50,7 +50,7 @@ impl CondorMk3 {
         // Mynaric uses REST API for management
         let client = reqwest::Client::new();
         let response = client
-            .post(&format!("{}/api/v1/command", self.api_endpoint))
+            .post(format!("{}/api/v1/command", self.api_endpoint))
             .json(&serde_json::json!({ "command": command }))
             .send()
             .await
@@ -215,18 +215,18 @@ impl OpticalTerminal for CondorMk3 {
 
 /// Tesat SCOT80 implementation
 pub struct Scot80 {
-    terminal_id: TerminalId,
+    _terminal_id: TerminalId,
     serial: SerialNumber,
-    control_interface: String,
+    _control_interface: String,
     config: Option<OctConfiguration>,
 }
 
 impl Scot80 {
     pub fn new(terminal_id: TerminalId, serial: SerialNumber, control_interface: String) -> Self {
         Self {
-            terminal_id,
+            _terminal_id: terminal_id,
             serial,
-            control_interface,
+            _control_interface: control_interface,
             config: None,
         }
     }

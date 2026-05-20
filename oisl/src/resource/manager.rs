@@ -137,7 +137,7 @@ impl SatelliteNode {
     /// Add optical terminal
     pub fn add_optical_terminal(&mut self, capability: TerminalCapability) {
         self.optical_terminals
-            .insert(capability.terminal_id.clone(), capability);
+            .insert(capability.terminal_id, capability);
     }
 
     /// Check if resource claim can be satisfied
@@ -157,17 +157,17 @@ impl SatelliteNode {
         }
 
         // Check compute availability
-        if let Some(cycles) = claim.compute_cycles {
-            if cycles > (self.compute.cpu_cores as u64 * 1_000_000_000) {
-                return false;
-            }
+        if let Some(cycles) = claim.compute_cycles
+            && cycles > (self.compute.cpu_cores as u64 * 1_000_000_000)
+        {
+            return false;
         }
 
         // Check storage availability
-        if let Some(bytes) = claim.storage_bytes {
-            if bytes > self.storage.available_bytes {
-                return false;
-            }
+        if let Some(bytes) = claim.storage_bytes
+            && bytes > self.storage.available_bytes
+        {
+            return false;
         }
 
         true

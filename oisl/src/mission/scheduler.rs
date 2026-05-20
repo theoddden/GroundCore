@@ -1,11 +1,10 @@
 // Tasking Scheduler - places tasks on timeline considering dependencies and constraints
 
-use crate::mission::{LinkReservation, SatelliteTask, TaskType};
-use crate::{BandwidthAllocation, ConfidenceScore, PlanId, Priority, SatelliteId, TaskId};
+use crate::mission::{SatelliteTask, TaskType};
+use crate::{SatelliteId, TaskId};
 use chrono::{DateTime, Duration, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, VecDeque};
-use uuid::Uuid;
 
 /// Tasking scheduler
 pub struct TaskingScheduler {
@@ -167,22 +166,20 @@ impl TaskingScheduler {
                     peer_terminal: existing_peer,
                     ..
                 } = &existing.task.task_type
+                    && peer_terminal == existing_peer
+                    && scheduled
+                        .task
+                        .scheduled_window
+                        .overlaps(&existing.task.scheduled_window)
                 {
-                    if peer_terminal == existing_peer
-                        && scheduled
-                            .task
-                            .scheduled_window
-                            .overlaps(&existing.task.scheduled_window)
-                    {
-                        return Some(ConflictResolution {
-                            conflict_type: ConflictType::TerminalContention {
-                                terminal_id: peer_terminal.clone(),
-                                tasks: vec![scheduled.task.task_id, existing.task.task_id],
-                            },
-                            resolution: ResolutionStrategy::PrioritizeBySLA,
-                            affected_tasks: vec![scheduled.task.task_id, existing.task.task_id],
-                        });
-                    }
+                    return Some(ConflictResolution {
+                        conflict_type: ConflictType::TerminalContention {
+                            terminal_id: *peer_terminal,
+                            tasks: vec![scheduled.task.task_id, existing.task.task_id],
+                        },
+                        resolution: ResolutionStrategy::PrioritizeBySLA,
+                        affected_tasks: vec![scheduled.task.task_id, existing.task.task_id],
+                    });
                 }
             }
         }

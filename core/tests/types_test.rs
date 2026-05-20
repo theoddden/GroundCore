@@ -14,11 +14,11 @@ mod tests {
 
     #[test]
     fn test_data_rate_ord() {
-        let rate1 = DataRate(1_000_000);
-        let rate2 = DataRate(2_000_000);
+        let rate1: DataRate = 1_000_000;
+        let rate2: DataRate = 2_000_000;
         assert!(rate1 < rate2);
         assert!(rate2 > rate1);
-        assert_eq!(rate1, DataRate(1_000_000));
+        assert_eq!(rate1, 1_000_000);
     }
 
     #[test]
@@ -33,11 +33,11 @@ mod tests {
 
     #[test]
     fn test_bytes_ord() {
-        let bytes1 = Bytes(1024);
-        let bytes2 = Bytes(2048);
+        let bytes1: Bytes = 1024;
+        let bytes2: Bytes = 2048;
         assert!(bytes1 < bytes2);
         assert!(bytes2 > bytes1);
-        assert_eq!(bytes1, Bytes(1024));
+        assert_eq!(bytes1, 1024);
     }
 
     #[test]

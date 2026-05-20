@@ -63,7 +63,7 @@ impl SatelliteScheduler for DefaultSatelliteScheduler {
     fn allocate(&mut self, claim: ResourceClaim) -> Result<AllocationId, ScheduleError> {
         let satellite = self
             .find_best_satellite(&claim)
-            .ok_or_else(|| ScheduleError::NoAvailableNode)?;
+            .ok_or(ScheduleError::NoAvailableNode)?;
 
         let task_id = TaskId::new_v4();
         let tenant_id = TenantId::from("default");
@@ -126,25 +126,25 @@ impl SatelliteScheduler for DefaultSatelliteScheduler {
         for (source_sat, allocation) in allocations_to_move {
             // Try to find a less loaded satellite
             let claim = allocation.resources.clone();
-            if let Some(target_sat) = self.find_best_satellite(&claim) {
-                if target_sat.satellite_id != source_sat {
-                    // Move allocation
-                    self.allocator.release(&allocation.allocation_id).ok();
+            if let Some(target_sat) = self.find_best_satellite(&claim)
+                && target_sat.satellite_id != source_sat
+            {
+                // Move allocation
+                self.allocator.release(&allocation.allocation_id).ok();
 
-                    let task_id = TaskId::new_v4();
-                    let tenant_id = allocation.tenant_id.clone();
-                    let valid_window = allocation.valid_window.clone();
-                    let priority = allocation.priority;
+                let task_id = TaskId::new_v4();
+                let tenant_id = allocation.tenant_id.clone();
+                let valid_window = allocation.valid_window.clone();
+                let priority = allocation.priority;
 
-                    if self
-                        .allocator
-                        .allocate(claim, task_id, &tenant_id, priority, &valid_window)
-                        .is_ok()
-                    {
-                        moved_allocations += 1;
-                    } else {
-                        failed_migrations += 1;
-                    }
+                if self
+                    .allocator
+                    .allocate(claim, task_id, &tenant_id, priority, &valid_window)
+                    .is_ok()
+                {
+                    moved_allocations += 1;
+                } else {
+                    failed_migrations += 1;
                 }
             }
         }
@@ -168,7 +168,7 @@ impl SatelliteScheduler for DefaultSatelliteScheduler {
                     .optical_terminals
                     .values()
                     .filter(|t| t.available)
-                    .map(|t| t.terminal_id.clone())
+                    .map(|t| t.terminal_id)
                     .collect(),
                 confidence: crate::ConfidenceScore::new(0.9),
             };

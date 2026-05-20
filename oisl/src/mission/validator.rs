@@ -1,26 +1,21 @@
 // Plan Validator - runs validation passes before commit
 
 use crate::mission::state_machine::ConstellationState;
-use crate::mission::{
-    LinkReservation, SatelliteTask, ServiceLevelAgreement, TaskType, TaskingPlan,
-    ValidationSeverity, ValidationWarning, ValidationWarningType,
-};
+use crate::mission::{TaskingPlan, ValidationSeverity, ValidationWarning, ValidationWarningType};
 use crate::topology::TopologyForecast;
 use crate::topology::forecast::TopologyForecaster;
-use crate::{BandwidthAllocation, ConfidenceScore, PlanId, Priority};
 use std::collections::HashMap;
-use uuid::Uuid;
 
 /// Plan validator
 pub struct PlanValidator {
-    constellation: ConstellationState,
+    _constellation: ConstellationState,
     topology: TopologyForecast,
 }
 
 impl PlanValidator {
     pub fn new(constellation: ConstellationState, topology: TopologyForecast) -> Self {
         Self {
-            constellation,
+            _constellation: constellation,
             topology,
         }
     }
@@ -102,10 +97,10 @@ impl PlanValidator {
 
         for reservation in &plan.link_reservations {
             *terminal_usage
-                .entry(reservation.terminal_a.clone())
+                .entry(reservation.terminal_a)
                 .or_insert(0) += 1;
             *terminal_usage
-                .entry(reservation.terminal_b.clone())
+                .entry(reservation.terminal_b)
                 .or_insert(0) += 1;
         }
 
@@ -141,7 +136,7 @@ impl PlanValidator {
             if !terminal_a_exists || !terminal_b_exists {
                 warnings.push(ValidationWarning {
                     warning_type: ValidationWarningType::LowConfidenceRoute,
-                    message: format!("Link reservation references terminal not in topology"),
+                    message: "Link reservation references terminal not in topology".to_string(),
                     severity: ValidationSeverity::Error,
                 });
             }

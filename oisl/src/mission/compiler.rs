@@ -4,7 +4,7 @@ use crate::mission::state_machine::ConstellationState;
 use crate::topology::{SpatiotemporalRouter, TopologyForecast};
 use crate::{
     AssetId, BandwidthAllocation, BiTemporal, Bytes, ConfidenceScore, DataRate, GeoRegion, PlanId,
-    Priority, SatelliteId, SensorType, TaskId, TenantId, TimeWindow,
+    Priority, SatelliteId, SensorType, TaskId, TimeWindow,
 };
 use bitemporal::timestamp::{EventTime, ReceptionTime};
 use chrono::{Duration, Utc};
@@ -95,7 +95,6 @@ impl IntentCompiler for DefaultIntentCompiler {
                 topology,
                 &intent.constraints,
                 &intent.sla,
-                &intent.submitted_by,
             )?,
             ObjectiveType::Custody {
                 target,
@@ -107,7 +106,6 @@ impl IntentCompiler for DefaultIntentCompiler {
                 topology,
                 &intent.constraints,
                 &intent.sla,
-                &intent.submitted_by,
             )?,
             ObjectiveType::Downlink {
                 satellite,
@@ -119,7 +117,6 @@ impl IntentCompiler for DefaultIntentCompiler {
                 topology,
                 &intent.constraints,
                 &intent.sla,
-                &intent.submitted_by,
             )?,
         };
 
@@ -230,11 +227,12 @@ impl IntentCompiler for DefaultIntentCompiler {
 }
 
 impl DefaultIntentCompiler {
+    #[allow(clippy::too_many_arguments)]
     fn compile_data_relay(
         &self,
         source: &AssetId,
         destination: &AssetId,
-        volume: Bytes,
+        _volume: Bytes,
         constellation: &ConstellationState,
         topology: &TopologyForecast,
         constraints: &IntentConstraints,
@@ -265,7 +263,7 @@ impl DefaultIntentCompiler {
             .lock()
             .map_err(|_| CompilationError::Internal("Router lock poisoned".to_string()))?
             .compute_route(&source_sat, &dest_sat, topology, constraints, sla)
-            .map_err(|e| CompilationError::NoFeasibleRoute {
+            .map_err(|_e| CompilationError::NoFeasibleRoute {
                 source: source_sat.clone(),
                 destination: dest_sat.clone(),
             })?;
@@ -331,6 +329,7 @@ impl DefaultIntentCompiler {
         Ok((satellite_tasks, link_reservations))
     }
 
+    #[allow(clippy::too_many_arguments)]
     fn compile_observation(
         &self,
         target: &GeoRegion,
@@ -340,7 +339,6 @@ impl DefaultIntentCompiler {
         topology: &TopologyForecast,
         constraints: &IntentConstraints,
         sla: &ServiceLevelAgreement,
-        tenant_id: &TenantId,
     ) -> Result<(Vec<SatelliteTask>, Vec<LinkReservation>), CompilationError> {
         let mut satellite_tasks = Vec::new();
         let mut link_reservations = Vec::new();
@@ -439,7 +437,6 @@ impl DefaultIntentCompiler {
         topology: &TopologyForecast,
         _constraints: &IntentConstraints,
         sla: &ServiceLevelAgreement,
-        tenant_id: &TenantId,
     ) -> Result<(Vec<SatelliteTask>, Vec<LinkReservation>), CompilationError> {
         // Resolve target asset to a satellite (the asset being "kept in custody")
         let target_sat = constellation
@@ -550,7 +547,6 @@ impl DefaultIntentCompiler {
         _topology: &TopologyForecast,
         constraints: &IntentConstraints,
         sla: &ServiceLevelAgreement,
-        tenant_id: &TenantId,
     ) -> Result<(Vec<SatelliteTask>, Vec<LinkReservation>), CompilationError> {
         let ground_station = constellation
             .find_optimal_ground_station(satellite, ground_window, constraints)

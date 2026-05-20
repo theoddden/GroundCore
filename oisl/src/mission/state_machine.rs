@@ -201,7 +201,7 @@ impl ConstellationState {
     pub fn update_terminal(&mut self, terminal_id: &crate::TerminalId, mut state: TerminalState) {
         let now = Utc::now();
         state.last_updated = BiTemporal::new(now, EventTime::new(now), ReceptionTime::new(now));
-        self.optical_terminals.insert(terminal_id.clone(), state);
+        self.optical_terminals.insert(*terminal_id, state);
         self.current_version = BiTemporal::new(now, EventTime::new(now), ReceptionTime::new(now));
     }
 }

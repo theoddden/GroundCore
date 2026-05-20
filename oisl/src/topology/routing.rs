@@ -25,7 +25,7 @@ const ROUTE_CACHE_BUCKET_SECS: i64 = 300;
 
 /// Spatiotemporal router
 pub struct SpatiotemporalRouter {
-    forecast: TopologyForecast,
+    _forecast: TopologyForecast,
     cost_model: CostModel,
     /// Memoized routes keyed by (source, destination, time_bucket)
     route_cache: LruCache<RouteCacheKey, Route>,
@@ -34,7 +34,7 @@ pub struct SpatiotemporalRouter {
 impl SpatiotemporalRouter {
     pub fn new(forecast: TopologyForecast, cost_model: CostModel) -> Self {
         Self {
-            forecast,
+            _forecast: forecast,
             cost_model,
             route_cache: LruCache::new(256),
         }

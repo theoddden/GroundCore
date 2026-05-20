@@ -137,7 +137,7 @@ pub enum ClockError {
 pub struct DefaultPrecisionClock {
     confidence: ClockConfidence,
     last_sync: Option<DateTime<Utc>>,
-    drift_rate_ns_per_sec: f64,
+    _drift_rate_ns_per_sec: f64,
 }
 
 impl DefaultPrecisionClock {
@@ -145,7 +145,7 @@ impl DefaultPrecisionClock {
         Self {
             confidence: ClockConfidence::gps_disciplined(),
             last_sync: None,
-            drift_rate_ns_per_sec: 0.1, // 0.1 ns/sec drift
+            _drift_rate_ns_per_sec: 0.1, // 0.1 ns/sec drift
         }
     }
 
@@ -154,7 +154,7 @@ impl DefaultPrecisionClock {
         Self {
             confidence,
             last_sync: None,
-            drift_rate_ns_per_sec: 1.0,
+            _drift_rate_ns_per_sec: 1.0,
         }
     }
 }
