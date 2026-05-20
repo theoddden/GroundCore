@@ -5,8 +5,8 @@
 // be (A → B at T=0) → (B → C at T=120s) where B and C aren't visible at T=0.
 
 use crate::mission::{IntentConstraints, ServiceLevelAgreement};
-use crate::topology::forecast::TopologyForecaster;
 use crate::topology::TopologyForecast;
+use crate::topology::forecast::TopologyForecaster;
 use crate::{
     BandwidthAllocation, ConfidenceScore, DataRate, GeometryScore, LinkId, NodeId, PotentialEdge,
     TerminalId, TimeWindow,
@@ -146,10 +146,7 @@ impl SpatiotemporalRouter {
             }
         }
 
-        let route = best_route.ok_or(RoutingError::NoRouteFound {
-            source: source.clone(),
-            destination: destination.clone(),
-        })?;
+        let route = best_route.ok_or(RoutingError::NoRouteFound)?;
 
         // Cache the computed route for this (source, destination, time_bucket)
         self.route_cache.put(cache_key, route.clone());

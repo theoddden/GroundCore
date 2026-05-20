@@ -11,11 +11,7 @@ pub mod state_machine;
 pub mod validator;
 
 // Re-export submodule types
-pub use compiler::{
-    CompilationError, IntentCompiler, IntentConstraints, LinkReservation, MissionIntent,
-    ObjectiveType, PlanExplanation, SatelliteTask, ServiceLevelAgreement, TaskType, TaskingPlan,
-    ValidationWarning,
-};
+pub use compiler::IntentCompiler;
 pub use scheduler::TaskingScheduler;
 pub use state_machine::{ConstellationState, SatelliteState};
 pub use validator::{PlanValidator, ValidationReport};
@@ -24,7 +20,6 @@ use crate::{
     AssetId, BiTemporal, Bytes, ConfidenceScore, GeoRegion, IntentId, PlanId, Priority,
     SatelliteId, SensorType, TaskId, TenantId, TimeWindow,
 };
-use anyhow::Error;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -75,8 +70,6 @@ pub struct IntentConstraints {
     pub power_budget: Option<f64>,  // watts
     pub thermal_limit: Option<f64>, // celsius
 }
-
-
 /// Routing decision explanation
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RoutingDecision {
@@ -117,12 +110,12 @@ pub enum TradeoffType {
 pub enum CompilationError {
     #[error("No feasible route found between {source} and {destination}")]
     NoFeasibleRoute {
-        source: SatelliteId,
-        destination: SatelliteId,
+        source: String,
+        destination: String,
     },
 
     #[error("Insufficient resources on satellite {satellite_id}")]
-    InsufficientResources { satellite_id: SatelliteId },
+    InsufficientResources { satellite_id: String },
 
     #[error("Constraints cannot be satisfied: {reason}")]
     UnsatisfiableConstraints { reason: String },

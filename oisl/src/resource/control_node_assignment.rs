@@ -129,7 +129,7 @@ impl ControlNodeAssignmentAlgorithm {
                 })?;
 
         // Create propagator
-        let propagator = sgp4::Propagator::from_elements(tle_elements).map_err(|e| {
+        let propagator = sgp4::Propagator::from_elements_rec(tle_elements, false).map_err(|e| {
             AssignmentError::PredictionFailed(format!("SGP4 propagator error: {}", e))
         })?;
 

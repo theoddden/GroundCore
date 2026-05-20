@@ -17,7 +17,7 @@ use uuid::Uuid;
 use super::{
     CompilationError, IntentConstraints, LinkReservation, MissionIntent, ObjectiveType,
     PlanExplanation, SatelliteTask, ServiceLevelAgreement, TaskType, TaskingPlan,
-    ValidationWarning, ValidationWarningType, ValidationSeverity,
+    ValidationSeverity, ValidationWarning, ValidationWarningType,
 };
 
 /// Intent compiler - compiles declarative intent to imperative tasking
@@ -264,7 +264,7 @@ impl DefaultIntentCompiler {
         let route = self
             .router
             .lock()
-            .map_err(|_| CompilationError::Internal("Router lock poisoned".into()))?
+            .map_err(|_| CompilationError::Internal("Router lock poisoned".to_string()))?
             .compute_route(&source_sat, &dest_sat, topology, constraints, sla)
             .map_err(|e| CompilationError::NoFeasibleRoute {
                 source: source_sat.clone(),
