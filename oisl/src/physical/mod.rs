@@ -15,4 +15,3 @@ pub use configuration::{
 };
 pub use terminal::{EthernetEndpoint, OpticalTerminal, PatHandle, TelemetryStream};
 pub use vendors::{CondorMk3, Scot80, SerialNumber, Vendor};
-

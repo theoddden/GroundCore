@@ -9,9 +9,7 @@
 // Two-stage algorithm for optimal ground station selection to minimize
 // maximum satellite-to-ground latency across constellation operation.
 
-use crate::{
-    DataRate, LinkId, NodeId, TerminalId, TimeWindow,
-};
+use crate::{DataRate, GeometryScore, LinkId, NodeId, TerminalId, TimeWindow};
 use chrono::{DateTime, Duration, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, HashMap};

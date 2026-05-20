@@ -11,11 +11,7 @@ pub mod state_machine;
 pub mod validator;
 
 // Re-export submodule types
-pub use compiler::{
-    CompilationError, IntentCompiler, IntentConstraints, LinkReservation, MissionIntent,
-    ObjectiveType, PlanExplanation, SatelliteTask, ServiceLevelAgreement, TaskType, TaskingPlan,
-    ValidationWarning,
-};
+pub use compiler::IntentCompiler;
 pub use scheduler::TaskingScheduler;
 pub use state_machine::{ConstellationState, SatelliteState};
 pub use validator::{PlanValidator, ValidationReport};
@@ -24,9 +20,8 @@ use crate::{
     AssetId, BiTemporal, Bytes, GeoRegion, IntentId, SatelliteId, SensorType, TaskId, TenantId,
     TimeWindow,
 };
-use chrono::DateTime;
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 
 /// Mission intent - what the operator wants (declarative)
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -109,32 +104,42 @@ pub enum TradeoffType {
 }
 
 /// Compilation error
-#[derive(Debug, Clone, Serialize, Deserialize, thiserror::Error)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum CompilationError {
-    #[error("No feasible route found between {source} and {destination}")]
-    NoFeasibleRoute {
-        source: String,
-        destination: String,
-    },
-
-    #[error("Insufficient resources on satellite {satellite_id}")]
+    NoFeasibleRoute { source: String, destination: String },
     InsufficientResources { satellite_id: String },
-
-    #[error("Constraints cannot be satisfied: {reason}")]
     UnsatisfiableConstraints { reason: String },
-
-    #[error("Intent deadline cannot be met: required {required}s, available {available}s")]
     DeadlineMissed { required: u64, available: u64 },
-
-    #[error("Invalid intent: {0}")]
     InvalidIntent(String),
-
-    #[error("Topology forecast unavailable for horizon {horizon:?}")]
     TopologyUnavailable { horizon: chrono::Duration },
-
-    #[error("Internal error: {0}")]
-    Internal(String),
+    Internal(AnyhowError),
 }
+
+impl std::fmt::Display for CompilationError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::NoFeasibleRoute { source, destination } => {
+                write!(f, "No feasible route found between {} and {}", source, destination)
+            }
+            Self::InsufficientResources { satellite_id } => {
+                write!(f, "Insufficient resources on satellite {}", satellite_id)
+            }
+            Self::UnsatisfiableConstraints { reason } => {
+                write!(f, "Constraints cannot be satisfied: {}", reason)
+            }
+            Self::DeadlineMissed { required, available } => {
+                write!(f, "Intent deadline cannot be met: required {}s, available {}s", required, available)
+            }
+            Self::InvalidIntent(msg) => write!(f, "Invalid intent: {}", msg),
+            Self::TopologyUnavailable { horizon } => {
+                write!(f, "Topology forecast unavailable for horizon {:?}", horizon)
+            }
+            Self::Internal(err) => write!(f, "Internal error: {}", err),
+        }
+    }
+}
+
+impl std::error::Error for CompilationError {}
 
 /// Validation warning
 #[derive(Debug, Clone, Serialize, Deserialize)]

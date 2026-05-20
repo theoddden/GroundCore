@@ -2,6 +2,7 @@
 
 use crate::physical::terminal::TerminalCapability as PhysicalTerminalCapability;
 use crate::{DataRate, Priority, SatelliteId, TaskId, TenantId, TerminalId, TimeWindow};
+use crate::resource::{ResourceAllocation, ResourceClaim};
 use chrono::{DateTime, Duration, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, VecDeque};

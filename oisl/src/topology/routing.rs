@@ -5,8 +5,7 @@
 // be (A → B at T=0) → (B → C at T=120s) where B and C aren't visible at T=0.
 
 use crate::mission::{IntentConstraints, ServiceLevelAgreement};
-use crate::topology::TopologyForecast;
-use crate::topology::forecast::TopologyForecaster;
+use crate::topology::{TopologyForecast, forecast::TopologyForecaster};
 use crate::{
     BandwidthAllocation, ConfidenceScore, DataRate, NodeId, PotentialEdge, TimeWindow,
 };
@@ -282,17 +281,25 @@ impl PartialOrd for RouteState {
 }
 
 /// Routing error
-#[derive(Debug, Clone, thiserror::Error)]
+#[derive(Debug, Clone)]
 pub enum RoutingError {
-    #[error("No route found from {source} to {destination}")]
     NoRouteFound { source: NodeId, destination: NodeId },
-
-    #[error("Topology forecast unavailable")]
     TopologyUnavailable,
-
-    #[error("Route computation failed: {0}")]
     ComputationFailed(String),
-
-    #[error("Invalid route parameters: {0}")]
     InvalidParameters(String),
 }
+
+impl std::fmt::Display for RoutingError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::NoRouteFound { source, destination } => {
+                write!(f, "No route found from {} to {}", source, destination)
+            }
+            Self::TopologyUnavailable => write!(f, "Topology forecast unavailable"),
+            Self::ComputationFailed(msg) => write!(f, "Route computation failed: {}", msg),
+            Self::InvalidParameters(msg) => write!(f, "Invalid route parameters: {}", msg),
+        }
+    }
+}
+
+impl std::error::Error for RoutingError {}

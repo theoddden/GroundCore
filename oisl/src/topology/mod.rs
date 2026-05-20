@@ -26,5 +26,5 @@ pub use control_node_placement::{
     ControlNodePlacementAlgorithm, PlacementError, PlacementEvaluation,
 };
 
-use crate::mission::ServiceLevelAgreement;
 use crate::TerminalId;
+use crate::mission::ServiceLevelAgreement;
