@@ -83,7 +83,7 @@ impl ControlNodeAssignmentAlgorithm {
     /// Identify handoff events from predictions
     fn identify_handoff_events(&self, predictions: &[AssignmentPoint]) -> Vec<HandoffEvent> {
         let mut events = Vec::new();
-        let mut current_node: Option<NodeId> = None;
+        let mut current_node: Option<String> = None;
 
         for (i, point) in predictions.iter().enumerate() {
             let nearest = point.nearest_node.clone();
@@ -129,7 +129,7 @@ impl ControlNodeAssignmentAlgorithm {
                 })?;
 
         // Create propagator
-        let propagator = sgp4::Propagator::from_elements_rec(tle_elements, false).map_err(|e| {
+        let propagator = sgp4::Propagator::new(tle_elements).map_err(|e| {
             AssignmentError::PredictionFailed(format!("SGP4 propagator error: {}", e))
         })?;
 

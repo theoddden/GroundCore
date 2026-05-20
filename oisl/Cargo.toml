@@ -19,7 +19,6 @@ serde_json = { workspace = true }
 chrono = { workspace = true }
 nalgebra = { workspace = true }
 thiserror = { workspace = true }
-anyhow = "1.0"
 tracing = { workspace = true }
 uuid = { workspace = true }
 sha2 = { workspace = true }
