@@ -118,8 +118,16 @@ pub enum CompilationError {
 impl std::fmt::Display for CompilationError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::NoFeasibleRoute { source, destination } => {
-                write!(f, "No feasible route found between {} and {}", source, destination)
+            Self::NoFeasibleRoute {
+                source,
+                destination,
+            } => {
+                write!(
+                    f,
+                    "No feasible route found between {} and {}",
+                    source,
+                    destination
+                )
             }
             Self::InsufficientResources { satellite_id } => {
                 write!(f, "Insufficient resources on satellite {}", satellite_id)
@@ -127,8 +135,16 @@ impl std::fmt::Display for CompilationError {
             Self::UnsatisfiableConstraints { reason } => {
                 write!(f, "Constraints cannot be satisfied: {}", reason)
             }
-            Self::DeadlineMissed { required, available } => {
-                write!(f, "Intent deadline cannot be met: required {}s, available {}s", required, available)
+            Self::DeadlineMissed {
+                required,
+                available,
+            } => {
+                write!(
+                    f,
+                    "Intent deadline cannot be met: required {}s, available {}s",
+                    required,
+                    available
+                )
             }
             Self::InvalidIntent(msg) => write!(f, "Invalid intent: {}", msg),
             Self::TopologyUnavailable { horizon } => {
