@@ -1,10 +1,11 @@
 // Tasking Scheduler - places tasks on timeline considering dependencies and constraints
 
 use crate::mission::{LinkReservation, SatelliteTask, TaskType};
-use crate::{SatelliteId, TaskId};
+use crate::{BandwidthAllocation, ConfidenceScore, PlanId, Priority, SatelliteId, TaskId};
 use chrono::{DateTime, Duration, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, VecDeque};
+use uuid::Uuid;
 
 /// Tasking scheduler
 pub struct TaskingScheduler {
@@ -125,6 +126,7 @@ impl TaskingScheduler {
             }
             TaskType::Observation { .. } => Duration::minutes(5),
             TaskType::Downlink { .. } => Duration::minutes(10),
+            TaskType::DataRelay { .. } => Duration::minutes(5), // Relay between satellites
         };
 
         // Schedule within window, accounting for dependencies

@@ -8,9 +8,15 @@ use crate::{
 };
 use bitemporal::timestamp::{EventTime, ReceptionTime};
 use chrono::{Duration, Utc};
+use std::collections::HashMap;
+use std::sync::Mutex;
+use uuid::Uuid;
 
 // Types defined in mission module
-use super::{CompilationError, IntentConstraints, MissionIntent, ObjectiveType, ValidationWarning};
+use super::{
+    CompilationError, IntentConstraints, LinkReservation, MissionIntent, ObjectiveType,
+    PlanExplanation, SatelliteTask, ServiceLevelAgreement, TaskingPlan, TaskType, ValidationWarning,
+};
 
 /// Intent compiler - compiles declarative intent to imperative tasking
 pub trait IntentCompiler: Send + Sync {
@@ -121,7 +127,7 @@ impl IntentCompiler for DefaultIntentCompiler {
 
         Ok(TaskingPlan {
             plan_id,
-            parent_intent: intent.intent_id,
+            intent_id: intent.intent_id,
             satellite_tasks,
             link_reservations,
             compiled_at,
@@ -282,7 +288,6 @@ impl DefaultIntentCompiler {
                         .unwrap_or_else(|| {
                             Uuid::new_v5(&Uuid::NAMESPACE_DNS, hop.edge.endpoints.1.as_bytes())
                         }),
-                    optical_config: crate::physical::OctConfiguration::default_s2s(),
                 },
                 scheduled_window: hop.use_window.clone(),
                 dependencies: if i > 0 {
@@ -291,7 +296,6 @@ impl DefaultIntentCompiler {
                     vec![]
                 },
                 priority: Priority::Medium,
-                tenant_id: source.clone(),
             });
 
             // Resolve satellite node IDs to terminal UUIDs for the link reservation.
@@ -313,12 +317,13 @@ impl DefaultIntentCompiler {
                 });
 
             link_reservations.push(LinkReservation {
-                reservation_id: Uuid::new_v4(),
+                link_id: Uuid::new_v4(),
+                source: hop.edge.endpoints.0.clone(),
+                destination: hop.edge.endpoints.1.clone(),
                 terminal_a: term_a,
                 terminal_b: term_b,
                 time_window: hop.use_window.clone(),
-                bandwidth_allocation: hop.bandwidth_reservation.clone(),
-                task_ids: vec![task_id],
+                bandwidth: hop.bandwidth_reservation.clone(),
             });
         }
 
@@ -378,7 +383,6 @@ impl DefaultIntentCompiler {
                 scheduled_window: obs_window.clone(),
                 dependencies: vec![],
                 priority: sla.priority,
-                tenant_id: tenant_id.clone(),
             });
 
             // After each observation window, schedule a downlink to deliver the data.
@@ -401,24 +405,24 @@ impl DefaultIntentCompiler {
                     task_id: dl_task_id,
                     satellite_id: sat_id.clone(),
                     task_type: TaskType::Downlink {
-                        ground_station: gs_id,
+                        ground_station: gs_id.clone(),
                     },
                     scheduled_window: downlink_window.clone(),
                     dependencies: vec![task_id],
                     priority: sla.priority,
-                    tenant_id: tenant_id.clone(),
                 });
 
                 link_reservations.push(LinkReservation {
-                    reservation_id: Uuid::new_v4(),
+                    link_id: Uuid::new_v4(),
+                    source: sat_id.clone(),
+                    destination: gs_id.clone(),
                     terminal_a: sat_terminal,
                     terminal_b: gs_terminal,
                     time_window: downlink_window,
-                    bandwidth_allocation: BandwidthAllocation {
+                    bandwidth: BandwidthAllocation {
                         data_rate: DataRate(1_000_000), // 1 Mbps default
                         valid_window: obs_window,
                     },
-                    task_ids: vec![task_id, dl_task_id],
                 });
             }
         }
@@ -500,12 +504,10 @@ impl DefaultIntentCompiler {
                         .unwrap_or_else(|| {
                             Uuid::new_v5(&Uuid::NAMESPACE_DNS, target_sat.as_bytes())
                         }),
-                    optical_config: crate::physical::OctConfiguration::default_s2s(),
                 },
                 scheduled_window: seg_window.clone(),
                 dependencies: prev_task_id.map(|id| vec![id]).unwrap_or_default(),
                 priority: sla.priority,
-                tenant_id: tenant_id.clone(),
             });
 
             // Reserve the S2S link between relay and target
@@ -521,15 +523,16 @@ impl DefaultIntentCompiler {
                 .unwrap_or_else(|| Uuid::new_v5(&Uuid::NAMESPACE_DNS, target_sat.as_bytes()));
 
             link_reservations.push(LinkReservation {
-                reservation_id: Uuid::new_v4(),
+                link_id: Uuid::new_v4(),
+                source: relay_sat.clone(),
+                destination: target_sat.clone(),
                 terminal_a: relay_terminal,
                 terminal_b: target_terminal,
                 time_window: seg_window.clone(),
-                bandwidth_allocation: BandwidthAllocation {
+                bandwidth: BandwidthAllocation {
                     data_rate: DataRate(10_000_000), // 10 Mbps S2S
                     valid_window: seg_window,
                 },
-                task_ids: vec![task_id],
             });
 
             prev_task_id = Some(task_id);
@@ -566,7 +569,6 @@ impl DefaultIntentCompiler {
             scheduled_window: ground_window.clone(),
             dependencies: vec![],
             priority: sla.priority,
-            tenant_id: tenant_id.clone(),
         }];
 
         // Reserve the S2T (satellite-to-ground) optical link for the downlink window.
@@ -578,15 +580,16 @@ impl DefaultIntentCompiler {
         let gs_terminal = Uuid::new_v5(&Uuid::NAMESPACE_DNS, ground_station.as_bytes());
 
         let link_reservations = vec![LinkReservation {
-            reservation_id: Uuid::new_v4(),
+            link_id: Uuid::new_v4(),
+            source: satellite.clone(),
+            destination: ground_station.clone(),
             terminal_a: sat_terminal,
             terminal_b: gs_terminal,
             time_window: ground_window.clone(),
-            bandwidth_allocation: BandwidthAllocation {
+            bandwidth: BandwidthAllocation {
                 data_rate: DataRate(100_000_000), // 100 Mbps S2T optical downlink
                 valid_window: ground_window.clone(),
             },
-            task_ids: vec![task_id],
         }];
 
         Ok((satellite_tasks, link_reservations))

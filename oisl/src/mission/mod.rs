@@ -17,8 +17,8 @@ pub use state_machine::{ConstellationState, SatelliteState};
 pub use validator::{PlanValidator, ValidationReport};
 
 use crate::{
-    AssetId, BiTemporal, Bytes, GeoRegion, IntentId, SatelliteId, SensorType, TaskId, TenantId,
-    TimeWindow,
+    AssetId, BandwidthAllocation, BiTemporal, Bytes, ConfidenceScore, GeoRegion, IntentId,
+    PlanId, Priority, SatelliteId, SensorType, TaskId, TenantId, TimeWindow,
 };
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
@@ -185,6 +185,7 @@ pub struct ServiceLevelAgreement {
     pub max_latency: Option<chrono::Duration>,
     pub min_throughput: Option<u64>,
     pub reliability_target: Option<f64>, // 0.0 to 1.0
+    pub deadline: Option<chrono::DateTime<Utc>>,
 }
 
 /// Task type - what the task accomplishes
@@ -205,6 +206,9 @@ pub enum TaskType {
         source: AssetId,
         destination: AssetId,
     },
+    DataTransfer {
+        volume: crate::Bytes,
+    },
 }
 
 /// Satellite task - a single task assigned to a satellite
@@ -224,6 +228,8 @@ pub struct LinkReservation {
     pub link_id: uuid::Uuid,
     pub source: SatelliteId,
     pub destination: SatelliteId,
+    pub terminal_a: uuid::Uuid,
+    pub terminal_b: uuid::Uuid,
     pub time_window: TimeWindow,
     pub bandwidth: BandwidthAllocation,
 }
@@ -237,6 +243,7 @@ pub struct TaskingPlan {
     pub link_reservations: Vec<LinkReservation>,
     pub confidence: ConfidenceScore,
     pub compiled_at: BiTemporal<DateTime<Utc>>,
+    pub valid_until: chrono::DateTime<Utc>,
 }
 
 /// Plan explanation - why the compiler made specific decisions

@@ -8,6 +8,7 @@ use crate::pat::AcquisitionResult;
 use crate::{BiTemporal, EventTime, ReceptionTime};
 use chrono::{DateTime, Utc};
 use ed25519_dalek::{Signer, SigningKey, Verifier, VerifyingKey};
+use rand::RngCore;
 use rand::rngs::OsRng;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -38,8 +39,9 @@ impl PatAttestation {
 
         // Sign the hash with an ephemeral Ed25519 keypair.
         // In production, replace with the terminal's long-term signing key.
-        let mut csprng = OsRng;
-        let signing_key = SigningKey::generate(&mut csprng);
+        let mut keypair_bytes = [0u8; 64];
+        OsRng.fill_bytes(&mut keypair_bytes);
+        let signing_key = SigningKey::from_keypair_bytes(&keypair_bytes).unwrap();
         let verifying_key = VerifyingKey::from(&signing_key);
         let sig_bytes = signing_key.sign(&hash_bytes).to_bytes();
         let signer_public_key = hex::encode(verifying_key.as_bytes());

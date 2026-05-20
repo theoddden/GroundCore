@@ -137,9 +137,9 @@ impl ControlNodeAssignmentAlgorithm {
         let time_since_epoch = time.timestamp() as f64 - tle.epoch.timestamp() as f64;
         let minutes_since_epoch = sgp4::MinutesSinceEpoch(time_since_epoch / 60.0);
 
-        // Propagate to target time
-        let prediction = elements
-            .propagate(minutes_since_epoch, &constants)
+        // Propagate to target time (sgp4 v2.4: propagate is on Constants, not Elements)
+        let prediction = constants
+            .propagate(minutes_since_epoch)
             .map_err(|e| {
                 AssignmentError::PredictionFailed(format!("SGP4 propagation error: {}", e))
             })?;

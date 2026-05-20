@@ -2,11 +2,14 @@
 
 use crate::mission::state_machine::ConstellationState;
 use crate::mission::{
-    TaskType, TaskingPlan, ValidationSeverity, ValidationWarning, ValidationWarningType,
+    LinkReservation, SatelliteTask, ServiceLevelAgreement, TaskType, TaskingPlan,
+    ValidationSeverity, ValidationWarning, ValidationWarningType,
 };
 use crate::topology::TopologyForecast;
 use crate::topology::forecast::TopologyForecaster;
+use crate::{BandwidthAllocation, ConfidenceScore, PlanId, Priority};
 use std::collections::HashMap;
+use uuid::Uuid;
 
 /// Plan validator
 pub struct PlanValidator {

@@ -141,7 +141,9 @@ impl CryptoBackend for AesGcmBackend {
     }
 
     async fn generate_signing_key(&self) -> Result<SigningKeyPair> {
-        let signing_key = SigningKey::generate(&mut OsRng);
+        let mut keypair_bytes = [0u8; 64];
+        OsRng.fill_bytes(&mut keypair_bytes);
+        let signing_key = SigningKey::from_keypair_bytes(&keypair_bytes).unwrap();
         let verifying_key = signing_key.verifying_key();
 
         Ok(SigningKeyPair {

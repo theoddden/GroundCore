@@ -9,6 +9,7 @@
 
 use chrono::{DateTime, Utc};
 use ed25519_dalek::{Signer, SigningKey, VerifyingKey};
+use rand::RngCore;
 use rand::rngs::OsRng;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -68,8 +69,9 @@ impl IdentityCertificate {
     /// Create a self-signed certificate using an ephemeral keypair.
     /// In production, use `signed_by` with the CA's long-term keypair.
     pub fn new(issuer: String, subject: String, validity_days: u64) -> Self {
-        let mut csprng = OsRng;
-        let signing_key = SigningKey::generate(&mut csprng);
+        let mut keypair_bytes = [0u8; 64];
+        OsRng.fill_bytes(&mut keypair_bytes);
+        let signing_key = SigningKey::from_keypair_bytes(&keypair_bytes).unwrap();
         let keypair = (signing_key.clone(), VerifyingKey::from(&signing_key));
         Self::signed_by(issuer, subject, validity_days, &keypair)
     }
@@ -129,8 +131,9 @@ pub struct ControlPlaneKeyPair {
 
 impl ControlPlaneKeyPair {
     pub fn new(validity_days: u64) -> Self {
-        let mut csprng = rand::rngs::OsRng;
-        let signing_key = ed25519_dalek::SigningKey::generate(&mut csprng);
+        let mut keypair_bytes = [0u8; 64];
+        OsRng.fill_bytes(&mut keypair_bytes);
+        let signing_key = ed25519_dalek::SigningKey::from_keypair_bytes(&keypair_bytes).unwrap();
         let verifying_key = ed25519_dalek::VerifyingKey::from(&signing_key);
 
         let now = Utc::now();
