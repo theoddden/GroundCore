@@ -4,7 +4,11 @@
 // graph is harder - you're routing through time as well as space. A path might
 // be (A → B at T=0) → (B → C at T=120s) where B and C aren't visible at T=0.
 
-use crate::{mission::{IntentConstraints, ServiceLevelAgreement}, topology::{TopologyForecast, forecast::TopologyForecaster}, BandwidthAllocation, ConfidenceScore, DataRate, NodeId, PotentialEdge, TimeWindow};
+use crate::{
+    BandwidthAllocation, ConfidenceScore, DataRate, NodeId, PotentialEdge, TimeWindow,
+    mission::{IntentConstraints, ServiceLevelAgreement},
+    topology::{TopologyForecast, forecast::TopologyForecaster},
+};
 use caching::LruCache;
 use chrono::{DateTime, Duration, Utc};
 use serde::{Deserialize, Serialize};

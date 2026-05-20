@@ -24,9 +24,9 @@ use crate::{
     AssetId, BiTemporal, Bytes, GeoRegion, IntentId, SatelliteId, SensorType, TaskId, TenantId,
     TimeWindow,
 };
+use anyhow::Error as AnyhowError;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use anyhow::Error as AnyhowError;
 
 /// Mission intent - what the operator wants (declarative)
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -127,7 +127,11 @@ impl std::fmt::Display for CompilationError {
                 source,
                 destination,
             } => {
-                write!(f, "No feasible route found between {} and {}", source, destination)
+                write!(
+                    f,
+                    "No feasible route found between {} and {}",
+                    source, destination
+                )
             }
             Self::InsufficientResources { satellite_id } => {
                 write!(f, "Insufficient resources on satellite {}", satellite_id)
