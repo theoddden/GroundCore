@@ -109,7 +109,10 @@ pub enum TradeoffType {
 #[derive(Debug, Clone, Serialize, Deserialize, thiserror::Error)]
 pub enum CompilationError {
     #[error("No feasible route found between {source} and {destination}")]
-    NoFeasibleRoute { source: SatelliteId, destination: SatelliteId },
+    NoFeasibleRoute {
+        source: SatelliteId,
+        destination: SatelliteId,
+    },
 
     #[error("Insufficient resources on satellite {satellite_id}")]
     InsufficientResources { satellite_id: String },
