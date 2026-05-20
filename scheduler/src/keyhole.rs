@@ -327,6 +327,7 @@ impl KeyholeWarning {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use chrono::Duration;
 
     fn make_profile(elevations: &[f64]) -> Vec<(DateTime<Utc>, f64, f64)> {
         let start = Utc::now();

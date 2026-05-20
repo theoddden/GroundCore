@@ -1,7 +1,5 @@
 #[cfg(test)]
 mod tests {
-    use std::collections::HashMap;
-
     use scheduler::{DominantResourceFairness, ResourceShare, ResourceType};
 
     #[test]

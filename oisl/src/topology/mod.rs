@@ -25,4 +25,3 @@ pub use link_state::{ActiveLink, LinkMetrics, LinkPhase, PhaseTransition};
 pub use control_node_placement::{
     ControlNodePlacementAlgorithm, PlacementError, PlacementEvaluation,
 };
-

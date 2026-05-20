@@ -96,12 +96,8 @@ impl PlanValidator {
         let mut terminal_usage: HashMap<crate::TerminalId, usize> = HashMap::new();
 
         for reservation in &plan.link_reservations {
-            *terminal_usage
-                .entry(reservation.terminal_a)
-                .or_insert(0) += 1;
-            *terminal_usage
-                .entry(reservation.terminal_b)
-                .or_insert(0) += 1;
+            *terminal_usage.entry(reservation.terminal_a).or_insert(0) += 1;
+            *terminal_usage.entry(reservation.terminal_b).or_insert(0) += 1;
         }
 
         // Check for over-subscribed terminals
