@@ -2,9 +2,9 @@
 mod tests {
     use optical::link::state_machine::{
         DegradationAction, DegradationReason, FailureCause, LinkMetrics, LinkPhase, LinkQuality,
-        OpticalLink, RecoveryStrategy, TerminationReason,
+        OpticalLink,
     };
-    use optical::oct::{LinkType, OctConfiguration};
+    use optical::oct::OctConfiguration;
     use uuid::Uuid;
 
     #[test]
@@ -67,8 +67,10 @@ mod tests {
 
     #[test]
     fn test_link_metrics_utilization() {
-        let mut metrics = LinkMetrics::default();
-        metrics.data_rate_actual = 5_000_000_000;
+        let mut metrics = LinkMetrics {
+            data_rate_actual: 5_000_000_000,
+            ..Default::default()
+        };
         assert_eq!(metrics.utilization(), 0.5);
     }
 

@@ -21,13 +21,12 @@ pub use state_machine::{ConstellationState, SatelliteState};
 pub use validator::{PlanValidator, ValidationReport};
 
 use crate::{
-    AssetId, BiTemporal, Bytes, ConfidenceScore, GeoRegion, IntentId, PlanId, Priority,
-    SatelliteId, SensorType, TaskId, TenantId, TimeWindow,
+    AssetId, BiTemporal, Bytes, GeoRegion, IntentId, SatelliteId, SensorType, TaskId, TenantId,
+    TimeWindow,
 };
-use chrono::{DateTime, Utc};
+use chrono::DateTime;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use thiserror::Error;
 
 /// Mission intent - what the operator wants (declarative)
 #[derive(Debug, Clone, Serialize, Deserialize)]

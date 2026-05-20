@@ -1,8 +1,8 @@
 // Satellite Scheduler - Kubernetes-like scheduling across satellite nodes
 
-use crate::resource::{ResourceAllocation, ResourceClaim, SatelliteNode};
+use crate::resource::{ResourceClaim, SatelliteNode};
 use crate::{AllocationId, PreemptionReason, Priority, SatelliteId, TaskId, TenantId, TimeWindow};
-use chrono::{DateTime, Duration, Utc};
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 

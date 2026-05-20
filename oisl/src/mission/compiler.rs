@@ -7,8 +7,7 @@ use crate::{
     Priority, SatelliteId, SensorType, TaskId, TenantId, TimeWindow,
 };
 use bitemporal::timestamp::{EventTime, ReceptionTime};
-use chrono::{DateTime, Duration, Utc};
-use serde::{Deserialize, Serialize};
+use chrono::Duration;
 use std::collections::HashMap;
 use std::sync::Mutex;
 use uuid::Uuid;
@@ -17,7 +16,7 @@ use uuid::Uuid;
 use super::{
     CompilationError, IntentConstraints, LinkReservation, MissionIntent, ObjectiveType,
     PlanExplanation, SatelliteTask, ServiceLevelAgreement, TaskType, TaskingPlan,
-    ValidationSeverity, ValidationWarning, ValidationWarningType,
+    ValidationWarning,
 };
 
 /// Intent compiler - compiles declarative intent to imperative tasking

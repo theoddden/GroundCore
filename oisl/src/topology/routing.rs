@@ -8,14 +8,13 @@ use crate::mission::{IntentConstraints, ServiceLevelAgreement};
 use crate::topology::TopologyForecast;
 use crate::topology::forecast::TopologyForecaster;
 use crate::{
-    BandwidthAllocation, ConfidenceScore, DataRate, GeometryScore, LinkId, NodeId, PotentialEdge,
-    TerminalId, TimeWindow,
+    BandwidthAllocation, ConfidenceScore, DataRate, NodeId, PotentialEdge, TimeWindow,
 };
 use caching::LruCache;
 use chrono::{DateTime, Duration, Utc};
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
-use std::collections::{BinaryHeap, HashMap, HashSet};
+use std::collections::{BinaryHeap, HashSet};
 
 /// Cache key for spatiotemporal routes.
 /// Time is bucketed into 5-minute windows so routes valid within the same

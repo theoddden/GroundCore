@@ -9,7 +9,7 @@
 use crate::NodeId;
 use crate::topology::forecast::{GraphSnapshot, NodeType, Position3D, TopologyForecast};
 use serde::{Deserialize, Serialize};
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 
 /// Control Node Placement Algorithm
 pub struct ControlNodePlacementAlgorithm {

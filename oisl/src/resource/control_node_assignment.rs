@@ -6,7 +6,7 @@
 // handoffs based on distance thresholds.
 
 use crate::topology::forecast::Position3D;
-use crate::{AllocationId, NodeId, SatelliteId, TaskId, TerminalId, TimeWindow};
+use crate::{NodeId, SatelliteId};
 use chrono::{DateTime, Duration, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -129,7 +129,7 @@ impl ControlNodeAssignmentAlgorithm {
                 })?;
 
         // Create propagator
-        let propagator = sgp4::Propagator::new(tle_elements).map_err(|e| {
+        let propagator = sgp4::Propagator::try_from(tle_elements).map_err(|e| {
             AssignmentError::PredictionFailed(format!("SGP4 propagator error: {}", e))
         })?;
 

@@ -12,8 +12,4 @@ pub mod coordinator;
 pub use clock::{ClockConfidence, PrecisionClock, PrecisionTimestamp};
 pub use coordinator::{PatCoordinator, PatEvent, PatEventType, ScheduledAcquisition};
 
-use crate::pat::coordinator::{AcquisitionSequence, FallbackAction};
-use crate::{AcquisitionId, OctConfiguration, PointingVector, TerminalId};
-use chrono::{DateTime, Utc};
-use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
+use crate::TerminalId;

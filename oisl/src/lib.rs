@@ -18,7 +18,7 @@ pub mod topology;
 // Re-export common types
 pub use mission::{
     CompilationError, IntentCompiler, IntentConstraints, MissionIntent, ObjectiveType,
-    PlanExplanation, ServiceLevelAgreement, TaskingPlan, ValidationWarning,
+    ValidationWarning,
 };
 
 pub use topology::{

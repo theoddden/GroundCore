@@ -1,8 +1,7 @@
 // Satellite Node Manager - per-satellite resource state
 
 use crate::physical::terminal::TerminalCapability as PhysicalTerminalCapability;
-use crate::resource::{ResourceAllocation, ResourceClaim};
-use crate::{Bytes, DataRate, Priority, SatelliteId, TaskId, TenantId, TerminalId, TimeWindow};
+use crate::{DataRate, Priority, SatelliteId, TaskId, TenantId, TerminalId, TimeWindow};
 use chrono::{DateTime, Duration, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, VecDeque};

@@ -7,7 +7,7 @@
 use crate::{
     BiTemporal, DataRate, DegradationReason, LinkId, LossCause, TerminalId, TrackingQuality,
 };
-use chrono::{DateTime, Duration, Utc};
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
 /// Link phase with bi-temporal timestamps

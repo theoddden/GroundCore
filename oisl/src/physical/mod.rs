@@ -16,8 +16,3 @@ pub use configuration::{
 pub use terminal::{EthernetEndpoint, OpticalTerminal, PatHandle, TelemetryStream};
 pub use vendors::{CondorMk3, Scot80, SerialNumber, Vendor};
 
-use crate::{Bytes, DataRate, Frequency, TerminalId};
-use async_trait::async_trait;
-use chrono::{DateTime, Duration, Utc};
-use serde::{Deserialize, Serialize};
-use std::time::Instant;

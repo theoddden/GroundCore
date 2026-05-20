@@ -10,11 +10,11 @@
 // maximum satellite-to-ground latency across constellation operation.
 
 use crate::{
-    DataRate, GeometryScore, LinkId, NodeId, NodeId as CoreNodeId, TerminalId, TimeWindow,
+    DataRate, LinkId, NodeId, TerminalId, TimeWindow,
 };
 use chrono::{DateTime, Duration, Utc};
 use serde::{Deserialize, Serialize};
-use std::collections::{BTreeMap, HashMap, HashSet};
+use std::collections::{BTreeMap, HashMap};
 
 /// Topology forecast - time-indexed graph
 #[derive(Debug, Clone, Serialize, Deserialize)]
