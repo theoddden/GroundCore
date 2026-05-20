@@ -161,7 +161,7 @@ impl AnomalySynthesizer {
         for signal in &self.signal_buffer {
             by_component
                 .entry(signal.component.clone())
-                .or_insert_with(Vec::new)
+                .or_default()
                 .push(signal.clone());
         }
 

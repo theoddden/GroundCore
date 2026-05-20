@@ -1,9 +1,19 @@
 //! Tracking algorithms (open-loop, closed-loop, predictive)
 
-use crate::controller::{AntennaController, PointingTarget};
-use ground_core::{GroundStationError, Result};
+use crate::controller::PointingTarget;
 use serde::{Deserialize, Serialize};
-use tracking::{OrbitalState, Station};
+use tracking::OrbitalState;
+
+/// Ground station location
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+pub struct Station {
+    /// Latitude in degrees
+    pub latitude: f64,
+    /// Longitude in degrees
+    pub longitude: f64,
+    /// Altitude in meters
+    pub altitude: f64,
+}
 
 /// Tracking mode
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]

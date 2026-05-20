@@ -131,7 +131,7 @@ impl AgentContext {
     }
 
     /// Draft an incident report
-    pub fn draft_incident_report(&self, incident_data: serde_json::Value) -> String {
+    pub fn draft_incident_report(&self, _incident_data: serde_json::Value) -> String {
         // In a real implementation, this would use the agent to synthesize
         // a coherent incident report from the provided data
         format!(

@@ -2,7 +2,7 @@
 
 use crate::version::Version;
 use chrono::{DateTime, Utc};
-use ground_core::{PassId, Result};
+use ground_core::PassId;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -97,6 +97,12 @@ impl PassProcess {
 /// Process manager for all pass subprocesses
 pub struct ProcessManager {
     processes: HashMap<PassId, PassProcess>,
+}
+
+impl Default for ProcessManager {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl ProcessManager {

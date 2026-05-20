@@ -105,6 +105,12 @@ pub struct ProposalManager {
     proposals: std::collections::HashMap<String, ActionProposal>,
 }
 
+impl Default for ProposalManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ProposalManager {
     pub fn new() -> Self {
         Self {

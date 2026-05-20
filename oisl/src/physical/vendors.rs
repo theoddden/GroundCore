@@ -11,9 +11,7 @@ use crate::physical::terminal::{
 use crate::topology::link_state::LinkPhase;
 use crate::{DataRate, OctConfiguration, OctStandardVersion, ResetLevel, TerminalId};
 use async_trait::async_trait;
-use chrono::{DateTime, Utc};
-use std::pin::Pin;
-use tokio::sync::mpsc;
+use chrono::Utc;
 
 /// Vendor enum
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
@@ -105,7 +103,7 @@ impl OpticalTerminal for CondorMk3 {
     }
 
     async fn calibrate(&mut self) -> Result<CalibrationReport, TerminalError> {
-        let response = self.send_command("calibrate").await?;
+        let _response = self.send_command("calibrate").await?;
 
         // Parse response (simplified)
         Ok(CalibrationReport {
@@ -129,7 +127,7 @@ impl OpticalTerminal for CondorMk3 {
     }
 
     async fn begin_pat(&mut self) -> Result<PatHandle, TerminalError> {
-        let response = self.send_command("begin_pat").await?;
+        let _response = self.send_command("begin_pat").await?;
 
         Ok(PatHandle {
             acquisition_id: crate::AcquisitionId::new_v4(),
@@ -175,7 +173,7 @@ impl OpticalTerminal for CondorMk3 {
     }
 
     async fn health_check(&self) -> Result<HealthReport, TerminalError> {
-        let response = self.send_command("health_check").await?;
+        let _response = self.send_command("health_check").await?;
 
         Ok(HealthReport {
             overall_health: crate::HealthMetrics(crate::ConfidenceScore::new(0.95)),
@@ -201,7 +199,7 @@ impl OpticalTerminal for CondorMk3 {
     }
 
     async fn get_status(&self) -> Result<TerminalStatus, TerminalError> {
-        let response = self.send_command("status").await?;
+        let _response = self.send_command("status").await?;
 
         Ok(TerminalStatus {
             operational: true,
@@ -232,7 +230,7 @@ impl Scot80 {
         }
     }
 
-    async fn send_command(&self, command: &[u8]) -> Result<Vec<u8>, TerminalError> {
+    async fn send_command(&self, _command: &[u8]) -> Result<Vec<u8>, TerminalError> {
         // Tesat uses proprietary protocol (simplified)
         // In production, this would use the actual Tesat control protocol
         Ok(vec![])

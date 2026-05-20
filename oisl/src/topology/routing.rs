@@ -5,6 +5,7 @@
 // be (A → B at T=0) → (B → C at T=120s) where B and C aren't visible at T=0.
 
 use crate::mission::{IntentConstraints, ServiceLevelAgreement};
+use crate::topology::forecast::TopologyForecaster;
 use crate::topology::TopologyForecast;
 use crate::{
     BandwidthAllocation, ConfidenceScore, DataRate, GeometryScore, LinkId, NodeId, PotentialEdge,
@@ -158,8 +159,8 @@ impl SpatiotemporalRouter {
     fn build_route(
         &self,
         state: RouteState,
-        source: &NodeId,
-        destination: &NodeId,
+        _source: &NodeId,
+        _destination: &NodeId,
     ) -> Result<Route, RoutingError> {
         Ok(Route {
             hops: state.hops,
@@ -290,9 +291,9 @@ pub enum RoutingError {
     #[error("Topology forecast unavailable")]
     TopologyUnavailable,
 
-    #[error("Route computation failed: {0}")]
-    ComputationFailed(String),
+    #[error("Route computation failed")]
+    ComputationFailed(#[from] anyhow::Error),
 
-    #[error("Invalid route parameters: {0}")]
-    InvalidParameters(String),
+    #[error("Invalid route parameters")]
+    InvalidParameters(#[from] anyhow::Error),
 }

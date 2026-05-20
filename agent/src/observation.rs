@@ -6,7 +6,6 @@
 use chrono::{DateTime, Utc};
 use ground_core::{PassId, Result};
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 
 /// System state snapshot
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -152,6 +151,12 @@ pub struct HistoricalQuery {
 pub struct DefaultObservationTool {
     // In a real implementation, this would connect to the actual system
     // For now, it's a placeholder that returns mock data
+}
+
+impl Default for DefaultObservationTool {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl DefaultObservationTool {

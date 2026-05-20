@@ -35,7 +35,7 @@ impl ControlNodeAssignmentAlgorithm {
     pub fn predict_assignments(
         &self,
         satellite_id: SatelliteId,
-        current_position: Position3D,
+        _current_position: Position3D,
         control_nodes: HashMap<NodeId, ControlNodeLocation>,
         tle_data: &TleData,
     ) -> Result<AssignmentPrediction, AssignmentError> {
@@ -97,7 +97,7 @@ impl ControlNodeAssignmentAlgorithm {
 
                     if new_distance < current_distance * (1.0 - self.handoff_threshold_ratio) {
                         events.push(HandoffEvent {
-                            timestamp: point.timestamp,
+                            handoff_time: point.timestamp,
                             from_node: prev_node.clone(),
                             to_node: nearest.clone(),
                         });
@@ -127,7 +127,7 @@ impl ControlNodeAssignmentAlgorithm {
                 })?;
 
         // Create propagator
-        let propagator = sgp4::Propagator::new(tle_elements).map_err(|e| {
+        let propagator = sgp4::Propagator::from_elements(tle_elements).map_err(|e| {
             AssignmentError::PredictionFailed(format!("SGP4 propagator error: {}", e))
         })?;
 

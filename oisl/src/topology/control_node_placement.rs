@@ -228,7 +228,7 @@ impl ControlNodePlacementAlgorithm {
         &self,
         topologies: &[GraphSnapshot],
         selected: &HashSet<NodeId>,
-        candidates: &HashSet<NodeId>,
+        _candidates: &HashSet<NodeId>,
         remaining: &[NodeId],
     ) -> Option<NodeId> {
         let mut best_station = None;
@@ -254,7 +254,7 @@ impl ControlNodePlacementAlgorithm {
         let mut max_distance: f64 = 0.0;
 
         for topology in topologies {
-            for (node_id, node_state) in &topology.nodes {
+            for (_node_id, node_state) in &topology.nodes {
                 if matches!(node_state.node_type, NodeType::Satellite { .. }) {
                     let min_distance =
                         self.min_distance_to_control_nodes(node_state.position, topology, selected);
@@ -295,7 +295,7 @@ impl ControlNodePlacementAlgorithm {
         topologies: &[GraphSnapshot],
         selected: HashSet<NodeId>,
         candidates: &HashSet<NodeId>,
-        k: usize,
+        _k: usize,
     ) -> HashSet<NodeId> {
         let mut current = selected;
         let mut improved = true;

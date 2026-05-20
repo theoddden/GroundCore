@@ -86,11 +86,11 @@ impl EmergencyShardPool {
     }
 
     /// Claim an available emergency shard
-    pub fn claim(&self) -> Result<&EmergencyShard> {
-        for shard in &self.shards {
+    pub fn claim(&mut self) -> Result<usize> {
+        for (i, shard) in self.shards.iter().enumerate() {
             if shard.is_available() {
                 shard.claim()?;
-                return Ok(shard);
+                return Ok(i);
             }
         }
 
@@ -99,9 +99,11 @@ impl EmergencyShardPool {
         ))
     }
 
-    /// Release a shard back to the pool
-    pub fn release(&mut self, shard: &mut EmergencyShard) {
-        shard.release();
+    /// Release a shard back to the pool by index
+    pub fn release(&mut self, index: usize) {
+        if let Some(shard) = self.shards.get_mut(index) {
+            shard.release();
+        }
     }
 
     /// Get the number of available shards
@@ -126,25 +128,25 @@ mod tests {
 
     #[test]
     fn test_emergency_shard_claim_release() {
-        let pool = EmergencyShardPool::new(3, 1024);
+        let mut pool = EmergencyShardPool::new(3, 1024);
 
         assert_eq!(pool.available_count(), 3);
 
-        let shard = pool.claim().unwrap();
+        let shard_index = pool.claim().unwrap();
         assert_eq!(pool.available_count(), 2);
 
-        pool.release(shard);
+        pool.release(shard_index);
         assert_eq!(pool.available_count(), 3);
     }
 
     #[test]
     fn test_emergency_shard_exhaustion() {
-        let pool = EmergencyShardPool::new(1, 1024);
+        let mut pool = EmergencyShardPool::new(1, 1024);
 
         let _shard1 = pool.claim().unwrap();
         assert_eq!(pool.available_count(), 0);
 
-        let result = pool.claim();
-        assert!(result.is_err());
+        let _result = pool.claim();
+        assert!(_result.is_err());
     }
 }

@@ -1,6 +1,6 @@
 //! Handoff management for zero-downtime deployment
 
-use crate::subprocess::{PassProcess, ProcessManager};
+use crate::subprocess::ProcessManager;
 use crate::supervisor::SupervisorConfig;
 use crate::version::{Version, VersionedBinary};
 use ground_core::Result;
@@ -25,6 +25,12 @@ pub struct HandoffResult {
 
 /// Handoff manager
 pub struct HandoffManager;
+
+impl Default for HandoffManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl HandoffManager {
     pub fn new() -> Self {

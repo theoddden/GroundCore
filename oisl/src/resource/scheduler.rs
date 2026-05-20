@@ -70,21 +70,23 @@ impl SatelliteScheduler for DefaultSatelliteScheduler {
         let valid_window = TimeWindow::new(Utc::now(), Utc::now() + claim.duration);
         let priority = Priority::Medium;
 
+        // Clone satellite_id before mutable borrow
+        let sat_id = satellite.satellite_id.clone();
+
         let allocation_id = self
             .allocator
             .allocate(
                 claim.clone(),
                 task_id,
-                tenant_id.clone(),
+                &tenant_id,
                 priority,
-                valid_window,
+                &valid_window,
             )
             .map_err(|e| ScheduleError::AllocationFailed(e.to_string()))?;
 
         // Update satellite state
-        let sat_id = satellite.satellite_id.clone();
         if let Some(sat) = self.satellites.get_mut(&sat_id) {
-            sat.allocate(claim, task_id, tenant_id);
+            sat.allocate(claim, task_id, &tenant_id);
         }
 
         Ok(allocation_id)

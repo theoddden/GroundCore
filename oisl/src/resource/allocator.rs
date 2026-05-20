@@ -3,7 +3,7 @@
 use crate::{
     AllocationId, Bytes, DataRate, Priority, SatelliteId, TaskId, TenantId, TerminalId, TimeWindow,
 };
-use chrono::{DateTime, Duration, Utc};
+use chrono::Duration;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use uuid::Uuid;
@@ -98,16 +98,16 @@ impl ResourceAllocator {
         &mut self,
         claim: ResourceClaim,
         task_id: TaskId,
-        tenant_id: TenantId,
+        _tenant_id: &TenantId,
         priority: Priority,
-        valid_window: TimeWindow,
+        valid_window: &TimeWindow,
     ) -> Result<AllocationId, AllocationError> {
         // Check tenant quota
-        if let Some(quota) = self.tenant_quotas.get(&tenant_id) {
-            let current_usage = self.tenant_usage(&tenant_id);
+        if let Some(quota) = self.tenant_quotas.get(&_tenant_id) {
+            let current_usage = self.tenant_usage(&_tenant_id);
             if current_usage + claim.power_watts > quota.max_power_watts {
                 return Err(AllocationError::QuotaExceeded {
-                    tenant_id,
+                    tenant_id: _tenant_id.clone(),
                     resource: "power".to_string(),
                 });
             }
@@ -208,7 +208,7 @@ impl ResourceAllocator {
         &self,
         claim: &ResourceClaim,
         window: &TimeWindow,
-        tenant_id: &TenantId,
+        _tenant_id: &TenantId,
     ) -> Option<AllocationId> {
         if let Some(terminal) = &claim.optical_terminal {
             if let Some(ids) = self.terminal_index.get(terminal) {

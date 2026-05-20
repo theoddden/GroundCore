@@ -2,6 +2,7 @@
 
 use crate::mission::state_machine::ConstellationState;
 use crate::mission::{TaskingPlan, ValidationSeverity, ValidationWarning, ValidationWarningType};
+use crate::topology::forecast::TopologyForecaster;
 use crate::topology::TopologyForecast;
 use std::collections::HashMap;
 

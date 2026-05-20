@@ -99,8 +99,8 @@ impl SlewLimiter {
             profile: self.default_profile,
             start_time,
             end_time,
-            azimuth_waypoints,
-            elevation_waypoints,
+            azimuth_waypoints: az_waypoints,
+            elevation_waypoints: el_waypoints,
         })
     }
 

@@ -62,7 +62,7 @@ impl SafetyInterlock {
             el_min,
             el_max,
             emergency_stop: AtomicBool::new(false),
-            last_heartbeat: AtomicU64::new(Utc::now().timestamp_millis()),
+            last_heartbeat: AtomicU64::new(Utc::now().timestamp_millis() as u64),
             watchdog_timeout_ms,
             collision_zones: Vec::new(),
         }
@@ -117,7 +117,7 @@ impl SafetyInterlock {
     /// Update watchdog heartbeat
     pub fn update_watchdog(&self) {
         self.last_heartbeat
-            .store(Utc::now().timestamp_millis(), Ordering::Relaxed);
+            .store(Utc::now().timestamp_millis() as u64, Ordering::Relaxed);
     }
 
     /// Check watchdog timeout

@@ -7,12 +7,12 @@
 use crate::ResetLevel;
 use crate::physical::vendors::Vendor;
 use crate::{
-    OctConfiguration, OctStandardVersion, SerialNumber, TerminalId, topology::link_state::LinkPhase,
+    OctConfiguration, OctStandardVersion, TerminalId, topology::link_state::LinkPhase,
 };
+use crate::physical::SerialNumber;
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use std::pin::Pin;
-use tokio::sync::mpsc;
 
 /// Terminal capability
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]

@@ -5,7 +5,7 @@
 // ensuring uninterrupted management without container migration or Pod eviction.
 
 use crate::{BiTemporal, NodeId, SatelliteId};
-use chrono::{DateTime, Duration, Utc};
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
 /// Control plane handoff state machine

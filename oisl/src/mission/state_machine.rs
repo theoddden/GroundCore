@@ -1,6 +1,6 @@
 // Constellation State Machine - maintains live state model with bi-temporal versioning
 
-use crate::{AssetId, BiTemporal, GeoRegion, SatelliteId, TimeWindow};
+use crate::{AssetId, BiTemporal, SatelliteId};
 use bitemporal::timestamp::{EventTime, ReceptionTime};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};

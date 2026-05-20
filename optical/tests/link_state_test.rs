@@ -1,10 +1,10 @@
 #[cfg(test)]
 mod tests {
-    use ground_station_optical::link::state_machine::{
+    use optical::link::state_machine::{
         DegradationAction, DegradationReason, FailureCause, LinkMetrics, LinkPhase, LinkQuality,
         OpticalLink, RecoveryStrategy, TerminationReason,
     };
-    use ground_station_optical::oct::{LinkType, OctConfiguration};
+    use optical::oct::{LinkType, OctConfiguration};
     use uuid::Uuid;
 
     #[test]
@@ -78,7 +78,7 @@ mod tests {
         assert!(!metrics.control_plane_traffic.is_enabled());
 
         metrics.enable_control_plane(
-            ground_station_optical::link::state_machine::TrafficPriority::Critical,
+            optical::link::state_machine::TrafficPriority::Critical,
         );
         assert!(metrics.control_plane_traffic.is_enabled());
 

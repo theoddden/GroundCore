@@ -103,7 +103,7 @@ pub trait PrecisionClock: Send + Sync {
     fn confidence(&self) -> ClockConfidence;
 
     /// Sync to time reference
-    fn sync_to(&mut self, reference: &crate::pat::TimeReference) -> Result<SyncReport, ClockError>;
+    fn sync_to(&mut self, reference: &crate::TimeReference) -> Result<SyncReport, ClockError>;
 
     /// Check if clock is synchronized
     fn is_synchronized(&self) -> bool;
@@ -175,7 +175,7 @@ impl PrecisionClock for DefaultPrecisionClock {
         self.confidence
     }
 
-    fn sync_to(&mut self, reference: &crate::pat::TimeReference) -> Result<SyncReport, ClockError> {
+    fn sync_to(&mut self, reference: &crate::TimeReference) -> Result<SyncReport, ClockError> {
         let now = Utc::now();
         let offset_ns = reference.accuracy_ns as i64;
 

@@ -14,6 +14,6 @@ pub use coordinator::{PatCoordinator, PatEvent, PatEventType, ScheduledAcquisiti
 
 use crate::pat::coordinator::{AcquisitionSequence, FallbackAction};
 use crate::{AcquisitionId, OctConfiguration, PointingVector, TerminalId};
-use chrono::{DateTime, Duration, Utc};
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;

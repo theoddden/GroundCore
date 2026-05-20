@@ -1,12 +1,11 @@
 //! Supervisor for pass subprocesses
 
 use crate::handoff::{HandoffManager, HandoffResult};
-use crate::subprocess::{PassProcess, ProcessManager, ProcessState};
+use crate::subprocess::{PassProcess, ProcessManager};
 use crate::version::{Version, VersionedBinary};
 use chrono::{DateTime, Utc};
 use ground_core::{PassId, Result};
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 use std::path::PathBuf;
 use std::process::Command;
 
@@ -87,7 +86,7 @@ impl Supervisor {
 
         let child = Command::new(&self.config.binary_path)
             .arg("--pass-id")
-            .arg(pass_id.to_string())
+            .arg(&pass_id)
             .arg("--shard-region")
             .arg(&region_id)
             .arg("--hardware")

@@ -4,7 +4,7 @@ use crate::amplifier::{AmplifierControl, AmplifierStatus};
 use crate::attenuator::AttenuatorControl;
 use ground_core::{GroundStationError, Result};
 use serde::{Deserialize, Serialize};
-use std::sync::atomic::{AtomicF64, Ordering};
+use std::sync::atomic::{AtomicBool, Ordering};
 use tokio::sync::RwLock;
 
 /// AGC mode
@@ -50,10 +50,10 @@ impl Default for AgcConfig {
 pub struct AgcController {
     config: AgcConfig,
     mode: RwLock<AgcMode>,
-    current_level: AtomicF64,
+    current_level: RwLock<f64>,
     amplifiers: RwLock<Vec<Box<dyn AmplifierControl + Send + Sync>>>,
     attenuators: RwLock<Vec<Box<dyn AttenuatorControl + Send + Sync>>>,
-    enabled: AtomicF64, // Using atomic as bool-like
+    enabled: AtomicBool,
 }
 
 impl AgcController {
@@ -62,10 +62,10 @@ impl AgcController {
         Self {
             config,
             mode: RwLock::new(AgcMode::Manual),
-            current_level: AtomicF64::new(-20.0),
+            current_level: RwLock::new(-20.0),
             amplifiers: RwLock::new(Vec::new()),
             attenuators: RwLock::new(Vec::new()),
-            enabled: AtomicF64::new(0.0),
+            enabled: AtomicBool::new(false),
         }
     }
 
@@ -110,7 +110,7 @@ impl AgcController {
 
     /// Update signal level
     pub async fn update_signal_level(&self, level: f64) {
-        self.current_level.store(level, Ordering::Relaxed);
+        *self.current_level.write().await = level;
 
         if self.is_enabled() && self.get_mode().await == AgcMode::Automatic {
             if let Err(e) = self.adjust_gain().await {
@@ -120,13 +120,13 @@ impl AgcController {
     }
 
     /// Get current signal level
-    pub fn get_current_level(&self) -> f64 {
-        self.current_level.load(Ordering::Relaxed)
+    pub async fn get_current_level(&self) -> f64 {
+        *self.current_level.read().await
     }
 
     /// Adjust gain based on current signal level
     async fn adjust_gain(&self) -> Result<()> {
-        let current_level = self.current_level.load(Ordering::Relaxed);
+        let current_level = *self.current_level.read().await;
         let target_level = self.config.target_level;
         let error = target_level - current_level;
 

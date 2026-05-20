@@ -1,8 +1,8 @@
 // Tasking Scheduler - places tasks on timeline considering dependencies and constraints
 
-use crate::mission::{LinkReservation, TaskType};
-use crate::{Priority, SatelliteId, TaskId, TenantId, TimeWindow};
-use chrono::{DateTime, Duration, Utc};
+use crate::mission::{LinkReservation, SatelliteTask, TaskType};
+use crate::{Priority, SatelliteId, TaskId};
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, VecDeque};
 

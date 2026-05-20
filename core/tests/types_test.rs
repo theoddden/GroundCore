@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use crate::types::{Bytes, DataRate, Frequency, FrequencyBand};
+    use ground_core::types::{Bytes, DataRate, Frequency, FrequencyBand};
 
     #[test]
     fn test_frequency_band_names() {
@@ -22,12 +22,13 @@ mod tests {
     }
 
     #[test]
-    fn test_frequency_ord() {
-        let freq1 = Frequency(1_000_000);
-        let freq2 = Frequency(2_000_000);
-        assert!(freq1 < freq2);
-        assert!(freq2 > freq1);
-        assert_eq!(freq1, Frequency(1_000_000));
+    fn test_frequency_values() {
+        let freq1: Frequency = 1_000_000;
+        let freq2: Frequency = 2_000_000;
+
+        assert_eq!(freq1, 1_000_000);
+        assert_eq!(freq2, 2_000_000);
+        assert_ne!(freq1, freq2);
     }
 
     #[test]

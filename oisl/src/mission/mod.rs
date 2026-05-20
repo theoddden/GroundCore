@@ -10,14 +10,15 @@ pub mod scheduler;
 pub mod state_machine;
 pub mod validator;
 
-pub use compiler::{
-    IntentCompiler, PlanExplanation, SatelliteTask, ServiceLevelAgreement, TaskType, TaskingPlan,
-};
-pub use mission::{
-    CompilationError, IntentConstraints, MissionIntent, ObjectiveType, ValidationWarning,
-};
+pub use compiler::{IntentCompiler, CompilationError, IntentConstraints, MissionIntent, ObjectiveType, ValidationWarning};
+pub use PlanExplanation;
+pub use SatelliteTask;
+pub use ServiceLevelAgreement;
+pub use TaskType;
+pub use TaskingPlan;
+pub use LinkReservation;
 
-pub use scheduler::{LinkReservation, TaskingScheduler};
+pub use scheduler::TaskingScheduler;
 pub use state_machine::{ConstellationState, SatelliteState};
 pub use validator::{PlanValidator, ValidationReport};
 
@@ -212,7 +213,7 @@ pub enum CompilationError {
     TopologyUnavailable { horizon: chrono::Duration },
 
     #[error("Internal error: {0}")]
-    Internal(String),
+    Internal(#[from] anyhow::Error),
 }
 
 /// Validation warning
