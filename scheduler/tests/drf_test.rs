@@ -6,66 +6,71 @@ mod tests {
 
     #[test]
     fn test_resource_share_creation() {
-        let share = ResourceShare {
-            cpu: 0.5,
-            memory: 0.3,
-            bandwidth: 0.7,
-            storage: 0.2,
-        };
+        let share = ResourceShare::new(ResourceType::LBandSdrTime, 100.0);
+        assert_eq!(share.resource_type, ResourceType::LBandSdrTime);
+        assert_eq!(share.total_capacity, 100.0);
+        assert_eq!(share.allocated, 0.0);
+        assert_eq!(share.used, 0.0);
+    }
 
-        assert_eq!(share.cpu, 0.5);
-        assert_eq!(share.memory, 0.3);
+    #[test]
+    fn test_resource_share_utilization() {
+        let mut share = ResourceShare::new(ResourceType::LBandSdrTime, 100.0);
+        share.allocated = 50.0;
+        share.used = 25.0;
+
+        assert_eq!(share.share(), 0.5);
+        assert_eq!(share.utilization(), 0.5);
     }
 
     #[test]
     fn test_drf_fairness_calculation() {
         let mut drf = DominantResourceFairness::new();
+        drf.set_capacity(ResourceType::LBandSdrTime, 100.0);
+        drf.set_capacity(ResourceType::RotatorHours, 50.0);
 
-        let mut tenant1_resources = HashMap::new();
-        tenant1_resources.insert(ResourceType::Cpu, 0.5);
-        tenant1_resources.insert(ResourceType::Memory, 0.3);
+        let tenant1 = "tenant1".to_string();
+        let tenant2 = "tenant2".to_string();
 
-        let mut tenant2_resources = HashMap::new();
-        tenant2_resources.insert(ResourceType::Cpu, 0.3);
-        tenant2_resources.insert(ResourceType::Memory, 0.5);
+        let alloc1 = drf.get_or_create_allocation(tenant1.clone());
+        alloc1.add_share(ResourceShare::new(ResourceType::LBandSdrTime, 100.0));
+        alloc1.add_share(ResourceShare::new(ResourceType::RotatorHours, 50.0));
+        alloc1.allocate(ResourceType::LBandSdrTime, 40.0);
+        alloc1.allocate(ResourceType::RotatorHours, 30.0);
 
-        let share1 = drf.calculate_dominant_share(&tenant1_resources);
-        let share2 = drf.calculate_dominant_share(&tenant2_resources);
+        let alloc2 = drf.get_or_create_allocation(tenant2.clone());
+        alloc2.add_share(ResourceShare::new(ResourceType::LBandSdrTime, 100.0));
+        alloc2.add_share(ResourceShare::new(ResourceType::RotatorHours, 50.0));
+        alloc2.allocate(ResourceType::LBandSdrTime, 20.0);
+        alloc2.allocate(ResourceType::RotatorHours, 10.0);
 
-        // Both tenants should have equal dominant share (0.5)
-        assert_eq!(share1, 0.5);
-        assert_eq!(share2, 0.5);
+        // Tenant2 should have higher priority (lower dominant share)
+        let priority1 = drf.scheduling_priority(&tenant1);
+        let priority2 = drf.scheduling_priority(&tenant2);
+        assert!(priority2 < priority1);
     }
 
     #[test]
     fn test_drf_allocation() {
         let mut drf = DominantResourceFairness::new();
+        drf.set_capacity(ResourceType::LBandSdrTime, 100.0);
 
-        let mut total_capacity = HashMap::new();
-        total_capacity.insert(ResourceType::Cpu, 100.0);
-        total_capacity.insert(ResourceType::Memory, 100.0);
+        let tenant1 = "tenant1".to_string();
+        let alloc1 = drf.get_or_create_allocation(tenant1.clone());
+        alloc1.add_share(ResourceShare::new(ResourceType::LBandSdrTime, 100.0));
+        alloc1.allocate(ResourceType::LBandSdrTime, 30.0);
 
-        let mut allocation1 = HashMap::new();
-        allocation1.insert(ResourceType::Cpu, 30.0);
-        allocation1.insert(ResourceType::Memory, 20.0);
-
-        let mut allocation2 = HashMap::new();
-        allocation2.insert(ResourceType::Cpu, 20.0);
-        allocation2.insert(ResourceType::Memory, 30.0);
-
-        drf.set_total_capacity(total_capacity);
-        drf.add_allocation("tenant1".to_string(), allocation1);
-        drf.add_allocation("tenant2".to_string(), allocation2);
-
-        let fair_share = drf.get_fair_share("tenant1");
-        assert!(fair_share.is_some());
+        let allocation = drf.get_allocation(&tenant1);
+        assert!(allocation.is_some());
+        assert_eq!(allocation.unwrap().dominant_share(), 0.3);
     }
 
     #[test]
     fn test_resource_type_display() {
-        assert_eq!(format!("{:?}", ResourceType::Cpu), "Cpu");
-        assert_eq!(format!("{:?}", ResourceType::Memory), "Memory");
-        assert_eq!(format!("{:?}", ResourceType::Bandwidth), "Bandwidth");
-        assert_eq!(format!("{:?}", ResourceType::Storage), "Storage");
+        assert_eq!(format!("{:?}", ResourceType::LBandSdrTime), "LBandSdrTime");
+        assert_eq!(format!("{:?}", ResourceType::SBandSdrTime), "SBandSdrTime");
+        assert_eq!(format!("{:?}", ResourceType::RotatorHours), "RotatorHours");
+        assert_eq!(format!("{:?}", ResourceType::EgressBandwidth), "EgressBandwidth");
+        assert_eq!(format!("{:?}", ResourceType::TotalPasses), "TotalPasses");
     }
 }

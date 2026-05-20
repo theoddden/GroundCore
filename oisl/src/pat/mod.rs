@@ -12,4 +12,3 @@ pub mod coordinator;
 pub use clock::{ClockConfidence, PrecisionClock, PrecisionTimestamp};
 pub use coordinator::{PatCoordinator, PatEvent, PatEventType, ScheduledAcquisition};
 
-use crate::TerminalId;

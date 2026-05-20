@@ -11,11 +11,7 @@ pub mod state_machine;
 pub mod validator;
 
 // Re-export submodule types
-pub use compiler::{
-    CompilationError, IntentCompiler, IntentConstraints, LinkReservation, MissionIntent,
-    ObjectiveType, PlanExplanation, SatelliteTask, ServiceLevelAgreement, TaskType, TaskingPlan,
-    ValidationWarning,
-};
+pub use compiler::IntentCompiler;
 pub use scheduler::TaskingScheduler;
 pub use state_machine::{ConstellationState, SatelliteState};
 pub use validator::{PlanValidator, ValidationReport};
@@ -24,7 +20,6 @@ use crate::{
     AssetId, BiTemporal, Bytes, GeoRegion, IntentId, SatelliteId, SensorType, TaskId, TenantId,
     TimeWindow,
 };
-use anyhow::Error as AnyhowError;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
@@ -117,7 +112,7 @@ pub enum CompilationError {
     DeadlineMissed { required: u64, available: u64 },
     InvalidIntent(String),
     TopologyUnavailable { horizon: chrono::Duration },
-    Internal(AnyhowError),
+    Internal(String),
 }
 
 impl std::fmt::Display for CompilationError {

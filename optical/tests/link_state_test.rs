@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
     use optical::link::state_machine::{
-        DegradationAction, DegradationReason, FailureCause, LinkMetrics, LinkPhase, LinkQuality,
+        DegradationAction, DegradationReason, FailureCause, LinkMetrics, LinkQuality,
         OpticalLink,
     };
     use optical::oct::OctConfiguration;
@@ -67,7 +67,7 @@ mod tests {
 
     #[test]
     fn test_link_metrics_utilization() {
-        let mut metrics = LinkMetrics {
+        let metrics = LinkMetrics {
             data_rate_actual: 5_000_000_000,
             ..Default::default()
         };
