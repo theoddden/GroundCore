@@ -2,7 +2,7 @@
 mod tests {
     use std::collections::HashMap;
 
-    use crate::drf::{DominantResourceFairness, ResourceShare, ResourceType};
+    use scheduler::{DominantResourceFairness, ResourceShare, ResourceType};
 
     #[test]
     fn test_resource_share_creation() {
