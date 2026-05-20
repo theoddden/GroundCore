@@ -1,6 +1,5 @@
 //! Slew rate limiting and motion planning
 
-use crate::controller::PointingTarget;
 use chrono::{DateTime, Duration, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -149,7 +148,8 @@ impl SlewLimiter {
     }
 
     /// Generate waypoints for trajectory
-    fn generate_waypoints(
+    #[allow(clippy::type_complexity)]
+    pub fn generate_waypoints(
         &self,
         start: (f64, f64),
         target: (f64, f64),

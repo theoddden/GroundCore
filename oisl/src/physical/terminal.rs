@@ -5,11 +5,9 @@
 // This trait abstracts the management interface, not the optical layer.
 
 use crate::ResetLevel;
-use crate::physical::vendors::Vendor;
-use crate::{
-    OctConfiguration, OctStandardVersion, TerminalId, topology::link_state::LinkPhase,
-};
 use crate::physical::SerialNumber;
+use crate::physical::vendors::Vendor;
+use crate::{OctConfiguration, OctStandardVersion, TerminalId, topology::link_state::LinkPhase};
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use std::pin::Pin;

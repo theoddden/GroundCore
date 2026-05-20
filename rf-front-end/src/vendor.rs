@@ -47,11 +47,11 @@ impl RfDevice for MiniCircuitsAmplifierAdapter {
     }
 
     async fn enable(&mut self) -> Result<()> {
-        self.inner.enable().await
+        amplifier::AmplifierControl::enable(&mut self.inner).await
     }
 
     async fn disable(&mut self) -> Result<()> {
-        self.inner.disable().await
+        amplifier::AmplifierControl::disable(&mut self.inner).await
     }
 
     async fn get_calibration(&self) -> Result<DeviceCalibration> {
@@ -85,11 +85,11 @@ impl AmplifierControl for MiniCircuitsAmplifierAdapter {
     }
 
     async fn enable(&mut self) -> Result<()> {
-        self.inner.enable().await
+        amplifier::AmplifierControl::enable(&mut self.inner).await
     }
 
     async fn disable(&mut self) -> Result<()> {
-        self.inner.disable().await
+        amplifier::AmplifierControl::disable(&mut self.inner).await
     }
 
     async fn get_temperature(&self) -> Result<f64> {
@@ -143,11 +143,11 @@ impl RfDevice for QorvoAmplifierAdapter {
     }
 
     async fn enable(&mut self) -> Result<()> {
-        self.inner.enable().await
+        amplifier::AmplifierControl::enable(&mut self.inner).await
     }
 
     async fn disable(&mut self) -> Result<()> {
-        self.inner.disable().await
+        amplifier::AmplifierControl::disable(&mut self.inner).await
     }
 
     async fn get_calibration(&self) -> Result<DeviceCalibration> {
@@ -177,11 +177,11 @@ impl AmplifierControl for QorvoAmplifierAdapter {
     }
 
     async fn enable(&mut self) -> Result<()> {
-        self.inner.enable().await
+        amplifier::AmplifierControl::enable(&mut self.inner).await
     }
 
     async fn disable(&mut self) -> Result<()> {
-        self.inner.disable().await
+        amplifier::AmplifierControl::disable(&mut self.inner).await
     }
 
     async fn get_temperature(&self) -> Result<f64> {
@@ -278,11 +278,11 @@ impl RfDevice for CrystekFilterBankAdapter {
     }
 
     async fn enable(&mut self) -> Result<()> {
-        self.inner.enable().await
+        amplifier::AmplifierControl::enable(&mut self.inner).await
     }
 
     async fn disable(&mut self) -> Result<()> {
-        self.inner.disable().await
+        amplifier::AmplifierControl::disable(&mut self.inner).await
     }
 
     async fn get_calibration(&self) -> Result<DeviceCalibration> {
@@ -349,11 +349,11 @@ impl RfDevice for HittiteAttenuatorAdapter {
     }
 
     async fn enable(&mut self) -> Result<()> {
-        self.inner.enable().await
+        amplifier::AmplifierControl::enable(&mut self.inner).await
     }
 
     async fn disable(&mut self) -> Result<()> {
-        self.inner.disable().await
+        amplifier::AmplifierControl::disable(&mut self.inner).await
     }
 
     async fn get_calibration(&self) -> Result<DeviceCalibration> {

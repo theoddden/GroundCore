@@ -204,6 +204,12 @@ pub struct EmergencyStop {
     trigger_reason: RwLock<Option<String>>,
 }
 
+impl Default for EmergencyStop {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl EmergencyStop {
     /// Create a new emergency stop
     pub fn new() -> Self {

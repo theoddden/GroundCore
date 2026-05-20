@@ -95,17 +95,17 @@ impl AgcController {
 
     /// Enable AGC
     pub async fn enable(&self) {
-        self.enabled.store(1.0, Ordering::Relaxed);
+        self.enabled.store(true, Ordering::Relaxed);
     }
 
     /// Disable AGC
     pub async fn disable(&self) {
-        self.enabled.store(0.0, Ordering::Relaxed);
+        self.enabled.store(false, Ordering::Relaxed);
     }
 
     /// Check if AGC is enabled
     pub fn is_enabled(&self) -> bool {
-        self.enabled.load(Ordering::Relaxed) > 0.0
+        self.enabled.load(Ordering::Relaxed)
     }
 
     /// Update signal level
@@ -139,8 +139,8 @@ impl AgcController {
         let adjustment = self.compute_adjustment(error);
 
         // Apply adjustment to amplifiers
-        let amplifiers = self.amplifiers.read().await;
-        for amp in amplifiers.iter() {
+        let mut amplifiers = self.amplifiers.write().await;
+        for amp in amplifiers.iter_mut() {
             if let Ok(current_gain) = amp.get_gain().await {
                 let new_gain =
                     (current_gain + adjustment).clamp(self.config.min_gain, self.config.max_gain);
@@ -151,8 +151,8 @@ impl AgcController {
         }
 
         // Apply adjustment to attenuators (inverse relationship)
-        let attenuators = self.attenuators.read().await;
-        for att in attenuators.iter() {
+        let mut attenuators = self.attenuators.write().await;
+        for att in attenuators.iter_mut() {
             if let Ok(current_atten) = att.get_attenuation().await {
                 let new_atten = (current_atten - adjustment).clamp(0.0, 31.5);
                 if let Err(e) = att.set_attenuation(new_atten).await {
@@ -178,17 +178,17 @@ impl AgcController {
 
     /// Manually set gain (for manual mode)
     pub async fn set_manual_gain(&self, gain_db: f64) -> Result<()> {
-        let amplifiers = self.amplifiers.read().await;
+        let mut amplifiers = self.amplifiers.write().await;
 
-        for amp in amplifiers.iter() {
+        for amp in amplifiers.iter_mut() {
             if let Err(e) = amp.set_gain(gain_db).await {
                 tracing::warn!("Failed to set amplifier gain: {}", e);
             }
         }
 
         // Reset attenuators to minimum
-        let attenuators = self.attenuators.read().await;
-        for att in attenuators.iter() {
+        let mut attenuators = self.attenuators.write().await;
+        for att in attenuators.iter_mut() {
             if let Err(e) = att.set_attenuation(0.0).await {
                 tracing::warn!("Failed to reset attenuator: {}", e);
             }
@@ -221,7 +221,7 @@ impl AgcController {
     /// Get AGC status
     pub async fn get_status(&self) -> AgcStatus {
         let mode = self.mode.read().await;
-        let current_level = self.current_level.load(Ordering::Relaxed);
+        let current_level = *self.current_level.read().await;
         let total_gain = self.get_total_gain().await.unwrap_or(0.0);
 
         AgcStatus {

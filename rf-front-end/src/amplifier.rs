@@ -3,7 +3,7 @@
 use crate::device::{DeviceCalibration, RfDevice, RfDeviceState, RfDeviceType};
 use ground_core::{GroundStationError, Result};
 use serde::{Deserialize, Serialize};
-use std::sync::atomic::{AtomicBool, AtomicF64, AtomicU64, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use tokio::sync::RwLock;
 use uuid::Uuid;
 
@@ -67,8 +67,8 @@ pub trait AmplifierControl: RfDevice {
 pub struct GenericAmplifier {
     id: Uuid,
     device_type: RfDeviceType,
-    current_gain: AtomicF64,
-    temperature: AtomicF64,
+    current_gain: RwLock<f64>,
+    temperature: RwLock<f64>,
     max_temperature: f64,
     thermal_protection_enabled: AtomicBool,
     enabled: AtomicBool,
@@ -83,8 +83,8 @@ impl GenericAmplifier {
         Self {
             id: Uuid::new_v4(),
             device_type,
-            current_gain: AtomicF64::new(0.0),
-            temperature: AtomicF64::new(25.0),
+            current_gain: RwLock::new(0.0),
+            temperature: RwLock::new(25.0),
             max_temperature,
             thermal_protection_enabled: AtomicBool::new(true),
             enabled: AtomicBool::new(false),
@@ -100,7 +100,7 @@ impl GenericAmplifier {
             return;
         }
 
-        let temp = self.temperature.load(Ordering::Relaxed);
+        let temp = *self.temperature.read().await;
         if temp >= self.max_temperature {
             // Trigger thermal protection
             self.fault.store(true, Ordering::Relaxed);
@@ -111,7 +111,7 @@ impl GenericAmplifier {
 
     /// Update temperature (simulated)
     pub async fn update_temperature(&self, temp: f64) {
-        self.temperature.store(temp, Ordering::Relaxed);
+        *self.temperature.write().await = temp;
         self.check_thermal_protection().await;
     }
 }
@@ -124,16 +124,18 @@ impl RfDevice for GenericAmplifier {
 
     async fn get_state(&self) -> Result<RfDeviceState> {
         let status = self.amplifier_status.read().await;
+        let current_gain = *self.current_gain.read().await;
+        let temperature = *self.temperature.read().await;
         Ok(RfDeviceState {
             device_id: self.id,
             device_type: self.device_type,
             enabled: self.enabled.load(Ordering::Relaxed),
             settings: serde_json::json!({
-                "gain_db": self.current_gain.load(Ordering::Relaxed),
-                "temperature": self.temperature.load(Ordering::Relaxed),
-                "status": status,
+                "gain_db": current_gain,
+                "temperature": temperature,
+                "status": *status,
             }),
-            temperature: Some(self.temperature.load(Ordering::Relaxed)),
+            temperature: Some(temperature),
             fault: self.fault.load(Ordering::Relaxed),
             last_updated: chrono::Utc::now(),
         })
@@ -142,7 +144,7 @@ impl RfDevice for GenericAmplifier {
     async fn set_state(&mut self, state: RfDeviceState) -> Result<()> {
         self.enabled.store(state.enabled, Ordering::Relaxed);
         if let Some(temp) = state.temperature {
-            self.temperature.store(temp, Ordering::Relaxed);
+            *self.temperature.write().await = temp;
         }
         self.fault.store(state.fault, Ordering::Relaxed);
         Ok(())
@@ -168,9 +170,10 @@ impl RfDevice for GenericAmplifier {
     }
 
     async fn get_calibration(&self) -> Result<DeviceCalibration> {
+        let current_gain = *self.current_gain.read().await;
         Ok(DeviceCalibration {
             calibrated_at: chrono::Utc::now(),
-            coefficients: vec![self.current_gain.load(Ordering::Relaxed)],
+            coefficients: vec![current_gain],
             notes: "Amplifier calibration".to_string(),
             valid_until: None,
         })
@@ -201,12 +204,12 @@ impl AmplifierControl for GenericAmplifier {
             ));
         }
 
-        self.current_gain.store(gain_db, Ordering::Relaxed);
+        *self.current_gain.write().await = gain_db;
         Ok(())
     }
 
     async fn get_gain(&self) -> Result<f64> {
-        Ok(self.current_gain.load(Ordering::Relaxed))
+        Ok(*self.current_gain.read().await)
     }
 
     async fn enable(&mut self) -> Result<()> {
@@ -229,7 +232,7 @@ impl AmplifierControl for GenericAmplifier {
     }
 
     async fn get_temperature(&self) -> Result<f64> {
-        Ok(self.temperature.load(Ordering::Relaxed))
+        Ok(*self.temperature.read().await)
     }
 
     async fn get_noise_figure(&self) -> Result<f64> {
@@ -284,11 +287,11 @@ impl RfDevice for MiniCircuitsAmplifier {
     }
 
     async fn enable(&mut self) -> Result<()> {
-        self.inner.enable().await
+        RfDevice::enable(&mut self.inner).await
     }
 
     async fn disable(&mut self) -> Result<()> {
-        self.inner.disable().await
+        RfDevice::disable(&mut self.inner).await
     }
 
     async fn get_calibration(&self) -> Result<DeviceCalibration> {
@@ -317,11 +320,11 @@ impl AmplifierControl for MiniCircuitsAmplifier {
     }
 
     async fn enable(&mut self) -> Result<()> {
-        self.inner.enable().await
+        AmplifierControl::enable(&mut self.inner).await
     }
 
     async fn disable(&mut self) -> Result<()> {
-        self.inner.disable().await
+        AmplifierControl::disable(&mut self.inner).await
     }
 
     async fn get_temperature(&self) -> Result<f64> {

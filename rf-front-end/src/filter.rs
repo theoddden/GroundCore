@@ -109,7 +109,7 @@ impl RfDevice for FilterBank {
             device_type: RfDeviceType::FilterBank,
             enabled: self.enabled,
             settings: serde_json::json!({
-                "current_filter": current,
+                "current_filter": *current,
                 "filter_count": filters.len(),
             }),
             temperature: None,

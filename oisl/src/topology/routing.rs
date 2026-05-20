@@ -89,7 +89,7 @@ impl SpatiotemporalRouter {
 
             // Check if we reached destination
             if state.current_node == *destination {
-                let route = self.build_route(state, source, destination)?;
+                let route = self.build_route(state.clone(), source, destination)?;
 
                 // Validate against constraints
                 if self.satisfies_constraints(&route, constraints) {
@@ -291,9 +291,9 @@ pub enum RoutingError {
     #[error("Topology forecast unavailable")]
     TopologyUnavailable,
 
-    #[error("Route computation failed")]
-    ComputationFailed(#[from] anyhow::Error),
+    #[error("Route computation failed: {0}")]
+    ComputationFailed(anyhow::Error),
 
-    #[error("Invalid route parameters")]
-    InvalidParameters(#[from] anyhow::Error),
+    #[error("Invalid route parameters: {0}")]
+    InvalidParameters(anyhow::Error),
 }

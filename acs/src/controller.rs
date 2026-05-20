@@ -81,6 +81,7 @@ pub trait AntennaController: Send + Sync {
 
 /// Generic antenna controller implementation
 pub struct GenericAntennaController {
+    #[allow(dead_code)]
     id: Uuid,
     status: ControllerStatus,
     current_azimuth: f64,
@@ -91,7 +92,9 @@ pub struct GenericAntennaController {
     azimuth_max: f64,
     elevation_min: f64,
     elevation_max: f64,
+    #[allow(dead_code)]
     azimuth_rate_limit: f64,   // degrees per second
+    #[allow(dead_code)]
     elevation_rate_limit: f64, // degrees per second
     enabled: bool,
 }

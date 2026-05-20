@@ -76,6 +76,12 @@ pub struct OpenLoopTracking {
     mode: TrackingMode,
 }
 
+impl Default for OpenLoopTracking {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl OpenLoopTracking {
     pub fn new() -> Self {
         Self {
@@ -131,7 +137,7 @@ impl TrackingAlgorithm for OpenLoopTracking {
 
 impl OpenLoopTracking {
     /// Convert ECI position to azimuth/elevation
-    fn eci_to_az_el(&self, position: &[f64; 3], lat: f64, lon: f64, alt: f64) -> (f64, f64) {
+    fn eci_to_az_el(&self, position: &[f64; 3], _lat: f64, _lon: f64, _alt: f64) -> (f64, f64) {
         // Simplified conversion - in real implementation would use proper ECI to ECEF to Az/El
         let x = position[0];
         let y = position[1];
@@ -158,6 +164,12 @@ pub struct ClosedLoopTracking {
     current_el_offset: f64,
     integral_az: f64,
     integral_el: f64,
+}
+
+impl Default for ClosedLoopTracking {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl ClosedLoopTracking {
@@ -237,8 +249,16 @@ pub struct PredictiveTracking {
     mode: TrackingMode,
     state: [f64; 6], // [az, el, az_rate, el_rate, az_accel, el_accel]
     covariance: [[f64; 6]; 6],
+    #[allow(dead_code)]
     process_noise: f64,
+    #[allow(dead_code)]
     measurement_noise: f64,
+}
+
+impl Default for PredictiveTracking {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl PredictiveTracking {

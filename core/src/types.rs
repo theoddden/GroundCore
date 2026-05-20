@@ -17,6 +17,12 @@ pub type CustomerId = String;
 /// Frequency in Hz
 pub type Frequency = u64;
 
+/// Data rate in bits per second
+pub type DataRate = u64;
+
+/// Bytes
+pub type Bytes = u64;
+
 /// Frequency band
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum FrequencyBand {

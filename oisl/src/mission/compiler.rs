@@ -196,7 +196,11 @@ impl IntentCompiler for DefaultIntentCompiler {
             .satellite_tasks
             .iter()
             .filter_map(|task| {
-                if let TaskType::OpticalLinkEstablishment { peer_terminal: _, .. } = &task.task_type {
+                if let TaskType::OpticalLinkEstablishment {
+                    peer_terminal: _,
+                    ..
+                } = &task.task_type
+                {
                     Some(crate::mission::RoutingDecision {
                         source: task.satellite_id.clone(),
                         destination: "peer".to_string(),
@@ -240,17 +244,21 @@ impl DefaultIntentCompiler {
         // Resolve source and destination to satellites
         let source_sat = constellation
             .resolve_asset_to_satellite(source)
-            .ok_or_else(|| CompilationError::InvalidIntent(format!(
-                "Source asset {} not found in constellation",
-                source
-            )))?;
+            .ok_or_else(|| {
+                CompilationError::InvalidIntent(format!(
+                    "Source asset {} not found in constellation",
+                    source
+                ))
+            })?;
 
         let dest_sat = constellation
             .resolve_asset_to_satellite(destination)
-            .ok_or_else(|| CompilationError::InvalidIntent(format!(
-                "Destination asset {} not found in constellation",
-                destination
-            )))?;
+            .ok_or_else(|| {
+                CompilationError::InvalidIntent(format!(
+                    "Destination asset {} not found in constellation",
+                    destination
+                ))
+            })?;
 
         // Compute route through constellation
         let route = self
@@ -439,10 +447,12 @@ impl DefaultIntentCompiler {
         // Resolve target asset to a satellite (the asset being "kept in custody")
         let target_sat = constellation
             .resolve_asset_to_satellite(target)
-            .ok_or_else(|| CompilationError::InvalidIntent(format!(
-                "Custody target asset '{}' not found in constellation",
-                target
-            )))?;
+            .ok_or_else(|| {
+                CompilationError::InvalidIntent(format!(
+                    "Custody target asset '{}' not found in constellation",
+                    target
+                ))
+            })?;
 
         let mut satellite_tasks = Vec::new();
         let mut link_reservations = Vec::new();

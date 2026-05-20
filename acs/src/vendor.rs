@@ -1,7 +1,6 @@
 //! Vendor-specific antenna controller adapters
 
-use crate::controller::{AntennaController, ControllerError, ControllerStatus, PointingTarget};
-use async_trait::async_trait;
+use crate::controller::{AntennaController, ControllerStatus, PointingTarget};
 use ground_core::{GroundStationError, Result};
 use std::time::Duration;
 use tokio::time::sleep;
@@ -12,6 +11,12 @@ pub struct VertexRsIAdapter {
     current_az: f64,
     current_el: f64,
     enabled: bool,
+}
+
+impl Default for VertexRsIAdapter {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl VertexRsIAdapter {
@@ -116,6 +121,12 @@ pub struct GeneralDynamicsAdapter {
     enabled: bool,
 }
 
+impl Default for GeneralDynamicsAdapter {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl GeneralDynamicsAdapter {
     pub fn new() -> Self {
         Self {
@@ -206,6 +217,12 @@ pub struct PhasedArrayAdapter {
     current_az: f64,
     current_el: f64,
     enabled: bool,
+}
+
+impl Default for PhasedArrayAdapter {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl PhasedArrayAdapter {

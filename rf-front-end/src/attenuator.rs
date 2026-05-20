@@ -3,12 +3,12 @@
 use crate::device::{DeviceCalibration, RfDevice, RfDeviceState, RfDeviceType};
 use ground_core::{GroundStationError, Result};
 use serde::{Deserialize, Serialize};
-use std::sync::atomic::{AtomicF64, Ordering};
+use std::sync::atomic::Ordering;
 use tokio::sync::RwLock;
 use uuid::Uuid;
 
 /// Attenuation level
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub struct AttenuationLevel {
     /// Attenuation in dB
     pub db: f64,
@@ -42,7 +42,7 @@ pub trait AttenuatorControl: RfDevice {
 pub struct VariableAttenuator {
     id: Uuid,
     enabled: bool,
-    current_attenuation: AtomicF64,
+    current_attenuation: RwLock<f64>,
     min_attenuation: f64,
     max_attenuation: f64,
     step_size: f64,
@@ -55,7 +55,7 @@ impl VariableAttenuator {
         Self {
             id: Uuid::new_v4(),
             enabled: false,
-            current_attenuation: AtomicF64::new(0.0),
+            current_attenuation: RwLock::new(0.0),
             min_attenuation,
             max_attenuation,
             step_size,
@@ -109,7 +109,7 @@ impl RfDevice for VariableAttenuator {
     }
 
     async fn get_state(&self) -> Result<RfDeviceState> {
-        let current = self.current_attenuation.load(Ordering::Relaxed);
+        let current = *self.current_attenuation.read().await;
         let calibrated = self.get_calibrated_attenuation(current).await;
 
         Ok(RfDeviceState {
@@ -180,7 +180,7 @@ impl AttenuatorControl for VariableAttenuator {
         // Quantize to step size
         let quantized = (attenuation_db / self.step_size).round() * self.step_size;
 
-        self.current_attenuation.store(quantized, Ordering::Relaxed);
+        *self.current_attenuation.write().await = quantized;
         tracing::debug!(
             "Attenuator set to {} dB (quantized from {} dB)",
             quantized,
@@ -191,19 +191,19 @@ impl AttenuatorControl for VariableAttenuator {
     }
 
     async fn get_attenuation(&self) -> Result<f64> {
-        let current = self.current_attenuation.load(Ordering::Relaxed);
+        let current = *self.current_attenuation.read().await;
         let calibrated = self.get_calibrated_attenuation(current).await;
         Ok(calibrated)
     }
 
     async fn increment_attenuation(&mut self, step_db: f64) -> Result<()> {
-        let current = self.current_attenuation.load(Ordering::Relaxed);
+        let current = *self.current_attenuation.read().await;
         let new_attenuation = current + step_db;
         self.set_attenuation(new_attenuation).await
     }
 
     async fn decrement_attenuation(&mut self, step_db: f64) -> Result<()> {
-        let current = self.current_attenuation.load(Ordering::Relaxed);
+        let current = *self.current_attenuation.read().await;
         let new_attenuation = current - step_db;
         self.set_attenuation(new_attenuation).await
     }
@@ -248,7 +248,7 @@ impl DigitalStepAttenuator {
 
     /// Get current control word
     pub async fn get_control_word(&self) -> Result<u64> {
-        let current = self.inner.current_attenuation.load(Ordering::Relaxed);
+        let current = *self.inner.current_attenuation.read().await;
         let ratio = current / self.inner.max_attenuation;
         let control_word = (ratio * (2_u64.pow(self.num_bits as u32) as f64)) as u64;
         Ok(control_word)

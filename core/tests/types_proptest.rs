@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod proptests {
-    use ground_station_core::types::{Bytes, DataRate, Frequency, FrequencyBand};
+    use ground_core::{Bytes, DataRate, Frequency, FrequencyBand};
     use proptest::prelude::*;
 
     proptest! {

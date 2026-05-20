@@ -86,7 +86,7 @@ impl SatelliteScheduler for DefaultSatelliteScheduler {
 
         // Update satellite state
         if let Some(sat) = self.satellites.get_mut(&sat_id) {
-            sat.allocate(claim, task_id, &tenant_id);
+            sat.allocate(claim, task_id, tenant_id.clone());
         }
 
         Ok(allocation_id)
