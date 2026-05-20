@@ -13,7 +13,7 @@ use std::collections::HashMap;
 use std::sync::Mutex;
 use uuid::Uuid;
 
-// Types defined in parent module (mod.rs)
+// Types defined in compiler module
 use super::{
     CompilationError, IntentConstraints, LinkReservation, MissionIntent, ObjectiveType,
     PlanExplanation, SatelliteTask, ServiceLevelAgreement, TaskType, TaskingPlan,

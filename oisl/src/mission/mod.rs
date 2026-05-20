@@ -11,7 +11,11 @@ pub mod state_machine;
 pub mod validator;
 
 // Re-export submodule types
-pub use compiler::IntentCompiler;
+pub use compiler::{
+    CompilationError, IntentCompiler, IntentConstraints, LinkReservation, MissionIntent,
+    ObjectiveType, PlanExplanation, SatelliteTask, ServiceLevelAgreement, TaskType, TaskingPlan,
+    ValidationWarning,
+};
 pub use scheduler::TaskingScheduler;
 pub use state_machine::{ConstellationState, SatelliteState};
 pub use validator::{PlanValidator, ValidationReport};
@@ -23,7 +27,7 @@ use crate::{
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use uuid::Uuid;
+use thiserror::Error;
 
 /// Mission intent - what the operator wants (declarative)
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -110,8 +114,8 @@ pub enum TradeoffType {
 pub enum CompilationError {
     #[error("No feasible route found between {source} and {destination}")]
     NoFeasibleRoute {
-        source: SatelliteId,
-        destination: SatelliteId,
+        source: String,
+        destination: String,
     },
 
     #[error("Insufficient resources on satellite {satellite_id}")]
@@ -130,7 +134,7 @@ pub enum CompilationError {
     TopologyUnavailable { horizon: chrono::Duration },
 
     #[error("Internal error: {0}")]
-    Internal(Error),
+    Internal(String),
 }
 
 /// Validation warning
