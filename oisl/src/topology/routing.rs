@@ -283,10 +283,7 @@ impl PartialOrd for RouteState {
 #[derive(Debug, Clone, thiserror::Error)]
 pub enum RoutingError {
     #[error("No route found from {source} to {destination}")]
-    NoRouteFound {
-        source: NodeId,
-        destination: NodeId,
-    },
+    NoRouteFound { source: NodeId, destination: NodeId },
 
     #[error("Topology forecast unavailable")]
     TopologyUnavailable,
