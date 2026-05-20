@@ -561,6 +561,7 @@ dependencies = [
  "thiserror",
  "tokio",
  "tracing",
+ "uuid",
 ]
 
 [[package]]
@@ -1322,7 +1323,6 @@ dependencies = [
 name = "oisl"
 version = "0.1.0"
 dependencies = [
- "anyhow",
  "async-trait",
  "bitemporal",
  "bytes",

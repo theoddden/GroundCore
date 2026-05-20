@@ -1,7 +1,7 @@
 // Plan Validator - runs validation passes before commit
 
 use crate::mission::state_machine::ConstellationState;
-use crate::mission::{TaskingPlan, ValidationSeverity, ValidationWarning, ValidationWarningType};
+use crate::mission::{TaskType, TaskingPlan, ValidationSeverity, ValidationWarning, ValidationWarningType};
 use crate::topology::TopologyForecast;
 use crate::topology::forecast::TopologyForecaster;
 use std::collections::HashMap;

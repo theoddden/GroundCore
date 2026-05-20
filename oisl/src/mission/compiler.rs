@@ -12,11 +12,9 @@ use std::collections::HashMap;
 use std::sync::Mutex;
 use uuid::Uuid;
 
-// Types defined in compiler module
+// Types defined in mission module
 use super::{
-    CompilationError, IntentConstraints, LinkReservation, MissionIntent, ObjectiveType,
-    PlanExplanation, SatelliteTask, ServiceLevelAgreement, TaskType, TaskingPlan,
-    ValidationWarning,
+    CompilationError, IntentConstraints, MissionIntent, ObjectiveType, ValidationWarning,
 };
 
 /// Intent compiler - compiles declarative intent to imperative tasking

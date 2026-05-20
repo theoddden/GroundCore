@@ -177,3 +177,74 @@ pub enum ValidationSeverity {
     Warning,
     Error,
 }
+
+/// Service level agreement - quality of service requirements
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ServiceLevelAgreement {
+    pub priority: Priority,
+    pub max_latency: Option<chrono::Duration>,
+    pub min_throughput: Option<u64>,
+    pub reliability_target: Option<f64>, // 0.0 to 1.0
+}
+
+/// Task type - what the task accomplishes
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(tag = "type")]
+pub enum TaskType {
+    Observation {
+        target: GeoRegion,
+        sensor: SensorType,
+    },
+    Downlink {
+        ground_station: AssetId,
+    },
+    OpticalLinkEstablishment {
+        peer_terminal: crate::TerminalId,
+    },
+    DataRelay {
+        source: AssetId,
+        destination: AssetId,
+    },
+}
+
+/// Satellite task - a single task assigned to a satellite
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SatelliteTask {
+    pub task_id: TaskId,
+    pub satellite_id: SatelliteId,
+    pub task_type: TaskType,
+    pub scheduled_window: TimeWindow,
+    pub dependencies: Vec<TaskId>,
+    pub priority: Priority,
+}
+
+/// Link reservation - reservation of a communication link
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LinkReservation {
+    pub link_id: uuid::Uuid,
+    pub source: SatelliteId,
+    pub destination: SatelliteId,
+    pub time_window: TimeWindow,
+    pub bandwidth: BandwidthAllocation,
+}
+
+/// Tasking plan - the compiled plan from an intent
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TaskingPlan {
+    pub plan_id: PlanId,
+    pub intent_id: IntentId,
+    pub satellite_tasks: Vec<SatelliteTask>,
+    pub link_reservations: Vec<LinkReservation>,
+    pub confidence: ConfidenceScore,
+    pub compiled_at: BiTemporal<DateTime<Utc>>,
+}
+
+/// Plan explanation - why the compiler made specific decisions
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PlanExplanation {
+    pub summary: String,
+    pub routing_decisions: Vec<RoutingDecision>,
+    pub resource_allocations: Vec<ResourceAllocationDecision>,
+    pub tradeoffs: Vec<TradeoffExplanation>,
+    pub warnings: Vec<String>,
+}

@@ -70,7 +70,10 @@ mod tests {
         assert_eq!(format!("{:?}", ResourceType::LBandSdrTime), "LBandSdrTime");
         assert_eq!(format!("{:?}", ResourceType::SBandSdrTime), "SBandSdrTime");
         assert_eq!(format!("{:?}", ResourceType::RotatorHours), "RotatorHours");
-        assert_eq!(format!("{:?}", ResourceType::EgressBandwidth), "EgressBandwidth");
+        assert_eq!(
+            format!("{:?}", ResourceType::EgressBandwidth),
+            "EgressBandwidth"
+        );
         assert_eq!(format!("{:?}", ResourceType::TotalPasses), "TotalPasses");
     }
 }

@@ -173,6 +173,27 @@ impl ScheduleOptimizer {
         let fulfilled_ratio = self.compute_fulfilled_ratio(schedule);
         score += fulfilled_ratio * 30.0;
 
+        // Keyhole penalty — passes that lose contact in the az-el mount's zenith
+        // blind spot reduce effective pass quality. Applies whether or not a handoff
+        // is scheduled (handoff has lower penalty but is not free).
+        for pass in &schedule.passes {
+            if let Some(kh) = &pass.keyhole_warning {
+                score += crate::keyhole::keyhole_score_penalty(
+                    &crate::keyhole::KeyholeAnalysis {
+                        station_id: pass.hardware_allocation.antenna_id.clone(),
+                        pass_max_elevation_deg: kh.max_elevation_deg,
+                        enters_keyhole: true,
+                        keyhole_entry: None,
+                        keyhole_exit: None,
+                        estimated_loss_s: kh.estimated_loss_s,
+                        handoff_recommended: !kh.handoff_scheduled,
+                        loss_fraction: kh.loss_fraction,
+                    },
+                    kh.handoff_scheduled,
+                );
+            }
+        }
+
         score
     }
 
@@ -330,6 +351,7 @@ impl ScheduleOptimizer {
             },
             scheduled_at: Utc::now(),
             status: crate::schedule::PassStatus::Scheduled,
+            keyhole_warning: None,
         }
     }
 
@@ -397,8 +419,8 @@ impl ScheduleOptimizer {
 mod tests {
     use super::*;
 
-    #[test]
-    fn test_optimization_basic() {
+    #[tokio::test]
+    async fn test_optimization_basic() {
         let config = OptimizationConfig::default();
         let mut optimizer = ScheduleOptimizer::new(config);
 
@@ -429,6 +451,7 @@ mod tests {
                 Utc::now() + chrono::Duration::hours(24),
                 None,
             )
+            .await
             .unwrap();
 
         assert_eq!(schedule.passes.len(), 1);

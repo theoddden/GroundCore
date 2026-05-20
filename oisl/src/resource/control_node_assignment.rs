@@ -122,23 +122,24 @@ impl ControlNodeAssignmentAlgorithm {
         time: DateTime<Utc>,
     ) -> Result<Position3D, AssignmentError> {
         // Convert TLE data to sgp4 format
-        let tle_elements =
+        let elements =
             sgp4::Elements::from_tle(None, tle.tle_line1.as_bytes(), tle.tle_line2.as_bytes())
                 .map_err(|e| {
                     AssignmentError::PredictionFailed(format!("SGP4 parse error: {}", e))
                 })?;
 
-        // Create propagator
-        let propagator = sgp4::Propagator::new(tle_elements).map_err(|e| {
-            AssignmentError::PredictionFailed(format!("SGP4 propagator error: {}", e))
+        // Calculate constants from elements
+        let constants = sgp4::Constants::from_elements(&elements).map_err(|e| {
+            AssignmentError::PredictionFailed(format!("SGP4 constants error: {}", e))
         })?;
 
-        // Calculate time since epoch
+        // Calculate time since epoch in minutes
         let time_since_epoch = time.timestamp() as f64 - tle.epoch.timestamp() as f64;
+        let minutes_since_epoch = sgp4::MinutesSinceEpoch(time_since_epoch / 60.0);
 
         // Propagate to target time
-        let prediction = propagator
-            .propagate(time_since_epoch / 60.0) // SGP4 expects minutes
+        let prediction = elements
+            .propagate(minutes_since_epoch, &constants)
             .map_err(|e| {
                 AssignmentError::PredictionFailed(format!("SGP4 propagation error: {}", e))
             })?;

@@ -4,6 +4,7 @@
 // independently arrive at the same acquisition state at the same time without
 // communicating.
 
+pub mod calibration;
 pub mod clock;
 pub mod coordinator;
 pub mod recovery;
@@ -11,6 +12,10 @@ pub mod scheduler;
 pub mod search;
 pub mod tracking;
 
+pub use calibration::{
+    CalibrationObservation, CalibrationSource, CalibrationTracker, PointingCorrection,
+    PointingModel,
+};
 pub use clock::{ClockConfidence, DriftRate, PrecisionClock, PrecisionTimestamp, TimeReference};
 pub use coordinator::{AcquisitionPlan, AcquisitionResult, PatCoordinator, PatPhase};
 pub use recovery::{FallbackAction, LossReason, RecoveryStrategy};

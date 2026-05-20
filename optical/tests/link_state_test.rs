@@ -1,8 +1,7 @@
 #[cfg(test)]
 mod tests {
     use optical::link::state_machine::{
-        DegradationAction, DegradationReason, FailureCause, LinkMetrics, LinkQuality,
-        OpticalLink,
+        DegradationAction, DegradationReason, FailureCause, LinkMetrics, LinkQuality, OpticalLink,
     };
     use optical::oct::OctConfiguration;
     use uuid::Uuid;

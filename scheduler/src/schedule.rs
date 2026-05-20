@@ -93,6 +93,10 @@ pub struct ScheduledPass {
     pub scheduled_at: DateTime<Utc>,
     /// Pass status
     pub status: PassStatus,
+    /// Keyhole warning — present when the pass is expected to enter the az-el
+    /// mount's keyhole zone near zenith. The scheduler applies a score penalty;
+    /// the pass executor should initiate a handoff if handoff_scheduled is false.
+    pub keyhole_warning: Option<crate::keyhole::KeyholeWarning>,
 }
 
 /// Hardware allocation for a pass

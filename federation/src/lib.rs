@@ -12,10 +12,15 @@
 pub mod attestation;
 pub mod challenge;
 pub mod peer;
+pub mod spectrum;
 pub mod verification;
 
 pub use attestation::{Attestation, SignedData};
 pub use peer::{FederationPeer, PeerId, PeerManager, VerificationResult};
+pub use spectrum::{
+    CoordinationBand, CoordinationRequest, CoordinationResponse, PassScheduleEntry,
+    SpectrumConflict, SpectrumCoordinator,
+};
 pub use verification::{
     AttestationVerification, ChallengePass, ChallengeResult, ChallengeSchedule,
 };

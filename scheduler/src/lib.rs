@@ -11,11 +11,16 @@
 //! resource is dominant, and reputation decreases for wasteful tenants.
 
 pub mod drf;
+pub mod keyhole;
 pub mod optimization;
 pub mod reputation;
 pub mod schedule;
 
 pub use drf::{DominantResourceFairness, ResourceShare, ResourceType};
+pub use keyhole::{
+    GroundStationGeometry, KeyholeConfig, KeyholeWarning, MountType, analyse_pass,
+    is_likely_keyhole_pass, keyhole_score_penalty,
+};
 pub use optimization::{OptimizationConfig, ScheduleOptimizer};
 pub use reputation::{ReputationTracker, TenantReputation};
 pub use schedule::{PassRequest, Schedule, ScheduledPass};
