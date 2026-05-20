@@ -12,7 +12,7 @@ use crate::topology::link_state::LinkPhase;
 use crate::{DataRate, OctConfiguration, OctStandardVersion, ResetLevel, TerminalId};
 use async_trait::async_trait;
 use chrono::Utc;
-use tokio::sync::mpsc;
+use tokio::sync::mpsc as tokio_mpsc;
 
 /// Vendor enum
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
@@ -154,7 +154,7 @@ impl OpticalTerminal for CondorMk3 {
     }
 
     async fn telemetry_stream(&self) -> Result<TelemetryStream, TerminalError> {
-        let (tx, rx) = mpsc::channel(100);
+        let (tx, rx) = tokio_mpsc::channel(100);
 
         // Simulate telemetry stream
         tokio::spawn(async move {
@@ -324,7 +324,7 @@ impl OpticalTerminal for Scot80 {
     }
 
     async fn telemetry_stream(&self) -> Result<TelemetryStream, TerminalError> {
-        let (tx, rx) = mpsc::channel(100);
+        let (tx, rx) = tokio_mpsc::channel(100);
 
         tokio::spawn(async move {
             loop {
