@@ -83,7 +83,7 @@ impl ControlNodeAssignmentAlgorithm {
     /// Identify handoff events from predictions
     fn identify_handoff_events(&self, predictions: &[AssignmentPoint]) -> Vec<HandoffEvent> {
         let mut events = Vec::new();
-        let mut current_node: Option<TerminalId> = None;
+        let mut current_node: Option<NodeId> = None;
 
         for (i, point) in predictions.iter().enumerate() {
             let nearest = point.nearest_node.clone();
