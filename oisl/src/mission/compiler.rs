@@ -15,7 +15,8 @@ use uuid::Uuid;
 // Types defined in mission module
 use super::{
     CompilationError, IntentConstraints, LinkReservation, MissionIntent, ObjectiveType,
-    PlanExplanation, SatelliteTask, ServiceLevelAgreement, TaskingPlan, TaskType, ValidationWarning,
+    PlanExplanation, SatelliteTask, ServiceLevelAgreement, TaskType, TaskingPlan,
+    ValidationWarning,
 };
 
 /// Intent compiler - compiles declarative intent to imperative tasking

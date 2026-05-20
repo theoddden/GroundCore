@@ -403,10 +403,7 @@ mod tests {
             p_no_handoff < p_with_handoff,
             "No handoff must be penalised more"
         );
-        assert!(
-            p_no_handoff < 0.0,
-            "Penalty must be negative"
-        );
+        assert!(p_no_handoff < 0.0, "Penalty must be negative");
         assert!(
             p_with_handoff < 0.0,
             "Even covered keyhole has some penalty"

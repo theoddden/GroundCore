@@ -295,7 +295,7 @@ impl CalibrationTracker {
             model: PointingModel::new(4 * 3600), // 4-hour rolling window
             known_sources: Vec::new(),
             min_observation_interval_s: 300, // 5 minutes minimum
-            target_interval_s: 2 * 3600,    // 2-hour target
+            target_interval_s: 2 * 3600,     // 2-hour target
             last_observation_at: None,
             observation_count: 0,
         }
