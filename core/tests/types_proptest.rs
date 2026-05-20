@@ -6,8 +6,8 @@ mod proptests {
     proptest! {
         #[test]
         fn test_data_rate_ord_properties(a in 0u64..1_000_000_000u64, b in 0u64..1_000_000_000u64) {
-            let rate1 = DataRate(a);
-            let rate2 = DataRate(b);
+            let rate1: DataRate = a.into();
+            let rate2: DataRate = b.into();
 
             // Reflexivity
             assert!(rate1 >= rate1);
@@ -19,7 +19,7 @@ mod proptests {
             }
 
             // Transitivity
-            let rate3 = DataRate((a + b) % 1_000_000_000);
+            let rate3: DataRate = ((a + b) % 1_000_000_000).into();
             if rate1 <= rate2 && rate2 <= rate3 {
                 assert!(rate1 <= rate3);
             }
@@ -27,8 +27,8 @@ mod proptests {
 
         #[test]
         fn test_frequency_ord_properties(a in 0u64..100_000_000_000u64, b in 0u64..100_000_000_000u64) {
-            let freq1 = Frequency(a);
-            let freq2 = Frequency(b);
+            let freq1: Frequency = a.into();
+            let freq2: Frequency = b.into();
 
             // Reflexivity
             assert!(freq1 >= freq1);
@@ -42,8 +42,8 @@ mod proptests {
 
         #[test]
         fn test_bytes_ord_properties(a in 0u64..1_000_000_000_000u64, b in 0u64..1_000_000_000_000u64) {
-            let bytes1 = Bytes(a);
-            let bytes2 = Bytes(b);
+            let bytes1: Bytes = a.into();
+            let bytes2: Bytes = b.into();
 
             // Reflexivity
             assert!(bytes1 >= bytes1);

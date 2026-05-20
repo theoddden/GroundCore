@@ -11,7 +11,11 @@ pub mod state_machine;
 pub mod validator;
 
 // Re-export submodule types
-pub use compiler::IntentCompiler;
+pub use compiler::{
+    CompilationError, IntentCompiler, IntentConstraints, LinkReservation, MissionIntent,
+    ObjectiveType, PlanExplanation, SatelliteTask, ServiceLevelAgreement, TaskType, TaskingPlan,
+    ValidationWarning,
+};
 pub use scheduler::TaskingScheduler;
 pub use state_machine::{ConstellationState, SatelliteState};
 pub use validator::{PlanValidator, ValidationReport};
@@ -22,6 +26,7 @@ use crate::{
 };
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use anyhow::Error as AnyhowError;
 
 /// Mission intent - what the operator wants (declarative)
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -122,12 +127,7 @@ impl std::fmt::Display for CompilationError {
                 source,
                 destination,
             } => {
-                write!(
-                    f,
-                    "No feasible route found between {} and {}",
-                    source,
-                    destination
-                )
+                write!(f, "No feasible route found between {} and {}", source, destination)
             }
             Self::InsufficientResources { satellite_id } => {
                 write!(f, "Insufficient resources on satellite {}", satellite_id)
@@ -142,8 +142,7 @@ impl std::fmt::Display for CompilationError {
                 write!(
                     f,
                     "Intent deadline cannot be met: required {}s, available {}s",
-                    required,
-                    available
+                    required, available
                 )
             }
             Self::InvalidIntent(msg) => write!(f, "Invalid intent: {}", msg),
