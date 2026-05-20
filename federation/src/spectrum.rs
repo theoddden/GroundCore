@@ -149,11 +149,7 @@ pub struct CoordinationRequest {
 }
 
 impl CoordinationRequest {
-    pub fn new(
-        from_station: String,
-        to_station: PeerId,
-        entries: Vec<PassScheduleEntry>,
-    ) -> Self {
+    pub fn new(from_station: String, to_station: PeerId, entries: Vec<PassScheduleEntry>) -> Self {
         Self {
             request_id: Uuid::new_v4(),
             from_station,
@@ -446,11 +442,7 @@ impl SpectrumCoordinator {
 mod tests {
     use super::*;
 
-    fn make_entry(
-        center_hz: f64,
-        start_offset_min: i64,
-        duration_min: i64,
-    ) -> PassScheduleEntry {
+    fn make_entry(center_hz: f64, start_offset_min: i64, duration_min: i64) -> PassScheduleEntry {
         let now = Utc::now();
         PassScheduleEntry {
             entry_id: Uuid::new_v4(),
@@ -493,7 +485,10 @@ mod tests {
         let theirs = vec![make_entry(2.2e9, 10, 10)]; // back-to-back, no overlap
         let state = PeerCoordinationState::new("peer-1".to_string());
         let conflicts = state.detect_conflicts(&ours, &theirs, &"peer-1".to_string());
-        assert!(conflicts.is_empty(), "Sequential passes should not conflict");
+        assert!(
+            conflicts.is_empty(),
+            "Sequential passes should not conflict"
+        );
     }
 
     #[test]

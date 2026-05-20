@@ -158,7 +158,11 @@ impl SnrDistribution {
     /// Returns link availability (0..1) under scintillation at that threshold.
     pub fn availability_at_threshold(&self, threshold_db: f64) -> f64 {
         if self.scintillation_std_dev_db < 1e-9 {
-            return if self.nominal_snr_db >= threshold_db { 1.0 } else { 0.0 };
+            return if self.nominal_snr_db >= threshold_db {
+                1.0
+            } else {
+                0.0
+            };
         }
         let margin = (self.nominal_snr_db - threshold_db) / self.scintillation_std_dev_db;
         normal_cdf(margin)
@@ -273,9 +277,9 @@ impl ScintillationModel {
 /// Rational approximation to the normal CDF Φ(x). Max error ≈ 7.5×10⁻⁸.
 fn normal_cdf(x: f64) -> f64 {
     let t = 1.0 / (1.0 + 0.2316419 * x.abs());
-    let poly = t * (0.319381530
-        + t * (-0.356563782
-            + t * (1.781477937 + t * (-1.821255978 + t * 1.330274429))));
+    let poly = t
+        * (0.319381530
+            + t * (-0.356563782 + t * (1.781477937 + t * (-1.821255978 + t * 1.330274429))));
     let pdf = (-0.5 * x * x).exp() / (2.0 * std::f64::consts::PI).sqrt();
     let cdf = 1.0 - pdf * poly;
     if x >= 0.0 { cdf } else { 1.0 - cdf }
@@ -330,7 +334,10 @@ mod tests {
         let dist = ScintillationModel::snr_distribution(&site, 15.0);
         let avail = dist.availability_at_threshold(10.0);
         assert!(avail < 1.0, "Poor site should have <100% availability");
-        assert!(avail > 0.5, "Should still be mostly available with 5 dB margin");
+        assert!(
+            avail > 0.5,
+            "Should still be mostly available with 5 dB margin"
+        );
     }
 
     #[test]
@@ -361,7 +368,10 @@ mod tests {
         let dist = ScintillationModel::snr_distribution(&site, 15.0);
         let fade_tight = dist.expected_fade_duration_s(14.0);
         let fade_loose = dist.expected_fade_duration_s(5.0);
-        assert!(fade_tight > fade_loose, "Tight threshold should produce longer fades");
+        assert!(
+            fade_tight > fade_loose,
+            "Tight threshold should produce longer fades"
+        );
     }
 
     #[test]
@@ -369,6 +379,9 @@ mod tests {
         let site = AtmosphericSite::excellent_site(1550e-9, 0.2);
         let dist = ScintillationModel::snr_distribution(&site, 30.0);
         let avail = dist.availability_at_threshold(10.0);
-        assert!(avail > 0.99, "20 dB margin on excellent site should give >99% availability");
+        assert!(
+            avail > 0.99,
+            "20 dB margin on excellent site should give >99% availability"
+        );
     }
 }

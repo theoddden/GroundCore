@@ -19,7 +19,7 @@
 //! This is the kind of detail that distinguishes professional ground station
 //! software from amateur software.
 
-use chrono::{DateTime, Duration, Utc};
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
 /// Mount type — determines whether a zenith keyhole exists and where.
@@ -38,9 +38,7 @@ pub enum MountType {
     XY,
     /// Equatorial/Parallactic mount. Keyhole at the celestial poles, not zenith.
     /// Rarely used for satellite tracking.
-    Equatorial {
-        max_ha_slew_deg_per_s: f64,
-    },
+    Equatorial { max_ha_slew_deg_per_s: f64 },
 }
 
 impl MountType {
@@ -349,7 +347,9 @@ mod tests {
     fn test_no_keyhole_low_elevation_pass() {
         let station = GroundStationGeometry::new_azel(
             "test-station".to_string(),
-            43.0, -79.0, 100.0,
+            43.0,
+            -79.0,
+            100.0,
             KeyholeConfig::default_azel(),
         );
         let profile = make_profile(&[5.0, 20.0, 35.0, 45.0, 35.0, 20.0, 5.0]);
@@ -363,7 +363,9 @@ mod tests {
     fn test_keyhole_high_elevation_pass() {
         let station = GroundStationGeometry::new_azel(
             "test-station".to_string(),
-            43.0, -79.0, 100.0,
+            43.0,
+            -79.0,
+            100.0,
             KeyholeConfig::default_azel(), // threshold = 80°
         );
         let profile = make_profile(&[10.0, 30.0, 60.0, 82.0, 85.0, 82.0, 60.0, 30.0, 10.0]);
@@ -376,10 +378,7 @@ mod tests {
 
     #[test]
     fn test_xy_mount_no_keyhole_even_overhead() {
-        let station = GroundStationGeometry::new_xy(
-            "xy-station".to_string(),
-            43.0, -79.0, 100.0,
-        );
+        let station = GroundStationGeometry::new_xy("xy-station".to_string(), 43.0, -79.0, 100.0);
         let profile = make_profile(&[10.0, 45.0, 85.0, 89.0, 89.0, 85.0, 45.0, 10.0]);
         let analysis = analyse_pass(&station, &profile, 80);
         assert!(!analysis.enters_keyhole, "X-Y mount should have no keyhole");
@@ -400,9 +399,18 @@ mod tests {
         };
         let p_no_handoff = keyhole_score_penalty(&analysis, false);
         let p_with_handoff = keyhole_score_penalty(&analysis, true);
-        assert!(p_no_handoff < p_with_handoff, "No handoff must be penalised more");
-        assert!(p_no_handoff < 0.0, "Penalty must be negative");
-        assert!(p_with_handoff < 0.0, "Even covered keyhole has some penalty");
+        assert!(
+            p_no_handoff < p_with_handoff,
+            "No handoff must be penalised more"
+        );
+        assert!(
+            p_no_handoff < 0.0,
+            "Penalty must be negative"
+        );
+        assert!(
+            p_with_handoff < 0.0,
+            "Even covered keyhole has some penalty"
+        );
     }
 
     #[test]

@@ -32,14 +32,9 @@ pub enum CalibrationSource {
         flux_jy: f64,
     },
     /// GPS satellite — always visible somewhere, precisely known ephemeris.
-    GpsSatellite {
-        prn: u8,
-    },
+    GpsSatellite { prn: u8 },
     /// Dedicated calibration satellite from a bilateral operator agreement.
-    CalibrationSatellite {
-        norad_id: u64,
-        operator: String,
-    },
+    CalibrationSatellite { norad_id: u64, operator: String },
     /// Cooperative transponder beacon at a known fixed position on the ground.
     TransponderBeacon {
         beacon_id: String,
@@ -220,7 +215,10 @@ impl PointingModel {
     /// Number of observations in the active rolling window.
     pub fn active_observation_count(&self) -> usize {
         let cutoff = Utc::now() - Duration::seconds(self.window_seconds);
-        self.history.iter().filter(|o| o.observed_at >= cutoff).count()
+        self.history
+            .iter()
+            .filter(|o| o.observed_at >= cutoff)
+            .count()
     }
 
     fn is_outlier(&self, candidate: &CalibrationObservation) -> bool {
@@ -230,19 +228,19 @@ impl PointingModel {
             .map(|o| o.residual_magnitude_mdeg())
             .collect();
         let mean = residuals.iter().sum::<f64>() / residuals.len() as f64;
-        let variance = residuals
-            .iter()
-            .map(|r| (r - mean).powi(2))
-            .sum::<f64>()
-            / residuals.len() as f64;
+        let variance =
+            residuals.iter().map(|r| (r - mean).powi(2)).sum::<f64>() / residuals.len() as f64;
         let std_dev = variance.sqrt();
         candidate.residual_magnitude_mdeg() > mean + 3.0 * std_dev.max(10.0)
     }
 
     fn recompute_correction(&mut self) {
         let cutoff = Utc::now() - Duration::seconds(self.window_seconds);
-        let recent: Vec<&CalibrationObservation> =
-            self.history.iter().filter(|o| o.observed_at >= cutoff).collect();
+        let recent: Vec<&CalibrationObservation> = self
+            .history
+            .iter()
+            .filter(|o| o.observed_at >= cutoff)
+            .collect();
 
         if recent.is_empty() {
             self.current_correction.confidence = 0.0;
@@ -296,8 +294,8 @@ impl CalibrationTracker {
         Self {
             model: PointingModel::new(4 * 3600), // 4-hour rolling window
             known_sources: Vec::new(),
-            min_observation_interval_s: 300,  // 5 minutes minimum
-            target_interval_s: 2 * 3600,      // 2-hour target
+            min_observation_interval_s: 300, // 5 minutes minimum
+            target_interval_s: 2 * 3600,    // 2-hour target
             last_observation_at: None,
             observation_count: 0,
         }
@@ -394,7 +392,10 @@ mod tests {
             "Should converge to ~50 mdeg, got {}",
             correction.az_offset_mdeg
         );
-        assert!(correction.confidence > 0.5, "Should have meaningful confidence after 5 obs");
+        assert!(
+            correction.confidence > 0.5,
+            "Should have meaningful confidence after 5 obs"
+        );
     }
 
     #[test]
