@@ -7,16 +7,17 @@ use crate::{
     Priority, SatelliteId, SensorType, TaskId, TenantId, TimeWindow,
 };
 use bitemporal::timestamp::{EventTime, ReceptionTime};
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, Duration, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Mutex;
 use uuid::Uuid;
 
+// Types defined in parent module (mod.rs)
 use super::{
     CompilationError, IntentConstraints, LinkReservation, MissionIntent, ObjectiveType,
     PlanExplanation, SatelliteTask, ServiceLevelAgreement, TaskType, TaskingPlan,
-    ValidationWarning,
+    ValidationWarning, ValidationWarningType, ValidationSeverity,
 };
 
 /// Intent compiler - compiles declarative intent to imperative tasking
@@ -196,7 +197,9 @@ impl IntentCompiler for DefaultIntentCompiler {
             .satellite_tasks
             .iter()
             .filter_map(|task| {
-                if let TaskType::OpticalLinkEstablishment { peer_terminal: _, .. } = &task.task_type
+                if let TaskType::OpticalLinkEstablishment {
+                    peer_terminal: _, ..
+                } = &task.task_type
                 {
                     Some(crate::mission::RoutingDecision {
                         source: task.satellite_id.clone(),

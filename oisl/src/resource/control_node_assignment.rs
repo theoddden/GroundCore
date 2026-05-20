@@ -6,7 +6,7 @@
 // handoffs based on distance thresholds.
 
 use crate::topology::forecast::Position3D;
-use crate::{NodeId, SatelliteId};
+use crate::{AllocationId, NodeId, SatelliteId, TaskId, TerminalId, TimeWindow};
 use chrono::{DateTime, Duration, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;

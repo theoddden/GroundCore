@@ -52,7 +52,7 @@ impl SpatiotemporalRouter {
         destination: &NodeId,
         topology: &TopologyForecast,
         constraints: &IntentConstraints,
-        sla: &ServiceLevelAgreement,
+        _sla: &ServiceLevelAgreement,
     ) -> Result<Route, RoutingError> {
         let time_bucket = topology.horizon_start.timestamp() / ROUTE_CACHE_BUCKET_SECS;
         let cache_key = (source.clone(), destination.clone(), time_bucket);
@@ -89,7 +89,7 @@ impl SpatiotemporalRouter {
 
             // Check if we reached destination
             if state.current_node == *destination {
-                let route = self.build_route(state.clone(), source, destination)?;
+                let route = self.build_route(&state, source, destination)?;
 
                 // Validate against constraints
                 if self.satisfies_constraints(&route, constraints) {
@@ -112,7 +112,7 @@ impl SpatiotemporalRouter {
                 }
 
                 // Calculate PAT overhead
-                let pat_overhead =
+                let _pat_overhead =
                     self.cost_model.pat_overhead_weight * edge.required_pointing_accuracy_rad;
 
                 // Calculate hop cost
@@ -158,12 +158,12 @@ impl SpatiotemporalRouter {
 
     fn build_route(
         &self,
-        state: RouteState,
+        state: &RouteState,
         _source: &NodeId,
         _destination: &NodeId,
     ) -> Result<Route, RoutingError> {
         Ok(Route {
-            hops: state.hops,
+            hops: state.hops.clone(),
             total_cost: CostScore(state.cost),
             confidence: state.confidence,
             failure_recovery_paths: vec![], // Would compute K-shortest paths

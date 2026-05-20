@@ -73,14 +73,10 @@ impl SatelliteScheduler for DefaultSatelliteScheduler {
         // Clone satellite_id before mutable borrow
         let sat_id = satellite.satellite_id.clone();
 
-        let allocation_id = self.allocator.allocate(
-            claim.clone(),
-            task_id,
-            &tenant_id,
-            priority,
-            &valid_window,
-        )
-        .map_err(|e| ScheduleError::AllocationFailed(e.to_string()))?;
+        let allocation_id = self
+            .allocator
+            .allocate(claim.clone(), task_id, &tenant_id, priority, &valid_window)
+            .map_err(|e| ScheduleError::AllocationFailed(e.to_string()))?;
 
         // Update satellite state
         if let Some(sat) = self.satellites.get_mut(&sat_id) {
@@ -142,7 +138,7 @@ impl SatelliteScheduler for DefaultSatelliteScheduler {
 
                     if self
                         .allocator
-                        .allocate(claim, task_id, tenant_id, priority, valid_window)
+                        .allocate(claim, task_id, &tenant_id, priority, &valid_window)
                         .is_ok()
                     {
                         moved_allocations += 1;

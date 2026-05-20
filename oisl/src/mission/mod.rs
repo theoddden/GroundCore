@@ -10,17 +10,12 @@ pub mod scheduler;
 pub mod state_machine;
 pub mod validator;
 
-pub use LinkReservation;
-pub use PlanExplanation;
-pub use SatelliteTask;
-pub use ServiceLevelAgreement;
-pub use TaskType;
-pub use TaskingPlan;
+// Re-export submodule types
 pub use compiler::{
-    CompilationError, IntentCompiler, IntentConstraints, MissionIntent, ObjectiveType,
+    CompilationError, IntentCompiler, IntentConstraints, LinkReservation, MissionIntent,
+    ObjectiveType, PlanExplanation, SatelliteTask, ServiceLevelAgreement, TaskType, TaskingPlan,
     ValidationWarning,
 };
-
 pub use scheduler::TaskingScheduler;
 pub use state_machine::{ConstellationState, SatelliteState};
 pub use validator::{PlanValidator, ValidationReport};
@@ -29,6 +24,7 @@ use crate::{
     AssetId, BiTemporal, Bytes, ConfidenceScore, GeoRegion, IntentId, PlanId, Priority,
     SatelliteId, SensorType, TaskId, TenantId, TimeWindow,
 };
+use anyhow::Error;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -80,81 +76,6 @@ pub struct IntentConstraints {
     pub thermal_limit: Option<f64>, // celsius
 }
 
-/// Service Level Agreement
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ServiceLevelAgreement {
-    pub priority: Priority,
-    pub deadline: Option<DateTime<Utc>>,
-    pub reliability_target: f64, // 0.0 to 1.0
-    pub compensation_terms: Option<String>,
-}
-
-/// Tasking plan - what the orchestrator computed (imperative)
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct TaskingPlan {
-    pub plan_id: PlanId,
-    pub parent_intent: IntentId,
-    pub satellite_tasks: Vec<SatelliteTask>,
-    pub link_reservations: Vec<LinkReservation>,
-    pub compiled_at: BiTemporal<DateTime<Utc>>,
-    pub valid_until: DateTime<Utc>,
-    pub confidence: ConfidenceScore,
-}
-
-/// Satellite task - specific task assigned to a satellite
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct SatelliteTask {
-    pub task_id: TaskId,
-    pub satellite_id: SatelliteId,
-    pub task_type: TaskType,
-    pub scheduled_window: TimeWindow,
-    pub dependencies: Vec<TaskId>,
-    pub priority: Priority,
-    pub tenant_id: TenantId,
-}
-
-/// Task type
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(tag = "type")]
-pub enum TaskType {
-    OpticalLinkEstablishment {
-        peer_terminal: crate::TerminalId,
-        optical_config: crate::physical::OctConfiguration,
-    },
-    DataTransfer {
-        source: AssetId,
-        destination: AssetId,
-        volume: Bytes,
-    },
-    Observation {
-        target: GeoRegion,
-        sensor: SensorType,
-    },
-    Downlink {
-        ground_station: AssetId,
-    },
-}
-
-/// Link reservation - reserved optical link for a task
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct LinkReservation {
-    pub reservation_id: uuid::Uuid,
-    pub terminal_a: crate::TerminalId,
-    pub terminal_b: crate::TerminalId,
-    pub time_window: TimeWindow,
-    pub bandwidth_allocation: crate::BandwidthAllocation,
-    pub task_ids: Vec<TaskId>,
-}
-
-/// Plan explanation - why the orchestrator made these decisions
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct PlanExplanation {
-    pub summary: String,
-    pub routing_decisions: Vec<RoutingDecision>,
-    pub resource_allocations: Vec<ResourceAllocationDecision>,
-    pub tradeoffs: Vec<TradeoffExplanation>,
-    pub warnings: Vec<String>,
-}
 
 /// Routing decision explanation
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -216,7 +137,7 @@ pub enum CompilationError {
     TopologyUnavailable { horizon: chrono::Duration },
 
     #[error("Internal error: {0}")]
-    Internal(anyhow::Error),
+    Internal(Error),
 }
 
 /// Validation warning
