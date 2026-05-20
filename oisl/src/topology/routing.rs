@@ -146,7 +146,10 @@ impl SpatiotemporalRouter {
             }
         }
 
-        let route = best_route.ok_or(RoutingError::NoRouteFound)?;
+        let route = best_route.ok_or(RoutingError::NoRouteFound {
+            source: source.clone(),
+            destination: destination.clone(),
+        })?;
 
         // Cache the computed route for this (source, destination, time_bucket)
         self.route_cache.put(cache_key, route.clone());
