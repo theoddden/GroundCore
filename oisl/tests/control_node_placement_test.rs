@@ -1,9 +1,7 @@
 #[cfg(test)]
 mod tests {
     use chrono::DateTime;
-    use oisl::topology::control_node_placement::{
-        ControlNodePlacementAlgorithm, PlacementError,
-    };
+    use oisl::topology::control_node_placement::{ControlNodePlacementAlgorithm, PlacementError};
     use oisl::topology::{
         GraphSnapshot, NodeState, NodeType, Position3D, TopologyForecast, Velocity3D,
     };
@@ -121,7 +119,9 @@ mod tests {
                     },
                     optical_terminals: Vec::new(),
                 };
-                snapshot.nodes.insert(format!("station{}", j), station_state);
+                snapshot
+                    .nodes
+                    .insert(format!("station{}", j), station_state);
             }
 
             forecast.add_snapshot(snapshot);

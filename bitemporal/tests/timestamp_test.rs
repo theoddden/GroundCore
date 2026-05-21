@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
-    use chrono::{DateTime, Utc};
     use bitemporal::{BiTemporal, EventTime, ReceptionTime};
+    use chrono::{DateTime, Utc};
 
     #[test]
     fn test_bitemporal_creation() {

@@ -13,7 +13,7 @@ pub mod link_state;
 pub mod routing;
 
 pub use forecast::{
-    GraphSnapshot, LinkObservation, NodeState, NodeType, PotentialEdge, Position3D,
+    GraphSnapshot, LinkObservation, NodeState, NodeType, Position3D, PotentialEdge,
     RefinementReport, TopologyForecast, TopologyForecaster, TopologyInterpolation, Velocity3D,
 };
 

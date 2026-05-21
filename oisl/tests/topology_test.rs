@@ -1,10 +1,10 @@
 #[cfg(test)]
 mod tests {
     use chrono::{DateTime, Duration};
+    use oisl::TimeWindow;
     use oisl::topology::{
         GraphSnapshot, NodeState, NodeType, Position3D, TopologyForecast, Velocity3D,
     };
-    use oisl::TimeWindow;
     use std::collections::HashMap;
 
     #[test]
