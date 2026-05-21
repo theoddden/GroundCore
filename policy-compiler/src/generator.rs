@@ -6,7 +6,7 @@
 //! - Coordination proofs are type-checked
 
 use crate::rules::{FrequencyBand, LicenseRequirement, RegulatoryPolicy};
-use quote::{ToTokens, format_ident, quote};
+use quote::{ToTokens, format_ident};
 use syn::{Item, parse_quote};
 
 /// Generated Rust types for a regulatory policy
@@ -29,15 +29,15 @@ impl GeneratedTypes {
 
         // Generate band types
         for band_rules in &policy.band_rules {
-            let band_type = Self::generate_band_type(&band_rules.band);
-            items.push(band_type);
+            let band_types = Self::generate_band_type(&band_rules.band);
+            items.extend(band_types);
         }
 
         // Generate license types
         for band_rules in &policy.band_rules {
-            let license_type =
+            let license_types =
                 Self::generate_license_type(&band_rules.band, &band_rules.license_requirement);
-            items.push(license_type);
+            items.extend(license_types);
         }
 
         // Generate coordination proof types
@@ -63,7 +63,7 @@ impl GeneratedTypes {
     }
 
     /// Generate a band type
-    fn generate_band_type(band: &FrequencyBand) -> Item {
+    fn generate_band_type(band: &FrequencyBand) -> Vec<Item> {
         let name = format_ident!("Band{}", band.name.replace("-", "").replace(" ", ""));
         let doc = format!(
             "{} frequency band ({}-{} MHz)",
@@ -74,40 +74,45 @@ impl GeneratedTypes {
         let lower_hz = band.lower_hz;
         let upper_hz = band.upper_hz;
 
-        parse_quote! {
+        let struct_item: Item = parse_quote! {
             #[doc = #doc]
             #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
             pub struct #name {
                 _phantom: core::marker::PhantomData<()>,
             }
+        };
 
+        let impl_item: Item = parse_quote! {
             impl #name {
                 pub const MIN_FREQUENCY: u64 = #lower_hz;
                 pub const MAX_FREQUENCY: u64 = #upper_hz;
             }
-        }
+        };
+
+        vec![struct_item, impl_item]
     }
 
     /// Generate a license type for a band
-    fn generate_license_type(band: &FrequencyBand, license_req: &LicenseRequirement) -> Item {
+    fn generate_license_type(band: &FrequencyBand, license_req: &LicenseRequirement) -> Vec<Item> {
         let band_suffix = band.name.replace("-", "").replace(" ", "");
         let band_name = format_ident!("Band{}", &band_suffix);
         let license_name = format_ident!("{}License", &band_suffix);
         let doc = format!("License for {} transmission", band.name);
 
-        let license_type_impl = match &license_req.license_type {
+        match &license_req.license_type {
             crate::rules::LicenseType::None => {
-                quote! {
+                let item: Item = parse_quote! {
                     #[doc = #doc]
                     #[derive(Debug, Clone)]
                     pub struct #license_name {
                         pub holder: String,
                         pub band: core::marker::PhantomData<#band_name>,
                     }
-                }
+                };
+                vec![item]
             }
             crate::rules::LicenseType::General => {
-                quote! {
+                let struct_item: Item = parse_quote! {
                     #[doc = #doc]
                     #[derive(Debug, Clone)]
                     pub struct #license_name {
@@ -116,17 +121,21 @@ impl GeneratedTypes {
                         pub valid_from: chrono::DateTime<chrono::Utc>,
                         pub valid_until: chrono::DateTime<chrono::Utc>,
                     }
+                };
 
+                let impl_item: Item = parse_quote! {
                     impl #license_name {
                         pub fn is_valid(&self) -> bool {
                             let now = chrono::Utc::now();
                             now >= self.valid_from && now < self.valid_until
                         }
                     }
-                }
+                };
+
+                vec![struct_item, impl_item]
             }
             crate::rules::LicenseType::Specific { license_class: _ } => {
-                quote! {
+                let struct_item: Item = parse_quote! {
                     #[doc = #doc]
                     #[derive(Debug, Clone)]
                     pub struct #license_name {
@@ -136,17 +145,21 @@ impl GeneratedTypes {
                         pub valid_from: chrono::DateTime<chrono::Utc>,
                         pub valid_until: chrono::DateTime<chrono::Utc>,
                     }
+                };
 
+                let impl_item: Item = parse_quote! {
                     impl #license_name {
                         pub fn is_valid(&self) -> bool {
                             let now = chrono::Utc::now();
                             now >= self.valid_from && now < self.valid_until
                         }
                     }
-                }
+                };
+
+                vec![struct_item, impl_item]
             }
             crate::rules::LicenseType::Amateur { class: _ } => {
-                quote! {
+                let item: Item = parse_quote! {
                     #[doc = #doc]
                     #[derive(Debug, Clone)]
                     pub struct #license_name {
@@ -154,12 +167,9 @@ impl GeneratedTypes {
                         pub class: String,
                         pub band: core::marker::PhantomData<#band_name>,
                     }
-                }
+                };
+                vec![item]
             }
-        };
-
-        parse_quote! {
-            #license_type_impl
         }
     }
 
@@ -275,7 +285,11 @@ mod tests {
         let generated = GeneratedTypes::generate_band_type(&band);
         let code = {
             use quote::ToTokens;
-            generated.into_token_stream().to_string()
+            generated
+                .into_iter()
+                .map(|item| item.into_token_stream().to_string())
+                .collect::<Vec<_>>()
+                .join("\n")
         };
 
         assert!(code.contains("BandLband"));
