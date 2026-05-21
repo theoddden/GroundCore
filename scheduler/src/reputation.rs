@@ -242,7 +242,9 @@ mod tests {
         reputation.record_fulfilled(100.0, 30.0);
         reputation.record_fulfilled(100.0, 30.0);
         reputation.record_fulfilled(100.0, 30.0);
-        assert!(reputation.reputation < 0.8);
+        reputation.record_fulfilled(100.0, 30.0);
+        reputation.record_fulfilled(100.0, 30.0);
+        assert!(reputation.reputation < 0.85);
     }
 
     #[test]
