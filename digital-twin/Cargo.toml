@@ -1,0 +1,24 @@
+[package]
+name = "digital-twin"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+ground-core = { path = "../core" }
+tracking = { path = "../tracking" }
+optical = { path = "../optical" }
+bitemporal = { path = "../bitemporal" }
+caching = { path = "../caching" }
+snapshotting = { path = "../snapshotting" }
+bevy_ecs = { workspace = true }
+tokio = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+chrono = { workspace = true }
+nalgebra = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+uuid = { workspace = true }
+
+[dev-dependencies]
+tokio-test = "0.4"

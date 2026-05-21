@@ -20,6 +20,7 @@ members = [
     "uplink",
     "acs",
     "rf-front-end",
+    "digital-twin",
 ]
 resolver = "2"
 
@@ -81,6 +82,9 @@ sgp4 = { version = "2.4", features = ["serde"] }
 
 # Memory safety (for real-time layer)
 bumpalo = "3.16"
+
+# ECS engine for digital twin simulation
+bevy_ecs = "0.14"
 
 
 [workspace.metadata.release]
