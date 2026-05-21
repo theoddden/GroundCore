@@ -66,6 +66,8 @@ impl DemodulatorBatcher {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use bitemporal::timestamp::{EventTime, ReceptionTime};
+    use chrono::Utc;
 
     #[test]
     fn test_demodulator_batching() {
@@ -78,7 +80,7 @@ mod tests {
         );
 
         for _ in 0..10 {
-            batcher.add_symbol(symbol.clone());
+            batcher.add_symbol(symbol);
         }
 
         assert!(batcher.is_ready());

@@ -1,8 +1,8 @@
 //! AGC controller with automatic gain adjustment
 
-use crate::amplifier::{AmplifierControl, AmplifierStatus};
+use crate::amplifier::AmplifierControl;
 use crate::attenuator::AttenuatorControl;
-use ground_core::{GroundStationError, Result};
+use ground_core::Result;
 use serde::{Deserialize, Serialize};
 use std::sync::atomic::{AtomicBool, Ordering};
 use tokio::sync::RwLock;

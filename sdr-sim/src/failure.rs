@@ -33,12 +33,14 @@ pub struct FailureInjector {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum FailureState {
     Normal,
+    #[allow(dead_code)]
     Failing,
+    #[allow(dead_code)]
     Recovered,
 }
 
-impl FailureInjector {
-    pub fn new() -> Self {
+impl Default for FailureInjector {
+    fn default() -> Self {
         Self {
             enabled: false,
             failure_type: None,
@@ -46,6 +48,12 @@ impl FailureInjector {
             recovery_time: None,
             current_state: FailureState::Normal,
         }
+    }
+}
+
+impl FailureInjector {
+    pub fn new() -> Self {
+        Self::default()
     }
 
     /// Schedule a failure
@@ -116,7 +124,6 @@ impl FailureInjector {
                     return true;
                 }
                 FailureType::SdrGarbageData => {
-                    let mut rng = rand::thread_rng();
                     *i = rand::random::<f32>();
                     *q = rand::random::<f32>();
                 }
@@ -130,13 +137,12 @@ impl FailureInjector {
                     *i = new_i;
                     *q = new_q;
                 }
-                FailureType::SampleRateDeviation { deviation_ppm } => {
+                FailureType::SampleRateDeviation { deviation_ppm: _ } => {
                     // Sample rate deviation is handled at the sample generation level
                     // This is a placeholder for that effect
                 }
                 FailureType::PacketLoss { loss_rate } => {
-                    let mut rng = rand::thread_rng();
-                    if rand::random::<f64>() < loss_rate as f64 {
+                    if rand::random::<f64>() < loss_rate {
                         // Drop this sample
                         return true;
                     }

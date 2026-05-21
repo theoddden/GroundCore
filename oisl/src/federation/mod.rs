@@ -9,7 +9,7 @@
 // Each ground station runs a full control plane, satellites bind to nearest
 // controller for uninterrupted management with seamless handoffs.
 
-mod control_plane_handoff;
+pub mod control_plane_handoff;
 
 use crate::{BiTemporal, LinkId, NodeId, OperatorId, SatelliteId, TerminalId};
 use chrono::{DateTime, Utc};

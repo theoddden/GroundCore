@@ -322,6 +322,7 @@ impl Default for ShadowTracker {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use chrono::Utc;
 
     #[tokio::test]
     async fn test_shadow_promotion() {

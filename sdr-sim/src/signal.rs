@@ -92,7 +92,7 @@ impl SignalGenerator {
         // Simplified FSK: alternate between two frequencies
         let symbol_duration = self.sample_rate as f64 / baud_rate as f64;
         let symbol_index = (self.time / symbol_duration) as u32;
-        let freq_offset = if symbol_index % 2 == 0 {
+        let freq_offset = if symbol_index.is_multiple_of(2) {
             1000.0
         } else {
             -1000.0

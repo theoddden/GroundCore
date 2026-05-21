@@ -4,7 +4,6 @@ use crate::amplifier::{AmplifierControl, AmplifierStatus, GainStage, GenericAmpl
 use crate::attenuator::{AttenuatorControl, VariableAttenuator};
 use crate::device::{DeviceCalibration, RfDevice, RfDeviceState, RfDeviceType};
 use crate::filter::{FilterBank, FilterControl, FilterId, FilterSpec, FilterType};
-use async_trait::async_trait;
 use ground_core::{GroundStationError, Result};
 use std::time::Duration;
 use tokio::time::sleep;
@@ -208,6 +207,12 @@ impl AmplifierControl for QorvoAmplifierAdapter {
 /// Crystek filter bank adapter
 pub struct CrystekFilterBankAdapter {
     inner: FilterBank,
+}
+
+impl Default for CrystekFilterBankAdapter {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl CrystekFilterBankAdapter {

@@ -3,7 +3,6 @@
 use crate::device::{DeviceCalibration, RfDevice, RfDeviceState, RfDeviceType};
 use ground_core::{GroundStationError, Result};
 use serde::{Deserialize, Serialize};
-use std::sync::atomic::Ordering;
 use tokio::sync::RwLock;
 use uuid::Uuid;
 

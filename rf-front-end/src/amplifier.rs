@@ -3,7 +3,7 @@
 use crate::device::{DeviceCalibration, RfDevice, RfDeviceState, RfDeviceType};
 use ground_core::{GroundStationError, Result};
 use serde::{Deserialize, Serialize};
-use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+use std::sync::atomic::{AtomicBool, Ordering};
 use tokio::sync::RwLock;
 use uuid::Uuid;
 
@@ -198,7 +198,7 @@ impl AmplifierControl for GenericAmplifier {
         }
 
         // Validate gain range (example: -20 to +60 dB)
-        if gain_db < -20.0 || gain_db > 60.0 {
+        if !(-20.0..=60.0).contains(&gain_db) {
             return Err(GroundStationError::Validation(
                 "Gain out of range".to_string(),
             ));

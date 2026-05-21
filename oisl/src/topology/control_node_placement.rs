@@ -13,8 +13,8 @@ use std::collections::HashSet;
 
 /// Control Node Placement Algorithm
 pub struct ControlNodePlacementAlgorithm {
-    num_clusters: usize,
-    local_search_iterations: usize,
+    pub num_clusters: usize,
+    pub local_search_iterations: usize,
 }
 
 impl ControlNodePlacementAlgorithm {

@@ -46,7 +46,7 @@ pub struct SimulatedSdr {
     signal_generator: SignalGenerator,
     failure_injector: FailureInjector,
     sample_counter: AtomicU64,
-    current_doppler: f64,
+    _current_doppler: f64,
     start_time: DateTime<Utc>,
     enabled: bool,
 }
@@ -66,7 +66,7 @@ impl SimulatedSdr {
             signal_generator,
             failure_injector: FailureInjector::new(),
             sample_counter: AtomicU64::new(0),
-            current_doppler: doppler_shift as f64,
+            _current_doppler: doppler_shift as f64,
             start_time: Utc::now(),
             enabled: true,
         }
@@ -207,9 +207,11 @@ mod tests {
 
     #[tokio::test]
     async fn test_doppler_simulation() {
-        let mut config = SimulatedSdrConfig::default();
-        config.doppler_shift = 1000;
-        config.doppler_drift_rate = 100.0;
+        let config = SimulatedSdrConfig {
+            doppler_shift: 1000,
+            doppler_drift_rate: 100.0,
+            ..Default::default()
+        };
 
         let mut sdr = SimulatedSdr::new(config);
 

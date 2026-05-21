@@ -76,6 +76,12 @@ pub struct FilterBank {
     filters: RwLock<HashMap<FilterId, FilterSpec>>,
 }
 
+impl Default for FilterBank {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl FilterBank {
     /// Create a new filter bank
     pub fn new() -> Self {

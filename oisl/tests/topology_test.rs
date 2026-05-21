@@ -4,14 +4,22 @@ mod tests {
     use oisl::topology::{
         GraphSnapshot, NodeState, NodeType, Position3D, TopologyForecast, Velocity3D,
     };
-    use oisl::{NodeId, TimeWindow};
+    use oisl::TimeWindow;
+    use std::collections::HashMap;
 
     #[test]
     fn test_graph_snapshot_creation() {
-        let mut snapshot = GraphSnapshot::new(DateTime::from_timestamp(0, 0).unwrap());
+        let timestamp = DateTime::from_timestamp(0, 0).unwrap();
+        let mut snapshot = GraphSnapshot {
+            timestamp,
+            nodes: HashMap::new(),
+            potential_edges: Vec::new(),
+            active_links: Vec::new(),
+        };
 
         let node_id = "sat1".to_string();
         let node_state = NodeState {
+            node_id: node_id.clone(),
             node_type: NodeType::Satellite {
                 satellite_id: "SAT1".to_string(),
             },
@@ -21,26 +29,36 @@ mod tests {
                 z_km: 7000.0,
             },
             velocity: Velocity3D {
-                x_km_s: 7.5,
-                y_km_s: 0.0,
-                z_km_s: 0.0,
+                vx_kms: 7.5,
+                vy_kms: 0.0,
+                vz_kms: 0.0,
             },
+            optical_terminals: Vec::new(),
         };
 
-        snapshot.add_node(node_id.clone(), node_state);
+        snapshot.nodes.insert(node_id.clone(), node_state);
         assert!(snapshot.nodes.contains_key(&node_id));
     }
 
     #[test]
     fn test_topology_forecast_creation() {
-        let forecast = TopologyForecast::new();
+        let start = DateTime::from_timestamp(0, 0).unwrap();
+        let end = DateTime::from_timestamp(3600, 0).unwrap();
+        let forecast = TopologyForecast::new(start, end);
         assert_eq!(forecast.snapshots.len(), 0);
     }
 
     #[test]
     fn test_topology_forecast_add_snapshot() {
-        let mut forecast = TopologyForecast::new();
-        let snapshot = GraphSnapshot::new(DateTime::from_timestamp(0, 0).unwrap());
+        let start = DateTime::from_timestamp(0, 0).unwrap();
+        let end = DateTime::from_timestamp(3600, 0).unwrap();
+        let mut forecast = TopologyForecast::new(start, end);
+        let snapshot = GraphSnapshot {
+            timestamp: DateTime::from_timestamp(0, 0).unwrap(),
+            nodes: HashMap::new(),
+            potential_edges: Vec::new(),
+            active_links: Vec::new(),
+        };
         forecast.add_snapshot(snapshot);
         assert_eq!(forecast.snapshots.len(), 1);
     }

@@ -199,6 +199,12 @@ pub struct TransmitReceiveSwitch {
     inner: GenericRfSwitch,
 }
 
+impl Default for TransmitReceiveSwitch {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl TransmitReceiveSwitch {
     /// Create a new T/R switch
     pub fn new() -> Self {
@@ -291,6 +297,12 @@ impl SwitchControl for TransmitReceiveSwitch {
 /// Polarization switch
 pub struct PolarizationSwitch {
     inner: GenericRfSwitch,
+}
+
+impl Default for PolarizationSwitch {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl PolarizationSwitch {

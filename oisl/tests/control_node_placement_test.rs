@@ -1,13 +1,12 @@
 #[cfg(test)]
 mod tests {
-    use chrono::{DateTime, Utc};
-    use ground_station_oisl::topology::control_node_placement::{
+    use chrono::DateTime;
+    use oisl::topology::control_node_placement::{
         ControlNodePlacementAlgorithm, PlacementError,
     };
-    use ground_station_oisl::topology::{
+    use oisl::topology::{
         GraphSnapshot, NodeState, NodeType, Position3D, TopologyForecast, Velocity3D,
     };
-    use ground_station_oisl::{NodeId, SatelliteId};
     use std::collections::{HashMap, HashSet};
 
     #[test]
@@ -27,7 +26,9 @@ mod tests {
     #[test]
     fn test_control_node_placement_no_candidates() {
         let algorithm = ControlNodePlacementAlgorithm::default();
-        let forecast = TopologyForecast::new();
+        let start = DateTime::from_timestamp(0, 0).unwrap();
+        let end = DateTime::from_timestamp(3600, 0).unwrap();
+        let forecast = TopologyForecast::new(start, end);
         let candidates = HashSet::new();
 
         let result = algorithm.select_control_nodes(&forecast, candidates, 3);
@@ -37,7 +38,9 @@ mod tests {
     #[test]
     fn test_control_node_placement_insufficient_candidates() {
         let algorithm = ControlNodePlacementAlgorithm::default();
-        let forecast = TopologyForecast::new();
+        let start = DateTime::from_timestamp(0, 0).unwrap();
+        let end = DateTime::from_timestamp(3600, 0).unwrap();
+        let forecast = TopologyForecast::new(start, end);
         let mut candidates = HashSet::new();
         candidates.insert("station1".to_string());
 
@@ -51,7 +54,9 @@ mod tests {
     #[test]
     fn test_control_node_placement_no_snapshots() {
         let algorithm = ControlNodePlacementAlgorithm::default();
-        let forecast = TopologyForecast::new();
+        let start = DateTime::from_timestamp(0, 0).unwrap();
+        let end = DateTime::from_timestamp(3600, 0).unwrap();
+        let forecast = TopologyForecast::new(start, end);
         let mut candidates = HashSet::new();
         candidates.insert("station1".to_string());
         candidates.insert("station2".to_string());
@@ -63,15 +68,23 @@ mod tests {
 
     #[test]
     fn test_control_node_placement_with_snapshots() {
-        let mut algorithm = ControlNodePlacementAlgorithm::new(2, 5);
-        let mut forecast = TopologyForecast::new();
+        let algorithm = ControlNodePlacementAlgorithm::new(2, 5);
+        let start = DateTime::from_timestamp(0, 0).unwrap();
+        let end = DateTime::from_timestamp(18000, 0).unwrap();
+        let mut forecast = TopologyForecast::new(start, end);
 
         // Add some snapshots
         for i in 0..5 {
-            let mut snapshot = GraphSnapshot::new(DateTime::from_timestamp(i * 3600, 0).unwrap());
+            let mut snapshot = GraphSnapshot {
+                timestamp: DateTime::from_timestamp(i * 3600, 0).unwrap(),
+                nodes: HashMap::new(),
+                potential_edges: Vec::new(),
+                active_links: Vec::new(),
+            };
 
             // Add satellite
             let sat_state = NodeState {
+                node_id: format!("sat{}", i),
                 node_type: NodeType::Satellite {
                     satellite_id: format!("SAT{}", i),
                 },
@@ -81,16 +94,18 @@ mod tests {
                     z_km: 7000.0,
                 },
                 velocity: Velocity3D {
-                    x_km_s: 7.5,
-                    y_km_s: 0.0,
-                    z_km_s: 0.0,
+                    vx_kms: 7.5,
+                    vy_kms: 0.0,
+                    vz_kms: 0.0,
                 },
+                optical_terminals: Vec::new(),
             };
-            snapshot.add_node(format!("sat{}", i), sat_state);
+            snapshot.nodes.insert(format!("sat{}", i), sat_state);
 
             // Add ground stations
             for j in 0..3 {
                 let station_state = NodeState {
+                    node_id: format!("station{}", j),
                     node_type: NodeType::GroundStation {
                         station_id: format!("STATION{}", j),
                     },
@@ -100,12 +115,13 @@ mod tests {
                         z_km: 0.0,
                     },
                     velocity: Velocity3D {
-                        x_km_s: 0.0,
-                        y_km_s: 0.0,
-                        z_km_s: 0.0,
+                        vx_kms: 0.0,
+                        vy_kms: 0.0,
+                        vz_kms: 0.0,
                     },
+                    optical_terminals: Vec::new(),
                 };
-                snapshot.add_node(format!("station{}", j), station_state);
+                snapshot.nodes.insert(format!("station{}", j), station_state);
             }
 
             forecast.add_snapshot(snapshot);
