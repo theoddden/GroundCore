@@ -19,50 +19,52 @@ use std::f64::consts::PI;
 pub fn propagate_orbits(
     mut query: Query<(&mut OrbitalState, &mut Position, &SatelliteIdComponent)>,
 ) {
-    query.par_iter_mut().for_each(|(mut orbital_state, mut position, satellite_id)| {
-        // Compute SGP4 constants if not already cached
-        let constants = match Constants::from_elements(&orbital_state.sgp4_elements) {
-            Ok(c) => c,
-            Err(e) => {
-                tracing::error!(
-                    "Failed to compute SGP4 constants for satellite {}: {}",
-                    satellite_id.name,
-                    e
-                );
-                return;
-            }
-        };
+    query
+        .par_iter_mut()
+        .for_each(|(mut orbital_state, mut position, satellite_id)| {
+            // Compute SGP4 constants if not already cached
+            let constants = match Constants::from_elements(&orbital_state.sgp4_elements) {
+                Ok(c) => c,
+                Err(e) => {
+                    tracing::error!(
+                        "Failed to compute SGP4 constants for satellite {}: {}",
+                        satellite_id.name,
+                        e
+                    );
+                    return;
+                }
+            };
 
-        // Propagate to current time
-        let now = Utc::now();
-        let tle_epoch = orbital_state.sgp4_elements.datetime.and_utc();
-        let duration = now.signed_duration_since(tle_epoch);
-        let minutes_since_epoch = duration.num_seconds() as f64 / 60.0;
+            // Propagate to current time
+            let now = Utc::now();
+            let tle_epoch = orbital_state.sgp4_elements.datetime.and_utc();
+            let duration = now.signed_duration_since(tle_epoch);
+            let minutes_since_epoch = duration.num_seconds() as f64 / 60.0;
 
-        match constants.propagate(MinutesSinceEpoch(minutes_since_epoch)) {
-            Ok(prediction) => {
-                position.position = Vector3::new(
-                    prediction.position[0],
-                    prediction.position[1],
-                    prediction.position[2],
-                );
-                position.velocity = Vector3::new(
-                    prediction.velocity[0],
-                    prediction.velocity[1],
-                    prediction.velocity[2],
-                );
-                position.time = now;
-                orbital_state.mark_updated();
+            match constants.propagate(MinutesSinceEpoch(minutes_since_epoch)) {
+                Ok(prediction) => {
+                    position.position = Vector3::new(
+                        prediction.position[0],
+                        prediction.position[1],
+                        prediction.position[2],
+                    );
+                    position.velocity = Vector3::new(
+                        prediction.velocity[0],
+                        prediction.velocity[1],
+                        prediction.velocity[2],
+                    );
+                    position.time = now;
+                    orbital_state.mark_updated();
+                }
+                Err(e) => {
+                    tracing::error!(
+                        "SGP4 propagation failed for satellite {}: {}",
+                        satellite_id.name,
+                        e
+                    );
+                }
             }
-            Err(e) => {
-                tracing::error!(
-                    "SGP4 propagation failed for satellite {}: {}",
-                    satellite_id.name,
-                    e
-                );
-            }
-        }
-    });
+        });
 }
 
 /// System: Compute link budget intervals for all active links
@@ -75,37 +77,41 @@ pub fn compute_link_intervals(
     _satellite_query: Query<(&Position, &SatelliteIdComponent)>,
     _ground_station_query: Query<(&GroundStation, &Position)>,
 ) {
-    link_query.par_iter_mut().for_each(|(mut link_budget, _terminal_state)| {
-        // For now, use simplified link budget calculation
-        // TODO: Integrate with optical::scintillation for fade distributions
+    link_query
+        .par_iter_mut()
+        .for_each(|(mut link_budget, _terminal_state)| {
+            // For now, use simplified link budget calculation
+            // TODO: Integrate with optical::scintillation for fade distributions
 
-        // Compute path loss based on range (simplified free-space path loss)
-        // FSPL(dB) = 20*log10(d) + 20*log10(f) + 92.45
-        // where d is distance in km, f is frequency in GHz
-        let frequency_ghz: f64 = 10.0; // Example: 10 GHz optical link
-        let range_km: f64 = 1000.0; // Placeholder: should be computed from positions
+            // Compute path loss based on range (simplified free-space path loss)
+            // FSPL(dB) = 20*log10(d) + 20*log10(f) + 92.45
+            // where d is distance in km, f is frequency in GHz
+            let frequency_ghz: f64 = 10.0; // Example: 10 GHz optical link
+            let range_km: f64 = 1000.0; // Placeholder: should be computed from positions
 
-        let path_loss_db = 20.0 * range_km.log10() + 20.0 * frequency_ghz.log10() + 92.45;
+            let path_loss_db = 20.0 * range_km.log10() + 20.0 * frequency_ghz.log10() + 92.45;
 
-        // Add uncertainty bounds for path loss (±1 dB for range uncertainty)
-        let path_loss_interval = crate::divergence::Interval::from_center(path_loss_db, 1.0);
+            // Add uncertainty bounds for path loss (±1 dB for range uncertainty)
+            let path_loss_interval = crate::divergence::Interval::from_center(path_loss_db, 1.0);
 
-        // Compute atmospheric attenuation using ITU-R P.676
-        let atmospheric_db = compute_atmospheric_attenuation(range_km, frequency_ghz);
-        let atmospheric_interval = crate::divergence::Interval::from_center(atmospheric_db, 0.5);
+            // Compute atmospheric attenuation using ITU-R P.676
+            let atmospheric_db = compute_atmospheric_attenuation(range_km, frequency_ghz);
+            let atmospheric_interval =
+                crate::divergence::Interval::from_center(atmospheric_db, 0.5);
 
-        // Compute predicted SNR
-        // SNR = TxPower - PathLoss - AtmosphericLoss + RxGain - NoiseFigure
-        let tx_power_db = 30.0; // Example: 30 dBm
-        let rx_gain_db = 40.0; // Example: 40 dBi
-        let noise_figure_db = 3.0; // Example: 3 dB
-        let predicted_snr_db = tx_power_db - path_loss_db - atmospheric_db + rx_gain_db - noise_figure_db;
+            // Compute predicted SNR
+            // SNR = TxPower - PathLoss - AtmosphericLoss + RxGain - NoiseFigure
+            let tx_power_db = 30.0; // Example: 30 dBm
+            let rx_gain_db = 40.0; // Example: 40 dBi
+            let noise_figure_db = 3.0; // Example: 3 dB
+            let predicted_snr_db =
+                tx_power_db - path_loss_db - atmospheric_db + rx_gain_db - noise_figure_db;
 
-        // Add uncertainty bounds for SNR (±2 dB for combined uncertainties)
-        let snr_interval = crate::divergence::Interval::from_center(predicted_snr_db, 2.0);
+            // Add uncertainty bounds for SNR (±2 dB for combined uncertainties)
+            let snr_interval = crate::divergence::Interval::from_center(predicted_snr_db, 2.0);
 
-        link_budget.update(path_loss_interval, atmospheric_interval, snr_interval);
-    });
+            link_budget.update(path_loss_interval, atmospheric_interval, snr_interval);
+        });
 }
 
 /// Compute atmospheric attenuation using ITU-R P.676 gaseous attenuation model
@@ -238,11 +244,7 @@ fn ecef_to_enu(
     up: Vector3<f64>,
 ) -> Vector3<f64> {
     let rel = ecef - station_ecef;
-    Vector3::new(
-        rel.dot(&east),
-        rel.dot(&north),
-        rel.dot(&up),
-    )
+    Vector3::new(rel.dot(&east), rel.dot(&north), rel.dot(&up))
 }
 
 /// Compute local ENU (East-North-Up) basis vectors at a given location

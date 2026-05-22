@@ -35,7 +35,10 @@ pub struct Interval {
 impl Interval {
     /// Create a new interval
     pub fn new(lower: f64, upper: f64) -> Self {
-        assert!(lower <= upper, "Interval lower bound must be <= upper bound");
+        assert!(
+            lower <= upper,
+            "Interval lower bound must be <= upper bound"
+        );
         Self { lower, upper }
     }
 

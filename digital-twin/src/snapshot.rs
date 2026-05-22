@@ -33,7 +33,11 @@ pub struct TwinSnapshot {
 
 impl TwinSnapshot {
     /// Create a new twin snapshot
-    pub fn new(timestamp: DateTime<Utc>, world_state: World, divergence_log: Vec<MetricDivergence>) -> Self {
+    pub fn new(
+        timestamp: DateTime<Utc>,
+        world_state: World,
+        divergence_log: Vec<MetricDivergence>,
+    ) -> Self {
         Self {
             timestamp,
             world_state,
@@ -131,9 +135,7 @@ impl SnapshotManager {
 
     /// Get the most recent snapshot
     pub fn latest_snapshot(&self) -> Option<&TwinSnapshot> {
-        self.snapshots
-            .values()
-            .max_by_key(|s| s.timestamp)
+        self.snapshots.values().max_by_key(|s| s.timestamp)
     }
 
     /// Clear all snapshots
@@ -183,11 +185,7 @@ impl SnapshotManager {
                 snapshot.divergence_log.clone(),
             )
         } else {
-            TwinSnapshot::new(
-                query_time,
-                World::new(),
-                Vec::new(),
-            )
+            TwinSnapshot::new(query_time, World::new(), Vec::new())
         };
 
         // Find divergences that first appeared before or at the query time
@@ -196,7 +194,8 @@ impl SnapshotManager {
             .iter()
             .filter(|d| {
                 d.bitemporal_stamp.reception_time.as_datetime() <= query_time
-                    || d.change_point_detected_at.map_or(false, |cp| cp <= query_time)
+                    || d.change_point_detected_at
+                        .map_or(false, |cp| cp <= query_time)
             })
             .cloned()
             .collect();
@@ -243,11 +242,8 @@ mod tests {
 
         // Store some snapshots
         for i in 0..5 {
-            let snapshot = TwinSnapshot::new(
-                base_time + Duration::seconds(i),
-                World::new(),
-                Vec::new(),
-            );
+            let snapshot =
+                TwinSnapshot::new(base_time + Duration::seconds(i), World::new(), Vec::new());
             manager.store_snapshot(snapshot);
         }
 
@@ -270,18 +266,23 @@ mod tests {
 
         // Store more snapshots than the limit
         for i in 0..5 {
-            let snapshot = TwinSnapshot::new(
-                base_time + Duration::seconds(i),
-                World::new(),
-                Vec::new(),
-            );
+            let snapshot =
+                TwinSnapshot::new(base_time + Duration::seconds(i), World::new(), Vec::new());
             manager.store_snapshot(snapshot);
         }
 
         // Should only retain the 3 most recent
         assert_eq!(manager.snapshot_count(), 3);
         assert!(manager.get_snapshot(base_time).is_none());
-        assert!(manager.get_snapshot(base_time + Duration::seconds(1)).is_none());
-        assert!(manager.get_snapshot(base_time + Duration::seconds(2)).is_some());
+        assert!(
+            manager
+                .get_snapshot(base_time + Duration::seconds(1))
+                .is_none()
+        );
+        assert!(
+            manager
+                .get_snapshot(base_time + Duration::seconds(2))
+                .is_some()
+        );
     }
 }

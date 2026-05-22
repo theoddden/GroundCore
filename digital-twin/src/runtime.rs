@@ -97,7 +97,11 @@ impl DigitalTwinRuntime {
 
         // Add the tick schedule
         let mut schedule = Schedule::default();
-        schedule.add_systems((systems::propagate_orbits, systems::compute_link_intervals, systems::visibility_windows));
+        schedule.add_systems((
+            systems::propagate_orbits,
+            systems::compute_link_intervals,
+            systems::visibility_windows,
+        ));
         world.add_schedule(schedule);
 
         Self {
@@ -112,29 +116,57 @@ impl DigitalTwinRuntime {
     }
 
     /// Add a satellite entity to the twin
-    pub fn add_satellite(&mut self, satellite_id: ground_core::SatelliteId, norad_id: u32, name: String) -> Entity {
-        let entity = self.world.spawn((
-            SatelliteIdComponent::new(satellite_id, norad_id, name),
-            Position::new(nalgebra::Vector3::zeros(), nalgebra::Vector3::zeros(), Utc::now()),
-        )).id();
+    pub fn add_satellite(
+        &mut self,
+        satellite_id: ground_core::SatelliteId,
+        norad_id: u32,
+        name: String,
+    ) -> Entity {
+        let entity = self
+            .world
+            .spawn((
+                SatelliteIdComponent::new(satellite_id, norad_id, name),
+                Position::new(
+                    nalgebra::Vector3::zeros(),
+                    nalgebra::Vector3::zeros(),
+                    Utc::now(),
+                ),
+            ))
+            .id();
         entity
     }
 
     /// Add a ground station entity to the twin
-    pub fn add_ground_station(&mut self, station_id: ground_core::StationId, lat: f64, lon: f64, alt: f64) -> Entity {
-        let entity = self.world.spawn((
-            GroundStation::new(station_id, lat, lon, alt),
-            Position::new(nalgebra::Vector3::zeros(), nalgebra::Vector3::zeros(), Utc::now()),
-        )).id();
+    pub fn add_ground_station(
+        &mut self,
+        station_id: ground_core::StationId,
+        lat: f64,
+        lon: f64,
+        alt: f64,
+    ) -> Entity {
+        let entity = self
+            .world
+            .spawn((
+                GroundStation::new(station_id, lat, lon, alt),
+                Position::new(
+                    nalgebra::Vector3::zeros(),
+                    nalgebra::Vector3::zeros(),
+                    Utc::now(),
+                ),
+            ))
+            .id();
         entity
     }
 
     /// Add a link entity to the twin
     pub fn add_link(&mut self, link_id: LinkId) -> Entity {
-        let entity = self.world.spawn((
-            LinkBudget::new(link_id.clone()),
-            OpticalTerminalState::new("Unknown".to_string(), "terminal-1".to_string()),
-        )).id();
+        let entity = self
+            .world
+            .spawn((
+                LinkBudget::new(link_id.clone()),
+                OpticalTerminalState::new("Unknown".to_string(), "terminal-1".to_string()),
+            ))
+            .id();
         entity
     }
 
@@ -189,7 +221,8 @@ impl DigitalTwinRuntime {
     /// Process an observed metric
     async fn process_observed(&mut self, observed: ObservedMetric) -> Result<()> {
         // Get the predicted interval for this link/metric from the ECS world
-        let predicted_interval = self.get_predicted_interval(&observed.link_id, observed.metric_type)?;
+        let predicted_interval =
+            self.get_predicted_interval(&observed.link_id, observed.metric_type)?;
 
         // Process through divergence detector
         let prediction_time = Utc::now(); // In practice, this would be when the prediction was made
@@ -228,15 +261,20 @@ impl DigitalTwinRuntime {
     }
 
     /// Get the predicted interval for a link/metric from the ECS world
-    fn get_predicted_interval(&mut self, link_id: &LinkId, metric_type: MetricType) -> Result<crate::divergence::Interval> {
+    fn get_predicted_interval(
+        &mut self,
+        link_id: &LinkId,
+        metric_type: MetricType,
+    ) -> Result<crate::divergence::Interval> {
         // Query the ECS world for the link budget
         let mut query = self.world.query::<&LinkBudget>();
-        let interval = query.iter(&self.world)
+        let interval = query
+            .iter(&self.world)
             .find(|link_budget| link_budget.link_id == *link_id)
             .map(|link_budget| match metric_type {
                 MetricType::Snr => link_budget.predicted_snr,
                 MetricType::Ber => crate::divergence::Interval::new(0.0, 0.0), // Placeholder
-                _ => crate::divergence::Interval::new(0.0, 0.0), // Placeholder
+                _ => crate::divergence::Interval::new(0.0, 0.0),               // Placeholder
             })
             .ok_or_else(|| {
                 ground_core::GroundStationError::Twin(format!(
@@ -317,7 +355,14 @@ pub fn create_twin_channels() -> (
         link_predictions: Vec::new(),
     });
 
-    (observed_tx, observed_rx, anomaly_tx, anomaly_rx, forecast_tx, forecast_rx)
+    (
+        observed_tx,
+        observed_rx,
+        anomaly_tx,
+        anomaly_rx,
+        forecast_tx,
+        forecast_rx,
+    )
 }
 
 #[cfg(test)]
@@ -326,7 +371,14 @@ mod tests {
 
     #[tokio::test]
     async fn test_twin_channels() {
-        let (observed_tx, mut observed_rx, anomaly_tx, mut anomaly_rx, forecast_tx, mut forecast_rx) = create_twin_channels();
+        let (
+            observed_tx,
+            mut observed_rx,
+            anomaly_tx,
+            mut anomaly_rx,
+            forecast_tx,
+            mut forecast_rx,
+        ) = create_twin_channels();
 
         // Send an observed metric
         let link_id = LinkId::new();

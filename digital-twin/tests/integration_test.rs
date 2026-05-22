@@ -7,7 +7,8 @@
 use bitemporal::{EventTime, ReceptionTime};
 use chrono::{Duration, Utc};
 use digital_twin::{
-    create_twin_channels, DivergenceDetector, Interval, MetricDivergence, MetricType, ObservedMetric,
+    DivergenceDetector, Interval, MetricDivergence, MetricType, ObservedMetric,
+    create_twin_channels,
 };
 use ground_core::LinkId;
 use std::time::Duration as StdDuration;
@@ -70,8 +71,12 @@ async fn test_divergence_detection_integration() {
     sleep(StdDuration::from_millis(100)).await;
 
     // No anomaly should be detected yet
-    let anomaly_result = tokio::time::timeout(StdDuration::from_millis(100), anomaly_rx.recv()).await;
-    assert!(anomaly_result.is_err(), "No anomaly should be detected for normal observation");
+    let anomaly_result =
+        tokio::time::timeout(StdDuration::from_millis(100), anomaly_rx.recv()).await;
+    assert!(
+        anomaly_result.is_err(),
+        "No anomaly should be detected for normal observation"
+    );
 
     // Inject divergent observation (outside interval)
     observed_tx
@@ -85,8 +90,12 @@ async fn test_divergence_detection_integration() {
         .unwrap();
 
     // Anomaly should be detected
-    let anomaly_result = tokio::time::timeout(StdDuration::from_millis(500), anomaly_rx.recv()).await;
-    assert!(anomaly_result.is_ok(), "Anomaly should be detected for divergent observation");
+    let anomaly_result =
+        tokio::time::timeout(StdDuration::from_millis(500), anomaly_rx.recv()).await;
+    assert!(
+        anomaly_result.is_ok(),
+        "Anomaly should be detected for divergent observation"
+    );
 
     let anomaly_signal = anomaly_result.unwrap().unwrap();
     assert_eq!(anomaly_signal.divergence.link_id, link_id);
@@ -242,8 +251,8 @@ async fn test_bi_temporal_divergence_logging() {
 
 #[tokio::test]
 async fn test_snapshot_manager_forensic_capability() {
-    use digital_twin::SnapshotManager;
     use bevy_ecs::World;
+    use digital_twin::SnapshotManager;
 
     let mut manager = SnapshotManager::new(10);
     let base_time = Utc::now();
