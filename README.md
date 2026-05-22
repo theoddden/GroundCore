@@ -29,6 +29,14 @@ Ground Core is organized into two complementary communication layers:
 - **Federation layer** with cryptographic attestation for cross-station coordination
 - **Resource allocation** with multi-tenant isolation and preemption support
 
+### Digital Twin Layer
+- **Divergence detection** using CUSUM change-point detection for regime shift identification
+- **Interval-based anomaly detection** using set-membership testing (provable, not probabilistic)
+- **Bi-temporal logging** with event time and reception time for forensic replay
+- **Snapshot management** for counterfactual queries and incident investigation
+- **Runtime channels** for observed metrics, anomaly signals, and forecasts
+- **Integration with Bevy ECS** for simulation and state management
+
 ### Human-Facing Layer
 - **Embedded Claude Code agent** for anomaly detection and decision explanation
 - **REST/gRPC API** for external integration
@@ -114,6 +122,7 @@ ground-station-core/
 ├── hardware/              # Hardware management with sharding
 ├── scheduler/            # DRF scheduler with reputation weighting
 ├── bitemporal/           # Bi-temporal logging with provenance
+├── digital-twin/         # Digital twin simulation and divergence detection
 ├── sdr-sim/              # Simulated SDR for testing
 ├── policy-compiler/       # Spectrum policy → Rust types
 ├── regulatory/           # Compile-time regulatory enforcement
