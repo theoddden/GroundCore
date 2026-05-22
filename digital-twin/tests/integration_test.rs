@@ -4,6 +4,7 @@
 //! This is the verification scaffolding that proves the implementation is real
 //! and not vibes.
 
+use bitemporal::{EventTime, ReceptionTime};
 use chrono::{Duration, Utc};
 use digital_twin::{
     create_twin_channels, DivergenceDetector, Interval, MetricDivergence, MetricType, ObservedMetric,
@@ -28,13 +29,16 @@ async fn test_divergence_detection_integration() {
         while let Some(observed) = observed_rx.recv().await {
             let predicted_interval = Interval::new(10.0, 20.0); // Expected SNR: 10-20 dB
 
+            let event_time = EventTime::new(base_time);
+            let reception_time = ReceptionTime::new(observed.observation_time);
+
             let result = detector.process_observation(
                 observed.link_id.clone(),
                 observed.metric_type,
                 predicted_interval,
                 observed.value,
-                base_time,
-                observed.observation_time,
+                event_time,
+                reception_time,
             );
 
             if let Some(divergence) = result {
@@ -104,13 +108,15 @@ async fn test_cusum_change_point_detection() {
 
     // Send normal observations
     for i in 0..10 {
+        let event_time = EventTime::new(base_time);
+        let reception_time = ReceptionTime::new(base_time + Duration::seconds(i));
         let result = detector.process_observation(
             link_id.clone(),
             MetricType::Snr,
             predicted_interval,
             15.0, // Normal
-            base_time,
-            base_time + Duration::seconds(i),
+            event_time,
+            reception_time,
         );
         assert!(result.is_none(), "No anomaly for normal observations");
     }
@@ -118,13 +124,15 @@ async fn test_cusum_change_point_detection() {
     // Send divergent observations to trigger CUSUM
     let mut change_point_detected = false;
     for i in 10..20 {
+        let event_time = EventTime::new(base_time);
+        let reception_time = ReceptionTime::new(base_time + Duration::seconds(i));
         let result = detector.process_observation(
             link_id.clone(),
             MetricType::Snr,
             predicted_interval,
             25.0, // Divergent
-            base_time,
-            base_time + Duration::seconds(i),
+            event_time,
+            reception_time,
         );
 
         if let Some(divergence) = result {
@@ -167,24 +175,28 @@ async fn test_bounded_interval_set_membership() {
     let base_time = Utc::now();
 
     // Observation within interval - no anomaly
+    let event_time = EventTime::new(base_time);
+    let reception_time = ReceptionTime::new(base_time);
     let result = detector.process_observation(
         link_id.clone(),
         MetricType::Snr,
         interval,
         15.0,
-        base_time,
-        base_time,
+        event_time,
+        reception_time,
     );
     assert!(result.is_none());
 
     // Observation outside interval - provable anomaly
+    let event_time = EventTime::new(base_time);
+    let reception_time = ReceptionTime::new(base_time);
     let result = detector.process_observation(
         link_id.clone(),
         MetricType::Snr,
         interval,
         25.0,
-        base_time,
-        base_time,
+        event_time,
+        reception_time,
     );
     assert!(result.is_some());
     assert!(result.unwrap().is_anomaly());
@@ -198,14 +210,17 @@ async fn test_bi_temporal_divergence_logging() {
     let observation_time = prediction_time + Duration::seconds(1);
     let interval = Interval::new(10.0, 20.0);
 
+    let event_time = EventTime::new(prediction_time);
+    let reception_time = ReceptionTime::new(observation_time);
+
     // Process a divergent observation
     let result = detector.process_observation(
         link_id.clone(),
         MetricType::Snr,
         interval,
         25.0,
-        prediction_time,
-        observation_time,
+        event_time,
+        reception_time,
     );
 
     assert!(result.is_some());
@@ -213,11 +228,11 @@ async fn test_bi_temporal_divergence_logging() {
 
     // Verify bi-temporal timestamps are recorded
     assert_eq!(
-        *divergence.bitemporal_stamp.event_time(),
+        divergence.bitemporal_stamp.event_time.as_datetime(),
         prediction_time
     );
     assert_eq!(
-        *divergence.bitemporal_stamp.observation_time(),
+        divergence.bitemporal_stamp.reception_time.as_datetime(),
         observation_time
     );
 

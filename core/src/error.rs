@@ -48,6 +48,9 @@ pub enum GroundStationError {
 
     #[error("Validation error: {0}")]
     Validation(String),
+
+    #[error("Digital twin error: {0}")]
+    Twin(String),
 }
 
 pub type Result<T> = std::result::Result<T, GroundStationError>;

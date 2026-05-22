@@ -62,4 +62,4 @@ pub use runtime::{
     create_twin_channels,
 };
 pub use snapshot::{CounterfactualQuery, SnapshotManager, TwinSnapshot};
-pub use systems::{atmospheric_attenuation, compute_link_intervals, propagate_orbits, visibility_windows};
+pub use systems::{compute_link_intervals, propagate_orbits, visibility_windows};

@@ -17,9 +17,9 @@
 //!    battle-tested signal-processing literature, and it's exactly "when did prediction
 //!    first diverge from reality."
 
-use bitemporal::BiTemporal;
+use bitemporal::{BiTemporal, EventTime, ReceptionTime};
 use chrono::{DateTime, Utc};
-use ground_core::{LinkId, Result};
+use ground_core::LinkId;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -131,7 +131,7 @@ pub struct MetricDivergence {
     /// When the change-point was first detected (CUSUM crossed threshold)
     pub change_point_detected_at: Option<DateTime<Utc>>,
     /// Bi-temporal timestamp (prediction time vs observation time)
-    pub bitemporal_stamp: BiTemporal<DateTime<Utc>>,
+    pub bitemporal_stamp: BiTemporal<()>,
     /// Causal hypotheses for the divergence
     pub causal_hypotheses: Vec<CausalHypothesis>,
 }
@@ -144,8 +144,8 @@ impl MetricDivergence {
         predicted_interval: Interval,
         observed: f64,
         sigma: f64,
-        prediction_time: DateTime<Utc>,
-        observation_time: DateTime<Utc>,
+        event_time: EventTime,
+        reception_time: ReceptionTime,
     ) -> Self {
         Self {
             link_id,
@@ -154,7 +154,7 @@ impl MetricDivergence {
             observed,
             sigma,
             change_point_detected_at: None,
-            bitemporal_stamp: BiTemporal::new(prediction_time, observation_time),
+            bitemporal_stamp: BiTemporal::new((), event_time, reception_time),
             causal_hypotheses: Vec::new(),
         }
     }
@@ -296,8 +296,8 @@ impl DivergenceDetector {
         metric_type: MetricType,
         predicted_interval: Interval,
         observed: f64,
-        prediction_time: DateTime<Utc>,
-        observation_time: DateTime<Utc>,
+        event_time: EventTime,
+        reception_time: ReceptionTime,
     ) -> Option<MetricDivergence> {
         // Compute sigma (distance from interval normalized by interval width)
         let distance = predicted_interval.distance(observed);
@@ -314,7 +314,7 @@ impl DivergenceDetector {
         self.ensure_detector(link_id, metric_type, 0.0); // Reference = 0 deviation
         let key = (link_id, metric_type);
         let detector = self.detectors.get_mut(&key)?;
-        let change_detected = detector.update(sigma, observation_time);
+        let change_detected = detector.update(sigma, reception_time.as_datetime());
 
         // If anomaly detected or change-point detected, log it
         if is_anomaly || change_detected {
@@ -324,8 +324,8 @@ impl DivergenceDetector {
                 predicted_interval,
                 observed,
                 sigma,
-                prediction_time,
-                observation_time,
+                event_time,
+                reception_time,
             );
 
             if change_detected {

@@ -6,8 +6,7 @@
 
 use crate::components::*;
 use bevy_ecs::prelude::*;
-use chrono::{DateTime, Duration, Utc};
-use ground_core::Result;
+use chrono::{DateTime, Utc};
 use nalgebra::Vector3;
 use sgp4::{Constants, MinutesSinceEpoch};
 use std::f64::consts::PI;
@@ -37,7 +36,8 @@ pub fn propagate_orbits(
         // Propagate to current time
         let now = Utc::now();
         let tle_epoch = orbital_state.sgp4_elements.datetime.and_utc();
-        let minutes_since_epoch = (now - tle_epoch).num_seconds() as f64 / 60.0;
+        let duration = now.signed_duration_since(tle_epoch);
+        let minutes_since_epoch = duration.num_seconds() as f64 / 60.0;
 
         match constants.propagate(MinutesSinceEpoch(minutes_since_epoch)) {
             Ok(prediction) => {
@@ -72,18 +72,18 @@ pub fn propagate_orbits(
 /// for fade distributions. It runs in parallel across all link entities.
 pub fn compute_link_intervals(
     mut link_query: Query<(&mut LinkBudget, &OpticalTerminalState)>,
-    satellite_query: Query<(&Position, &SatelliteIdComponent)>,
-    ground_station_query: Query<(&GroundStation, &Position)>,
+    _satellite_query: Query<(&Position, &SatelliteIdComponent)>,
+    _ground_station_query: Query<(&GroundStation, &Position)>,
 ) {
-    link_query.par_iter_mut().for_each(|(mut link_budget, terminal_state)| {
+    link_query.par_iter_mut().for_each(|(mut link_budget, _terminal_state)| {
         // For now, use simplified link budget calculation
         // TODO: Integrate with optical::scintillation for fade distributions
 
         // Compute path loss based on range (simplified free-space path loss)
         // FSPL(dB) = 20*log10(d) + 20*log10(f) + 92.45
         // where d is distance in km, f is frequency in GHz
-        let frequency_ghz = 10.0; // Example: 10 GHz optical link
-        let range_km = 1000.0; // Placeholder: should be computed from positions
+        let frequency_ghz: f64 = 10.0; // Example: 10 GHz optical link
+        let range_km: f64 = 1000.0; // Placeholder: should be computed from positions
 
         let path_loss_db = 20.0 * range_km.log10() + 20.0 * frequency_ghz.log10() + 92.45;
 
@@ -138,7 +138,6 @@ fn compute_atmospheric_attenuation(range_km: f64, frequency_ghz: f64) -> f64 {
 /// based on elevation angle constraints. It updates the Visibility component for
 /// each pair.
 pub fn visibility_windows(
-    mut visibility_query: Query<(&mut Visibility, &Position)>,
     satellite_query: Query<(&Position, &SatelliteIdComponent)>,
     ground_station_query: Query<(&GroundStation, &Position)>,
 ) {
@@ -149,7 +148,7 @@ pub fn visibility_windows(
     for (ground_station, ground_position) in ground_station_query.iter() {
         for (sat_position, satellite_id) in satellite_query.iter() {
             // Compute range and elevation
-            let (range, elevation) = compute_range_and_elevation(
+            let (_range, elevation) = compute_range_and_elevation(
                 &sat_position.position,
                 &ground_position.position,
                 ground_station.lat,

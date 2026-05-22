@@ -13,7 +13,7 @@ use sgp4::Elements;
 use std::time::Instant;
 
 /// Orbital state component for satellite entities
-#[derive(Component, Debug, Clone, Serialize, Deserialize)]
+#[derive(Component, Debug, Clone)]
 pub struct OrbitalState {
     /// SGP4 orbital elements
     pub sgp4_elements: Elements,

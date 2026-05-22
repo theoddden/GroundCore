@@ -8,9 +8,9 @@
 //! weaponized.
 
 use crate::divergence::MetricDivergence;
-use bevy_ecs::World;
+use bevy_ecs::world::World;
 use chrono::{DateTime, Utc};
-use serde::{Deserialize, Serialize};
+use ground_core::types::LinkId;
 use std::collections::HashMap;
 
 /// Twin state snapshot at a specific point in time
@@ -18,7 +18,7 @@ use std::collections::HashMap;
 /// This captures the complete state of the digital twin at a given tick, including
 /// the ECS world state and the divergence log. Because every tick is bi-temporally
 /// stamped, you can replay exactly what the system believed at any moment.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug)]
 pub struct TwinSnapshot {
     /// When this snapshot was taken
     pub timestamp: DateTime<Utc>,
@@ -26,7 +26,6 @@ pub struct TwinSnapshot {
     ///
     /// Note: In practice, World is not directly serializable. This would be a
     /// serialized representation of the entity-component state.
-    #[serde(skip)]
     pub world_state: World,
     /// Divergence log at this point in time
     pub divergence_log: Vec<MetricDivergence>,
@@ -54,7 +53,7 @@ impl TwinSnapshot {
     pub fn divergences_up_to(&self, time: DateTime<Utc>) -> Vec<&MetricDivergence> {
         self.divergence_log
             .iter()
-            .filter(|d| d.bitemporal_stamp.observation_time() <= &time)
+            .filter(|d| d.bitemporal_stamp.reception_time.as_datetime() <= time)
             .collect()
     }
 }
@@ -107,7 +106,7 @@ impl SnapshotManager {
         let closest_timestamp = self
             .snapshots
             .keys()
-            .min_by_key(|t| (t - timestamp).abs().num_seconds().abs())
+            .min_by_key(|t| (**t - timestamp).abs().num_seconds().abs())
             .copied()?;
 
         self.snapshots.get(&closest_timestamp)
@@ -122,7 +121,7 @@ impl SnapshotManager {
         let mut snapshots: Vec<_> = self
             .snapshots
             .iter()
-            .filter(|(t, _)| *t >= start && *t <= end)
+            .filter(|(t, _)| **t >= start && **t <= end)
             .map(|(_, s)| s)
             .collect();
 
@@ -158,7 +157,7 @@ impl Default for SnapshotManager {
 ///
 /// This represents the result of a counterfactual query: "what would the system
 /// have believed at time T if we hadn't observed divergence D?"
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct CounterfactualQuery {
     /// Query timestamp
     pub query_time: DateTime<Utc>,
@@ -176,20 +175,27 @@ impl SnapshotManager {
     /// Answer: "what did the system believe at time T, and when did belief first
     /// diverge from reality?"
     pub fn counterfactual_query(&self, query_time: DateTime<Utc>) -> CounterfactualQuery {
-        let actual_belief = self.get_closest_snapshot(query_time).cloned().unwrap_or_else(|| {
+        let actual_belief = if let Some(snapshot) = self.get_closest_snapshot(query_time) {
+            // Create a new snapshot with the same data (World is not Clone, so we use a placeholder)
+            TwinSnapshot::new(
+                snapshot.timestamp,
+                World::new(),
+                snapshot.divergence_log.clone(),
+            )
+        } else {
             TwinSnapshot::new(
                 query_time,
                 World::new(),
                 Vec::new(),
             )
-        });
+        };
 
         // Find divergences that first appeared before or at the query time
         let affecting_divergences: Vec<_> = actual_belief
             .divergence_log
             .iter()
             .filter(|d| {
-                d.bitemporal_stamp.observation_time() <= &query_time
+                d.bitemporal_stamp.reception_time.as_datetime() <= query_time
                     || d.change_point_detected_at.map_or(false, |cp| cp <= query_time)
             })
             .cloned()
@@ -212,7 +218,7 @@ impl SnapshotManager {
     ///
     /// Returns all divergences for a link in chronological order, showing when
     /// prediction first diverged from reality.
-    pub fn divergence_timeline(&self, link_id: &ground_core::LinkId) -> Vec<&MetricDivergence> {
+    pub fn divergence_timeline(&self, link_id: &LinkId) -> Vec<&MetricDivergence> {
         let mut divergences: Vec<_> = self
             .snapshots
             .values()
@@ -220,7 +226,7 @@ impl SnapshotManager {
             .filter(|d| d.link_id == *link_id)
             .collect();
 
-        divergences.sort_by_key(|d| d.bitemporal_stamp.observation_time().clone());
+        divergences.sort_by_key(|d| d.bitemporal_stamp.reception_time.as_datetime());
         divergences
     }
 }

@@ -7,8 +7,10 @@
 use crate::components::*;
 use crate::divergence::{DivergenceDetector, MetricDivergence, MetricType};
 use crate::snapshot::TwinSnapshot;
+use crate::systems;
 use bevy_ecs::prelude::*;
 use bevy_ecs::schedule::ScheduleLabel;
+use bitemporal::{EventTime, ReceptionTime};
 use chrono::{DateTime, Duration, Utc};
 use ground_core::{LinkId, Result};
 use std::sync::Arc;
@@ -94,7 +96,9 @@ impl DigitalTwinRuntime {
         let mut world = World::new();
 
         // Add the tick schedule
-        world.add_schedule(TwinTickSchedule);
+        let mut schedule = Schedule::default();
+        schedule.add_systems((systems::propagate_orbits, systems::compute_link_intervals, systems::visibility_windows));
+        world.add_schedule(schedule);
 
         Self {
             world,
@@ -189,13 +193,16 @@ impl DigitalTwinRuntime {
 
         // Process through divergence detector
         let prediction_time = Utc::now(); // In practice, this would be when the prediction was made
+        let event_time = EventTime::new(prediction_time);
+        let reception_time = ReceptionTime::new(observed.observation_time);
+
         if let Some(divergence) = self.divergence_detector.process_observation(
             observed.link_id.clone(),
             observed.metric_type,
             predicted_interval,
             observed.value,
-            prediction_time,
-            observed.observation_time,
+            event_time,
+            reception_time,
         ) {
             // Send anomaly signal
             let signal = AnomalySignal {
@@ -221,7 +228,7 @@ impl DigitalTwinRuntime {
     }
 
     /// Get the predicted interval for a link/metric from the ECS world
-    fn get_predicted_interval(&self, link_id: &LinkId, metric_type: MetricType) -> Result<crate::divergence::Interval> {
+    fn get_predicted_interval(&mut self, link_id: &LinkId, metric_type: MetricType) -> Result<crate::divergence::Interval> {
         // Query the ECS world for the link budget
         let mut query = self.world.query::<&LinkBudget>();
         let interval = query.iter(&self.world)
@@ -258,9 +265,12 @@ impl DigitalTwinRuntime {
 
     /// Snapshot the twin state
     async fn snapshot_state(&mut self) -> Result<()> {
-        let snapshot = TwinSnapshot {
+        // Note: World is not Clone, so we can't snapshot it directly
+        // In a full implementation, we would serialize the entity-component state
+        // For now, we just snapshot the divergence log
+        let _snapshot = TwinSnapshot {
             timestamp: Utc::now(),
-            world_state: self.world.clone(), // Note: World may not be Clone in practice
+            world_state: World::new(), // Placeholder: actual world state serialization
             divergence_log: self.divergence_detector.divergence_log().to_vec(),
         };
 

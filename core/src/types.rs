@@ -1,12 +1,16 @@
 //! Core types for Ground Station Core
 
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 /// Satellite identifier
 pub type SatelliteId = String;
 
 /// Ground station identifier
 pub type StationId = String;
+
+/// Link identifier
+pub type LinkId = Uuid;
 
 /// Pass identifier
 pub type PassId = String;
