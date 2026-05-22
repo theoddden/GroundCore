@@ -195,7 +195,7 @@ impl SnapshotManager {
             .filter(|d| {
                 d.bitemporal_stamp.reception_time.as_datetime() <= query_time
                     || d.change_point_detected_at
-                        .map_or(false, |cp| cp <= query_time)
+                        .is_some_and(|cp| cp <= query_time)
             })
             .cloned()
             .collect();

@@ -264,6 +264,7 @@ pub struct DivergenceDetector {
     /// Divergence log
     divergence_log: Vec<MetricDivergence>,
     /// Threshold for considering a value anomalous (sigma units)
+    #[expect(dead_code)]
     anomaly_threshold: f64,
 }
 
@@ -283,11 +284,9 @@ impl DivergenceDetector {
     /// Ensure a detector exists for the given link and metric
     fn ensure_detector(&mut self, link_id: LinkId, metric_type: MetricType, reference: f64) {
         let key = (link_id, metric_type);
-        if !self.detectors.contains_key(&key) {
-            // CUSUM threshold: 5 sigma, min shift: 1 sigma
-            self.detectors
-                .insert(key, CusumDetector::new(5.0, reference, 1.0));
-        }
+        self.detectors
+            .entry(key)
+            .or_insert_with(|| CusumDetector::new(5.0, reference, 1.0));
     }
 
     /// Process a new observation against a predicted interval
@@ -331,10 +330,10 @@ impl DivergenceDetector {
                 reception_time,
             );
 
-            if change_detected {
-                if let Some(detected_at) = detector.detection_time() {
-                    divergence.mark_change_point(detected_at);
-                }
+            if change_detected
+                && let Some(detected_at) = detector.detection_time()
+            {
+                divergence.mark_change_point(detected_at);
             }
 
             self.divergence_log.push(divergence.clone());
@@ -416,29 +415,33 @@ mod tests {
     #[test]
     fn test_divergence_detector() {
         let mut detector = DivergenceDetector::new(3.0);
-        let link_id = LinkId::new();
+        let link_id = uuid::Uuid::new_v4();
         let base_time = Utc::now();
 
         // Normal observation (within interval)
         let interval = Interval::new(10.0, 20.0);
+        let event_time = EventTime::new(base_time);
+        let reception_time = ReceptionTime::new(base_time);
         let result = detector.process_observation(
-            link_id.clone(),
+            link_id,
             MetricType::Snr,
             interval,
             15.0,
-            base_time,
-            base_time,
+            event_time,
+            reception_time,
         );
         assert!(result.is_none());
 
         // Anomalous observation (outside interval)
+        let event_time = EventTime::new(base_time);
+        let reception_time = ReceptionTime::new(base_time + Duration::seconds(1));
         let result = detector.process_observation(
-            link_id.clone(),
+            link_id,
             MetricType::Snr,
             interval,
             25.0,
-            base_time,
-            base_time + Duration::seconds(1),
+            event_time,
+            reception_time,
         );
         assert!(result.is_some());
         assert!(result.unwrap().is_anomaly());

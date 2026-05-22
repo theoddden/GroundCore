@@ -82,6 +82,7 @@ pub struct DigitalTwinRuntime {
     /// Channel for sending twin forecasts
     forecast_tx: watch::Sender<TwinForecast>,
     /// Snapshot manager
+    #[allow(dead_code)]
     snapshot_manager: Arc<snapshotting::SnapshotManager>,
 }
 
@@ -122,8 +123,7 @@ impl DigitalTwinRuntime {
         norad_id: u32,
         name: String,
     ) -> Entity {
-        let entity = self
-            .world
+        self.world
             .spawn((
                 SatelliteIdComponent::new(satellite_id, norad_id, name),
                 Position::new(
@@ -132,8 +132,7 @@ impl DigitalTwinRuntime {
                     Utc::now(),
                 ),
             ))
-            .id();
-        entity
+            .id()
     }
 
     /// Add a ground station entity to the twin
@@ -144,8 +143,7 @@ impl DigitalTwinRuntime {
         lon: f64,
         alt: f64,
     ) -> Entity {
-        let entity = self
-            .world
+        self.world
             .spawn((
                 GroundStation::new(station_id, lat, lon, alt),
                 Position::new(
@@ -154,20 +152,17 @@ impl DigitalTwinRuntime {
                     Utc::now(),
                 ),
             ))
-            .id();
-        entity
+            .id()
     }
 
     /// Add a link entity to the twin
     pub fn add_link(&mut self, link_id: LinkId) -> Entity {
-        let entity = self
-            .world
+        self.world
             .spawn((
-                LinkBudget::new(link_id.clone()),
+                LinkBudget::new(link_id),
                 OpticalTerminalState::new("Unknown".to_string(), "terminal-1".to_string()),
             ))
-            .id();
-        entity
+            .id()
     }
 
     /// Run the twin runtime
@@ -230,7 +225,7 @@ impl DigitalTwinRuntime {
         let reception_time = ReceptionTime::new(observed.observation_time);
 
         if let Some(divergence) = self.divergence_detector.process_observation(
-            observed.link_id.clone(),
+            observed.link_id,
             observed.metric_type,
             predicted_interval,
             observed.value,
@@ -340,6 +335,7 @@ pub struct LinkPrediction {
 }
 
 /// Create channels for the digital twin runtime
+#[allow(clippy::type_complexity)]
 pub fn create_twin_channels() -> (
     mpsc::Sender<ObservedMetric>,
     mpsc::Receiver<ObservedMetric>,
@@ -374,16 +370,16 @@ mod tests {
         let (
             observed_tx,
             mut observed_rx,
-            anomaly_tx,
-            mut anomaly_rx,
-            forecast_tx,
-            mut forecast_rx,
+            _anomaly_tx,
+            _anomaly_rx,
+            _forecast_tx,
+            _forecast_rx,
         ) = create_twin_channels();
 
         // Send an observed metric
-        let link_id = LinkId::new();
+        let link_id = uuid::Uuid::new_v4();
         let observed = ObservedMetric {
-            link_id: link_id.clone(),
+            link_id,
             metric_type: MetricType::Snr,
             value: 15.0,
             observation_time: Utc::now(),

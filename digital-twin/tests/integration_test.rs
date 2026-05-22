@@ -7,10 +7,9 @@
 use bitemporal::{EventTime, ReceptionTime};
 use chrono::{Duration, Utc};
 use digital_twin::{
-    DivergenceDetector, Interval, MetricDivergence, MetricType, ObservedMetric,
+    DivergenceDetector, Interval, MetricType, ObservedMetric,
     create_twin_channels,
 };
-use ground_core::LinkId;
 use std::time::Duration as StdDuration;
 use tokio::time::sleep;
 
@@ -23,7 +22,7 @@ async fn test_divergence_detection_integration() {
     // Spawn a task to process observations
     let processor_task = tokio::spawn(async move {
         let mut detector = DivergenceDetector::new(3.0);
-        let link_id = LinkId::new();
+        let _link_id = uuid::Uuid::new_v4();
         let base_time = Utc::now();
 
         // Process observations
@@ -34,8 +33,8 @@ async fn test_divergence_detection_integration() {
             let reception_time = ReceptionTime::new(observed.observation_time);
 
             let result = detector.process_observation(
-                observed.link_id.clone(),
-                observed.metric_type,
+                _link_id,
+                MetricType::Snr,
                 predicted_interval,
                 observed.value,
                 event_time,
@@ -56,10 +55,10 @@ async fn test_divergence_detection_integration() {
     });
 
     // Inject normal observation (within interval)
-    let link_id = LinkId::new();
+    let link_id = uuid::Uuid::new_v4();
     observed_tx
         .send(ObservedMetric {
-            link_id: link_id.clone(),
+            link_id,
             metric_type: MetricType::Snr,
             value: 15.0, // Within [10, 20]
             observation_time: Utc::now(),
@@ -81,7 +80,7 @@ async fn test_divergence_detection_integration() {
     // Inject divergent observation (outside interval)
     observed_tx
         .send(ObservedMetric {
-            link_id: link_id.clone(),
+            link_id,
             metric_type: MetricType::Snr,
             value: 25.0, // Outside [10, 20] - this is an anomaly!
             observation_time: Utc::now(),
@@ -111,7 +110,7 @@ async fn test_divergence_detection_integration() {
 #[tokio::test]
 async fn test_cusum_change_point_detection() {
     let mut detector = DivergenceDetector::new(3.0);
-    let link_id = LinkId::new();
+    let link_id = uuid::Uuid::new_v4();
     let base_time = Utc::now();
     let predicted_interval = Interval::new(10.0, 20.0);
 
@@ -120,7 +119,7 @@ async fn test_cusum_change_point_detection() {
         let event_time = EventTime::new(base_time);
         let reception_time = ReceptionTime::new(base_time + Duration::seconds(i));
         let result = detector.process_observation(
-            link_id.clone(),
+            link_id,
             MetricType::Snr,
             predicted_interval,
             15.0, // Normal
@@ -136,7 +135,7 @@ async fn test_cusum_change_point_detection() {
         let event_time = EventTime::new(base_time);
         let reception_time = ReceptionTime::new(base_time + Duration::seconds(i));
         let result = detector.process_observation(
-            link_id.clone(),
+            link_id,
             MetricType::Snr,
             predicted_interval,
             25.0, // Divergent
@@ -144,15 +143,15 @@ async fn test_cusum_change_point_detection() {
             reception_time,
         );
 
-        if let Some(divergence) = result {
-            if divergence.change_point_detected_at.is_some() {
-                change_point_detected = true;
-                println!(
-                    "Change point detected at: {:?}",
-                    divergence.change_point_detected_at
-                );
-                break;
-            }
+        if let Some(divergence) = result
+            && divergence.change_point_detected_at.is_some()
+        {
+            change_point_detected = true;
+            println!(
+                "Change point detected at: {:?}",
+                divergence.change_point_detected_at
+            );
+            break;
         }
     }
 
@@ -179,15 +178,15 @@ async fn test_bounded_interval_set_membership() {
     assert_eq!(interval.distance(25.0), 5.0); // 5 units above upper bound
 
     // This is the defensible version of a sigma gate - no probabilistic guess
-    let detector = DivergenceDetector::new(3.0);
-    let link_id = LinkId::new();
+    let mut detector = DivergenceDetector::new(3.0);
+    let link_id = uuid::Uuid::new_v4();
     let base_time = Utc::now();
 
     // Observation within interval - no anomaly
     let event_time = EventTime::new(base_time);
     let reception_time = ReceptionTime::new(base_time);
     let result = detector.process_observation(
-        link_id.clone(),
+        link_id,
         MetricType::Snr,
         interval,
         15.0,
@@ -200,7 +199,7 @@ async fn test_bounded_interval_set_membership() {
     let event_time = EventTime::new(base_time);
     let reception_time = ReceptionTime::new(base_time);
     let result = detector.process_observation(
-        link_id.clone(),
+        link_id,
         MetricType::Snr,
         interval,
         25.0,
@@ -213,8 +212,8 @@ async fn test_bounded_interval_set_membership() {
 
 #[tokio::test]
 async fn test_bi_temporal_divergence_logging() {
-    let detector = DivergenceDetector::new(3.0);
-    let link_id = LinkId::new();
+    let mut detector = DivergenceDetector::new(3.0);
+    let link_id = uuid::Uuid::new_v4();
     let prediction_time = Utc::now();
     let observation_time = prediction_time + Duration::seconds(1);
     let interval = Interval::new(10.0, 20.0);
@@ -224,7 +223,7 @@ async fn test_bi_temporal_divergence_logging() {
 
     // Process a divergent observation
     let result = detector.process_observation(
-        link_id.clone(),
+        link_id,
         MetricType::Snr,
         interval,
         25.0,
@@ -251,7 +250,7 @@ async fn test_bi_temporal_divergence_logging() {
 
 #[tokio::test]
 async fn test_snapshot_manager_forensic_capability() {
-    use bevy_ecs::World;
+    use bevy_ecs::world::World;
     use digital_twin::SnapshotManager;
 
     let mut manager = SnapshotManager::new(10);
