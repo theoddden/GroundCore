@@ -7,8 +7,7 @@
 use bitemporal::{EventTime, ReceptionTime};
 use chrono::{Duration, Utc};
 use digital_twin::{
-    DivergenceDetector, Interval, MetricType, ObservedMetric,
-    create_twin_channels,
+    DivergenceDetector, Interval, MetricType, ObservedMetric, create_twin_channels,
 };
 use std::time::Duration as StdDuration;
 use tokio::time::sleep;

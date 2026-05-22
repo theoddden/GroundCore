@@ -330,9 +330,7 @@ impl DivergenceDetector {
                 reception_time,
             );
 
-            if change_detected
-                && let Some(detected_at) = detector.detection_time()
-            {
+            if change_detected && let Some(detected_at) = detector.detection_time() {
                 divergence.mark_change_point(detected_at);
             }
 

@@ -367,14 +367,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_twin_channels() {
-        let (
-            observed_tx,
-            mut observed_rx,
-            _anomaly_tx,
-            _anomaly_rx,
-            _forecast_tx,
-            _forecast_rx,
-        ) = create_twin_channels();
+        let (observed_tx, mut observed_rx, _anomaly_tx, _anomaly_rx, _forecast_tx, _forecast_rx) =
+            create_twin_channels();
 
         // Send an observed metric
         let link_id = uuid::Uuid::new_v4();
