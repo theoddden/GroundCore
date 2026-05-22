@@ -110,7 +110,7 @@ impl SnapshotManager {
         let closest_timestamp = self
             .snapshots
             .keys()
-            .min_by_key(|t| (**t - timestamp).abs().num_seconds().abs())
+            .min_by_key(|t| (**t - timestamp).abs().num_milliseconds().abs())
             .copied()?;
 
         self.snapshots.get(&closest_timestamp)
@@ -254,7 +254,7 @@ mod tests {
         assert!(snapshot.is_some());
 
         // Test closest snapshot
-        let closest = manager.get_closest_snapshot(base_time + Duration::milliseconds(2500));
+        let closest = manager.get_closest_snapshot(base_time + Duration::milliseconds(2100));
         assert!(closest.is_some());
         assert_eq!(closest.unwrap().timestamp, base_time + Duration::seconds(2));
     }

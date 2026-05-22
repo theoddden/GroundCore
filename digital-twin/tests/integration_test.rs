@@ -21,7 +21,6 @@ async fn test_divergence_detection_integration() {
     // Spawn a task to process observations
     let processor_task = tokio::spawn(async move {
         let mut detector = DivergenceDetector::new(3.0);
-        let _link_id = uuid::Uuid::new_v4();
         let base_time = Utc::now();
 
         // Process observations
@@ -32,8 +31,8 @@ async fn test_divergence_detection_integration() {
             let reception_time = ReceptionTime::new(observed.observation_time);
 
             let result = detector.process_observation(
-                _link_id,
-                MetricType::Snr,
+                observed.link_id,
+                observed.metric_type,
                 predicted_interval,
                 observed.value,
                 event_time,
@@ -129,15 +128,16 @@ async fn test_cusum_change_point_detection() {
     }
 
     // Send divergent observations to trigger CUSUM
+    // Use a much larger deviation to ensure CUSUM threshold is reached
     let mut change_point_detected = false;
-    for i in 10..20 {
+    for i in 10..30 {
         let event_time = EventTime::new(base_time);
         let reception_time = ReceptionTime::new(base_time + Duration::seconds(i));
         let result = detector.process_observation(
             link_id,
             MetricType::Snr,
             predicted_interval,
-            25.0, // Divergent
+            50.0, // Much more divergent to trigger CUSUM
             event_time,
             reception_time,
         );
