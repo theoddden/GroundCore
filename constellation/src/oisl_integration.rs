@@ -5,18 +5,18 @@ use crate::manager::ConstellationSnapshot;
 #[cfg(feature = "oisl-integration")]
 use crate::satellite::OrbitalState;
 #[cfg(feature = "oisl-integration")]
-use chrono::{DateTime, Utc};
+use ground_core::SatelliteId;
 #[cfg(feature = "oisl-integration")]
-use ground_core::{NodeId, SatelliteId};
-#[cfg(feature = "oisl-integration")]
-use oisl::topology::{NodeState, NodeType, Position3D, Velocity3D, GraphSnapshot};
+use oisl::topology::{GraphSnapshot, NodeState, NodeType, Position3D, Velocity3D};
 
 #[cfg(feature = "oisl-integration")]
 impl From<OrbitalState> for NodeState {
     fn from(state: OrbitalState) -> Self {
         Self {
-            node_id: state.to_tracking_state().to_string(),
-            node_type: NodeType::Satellite { satellite_id: "".to_string() },
+            node_id: "sat".to_string(),
+            node_type: NodeType::Satellite {
+                satellite_id: "".to_string(),
+            },
             position: Position3D {
                 x_km: state.position[0],
                 y_km: state.position[1],
@@ -36,11 +36,12 @@ impl From<OrbitalState> for NodeState {
 impl ConstellationSnapshot {
     /// Convert to OISL GraphSnapshot
     pub fn to_oisl_graph(&self) -> GraphSnapshot {
-        let nodes = self.states
+        let nodes = self
+            .states
             .iter()
             .map(|(sat_id, state)| {
                 let node_state = NodeState::from(state.clone());
-                (sat_id.clone(), node_state)
+                (sat_id.to_string(), node_state)
             })
             .collect();
 

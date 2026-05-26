@@ -19,7 +19,9 @@ pub type Bytes = u64;
 macro_rules! string_id_newtype {
     ($name:ident, $doc:literal) => {
         #[doc = $doc]
-        #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Default, Serialize, Deserialize)]
+        #[derive(
+            Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Default, Serialize, Deserialize,
+        )]
         #[serde(transparent)]
         pub struct $name(pub String);
 

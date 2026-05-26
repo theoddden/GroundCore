@@ -38,10 +38,7 @@ impl Default for HardwareConfig {
                 "sdr-2".to_string(),
                 "sdr-3".to_string(),
             ],
-            shadow_sdr_devices: vec![
-                "sdr-shadow-0".to_string(),
-                "sdr-shadow-1".to_string(),
-            ],
+            shadow_sdr_devices: vec!["sdr-shadow-0".to_string(), "sdr-shadow-1".to_string()],
             antenna_ids: vec![
                 "antenna-0".to_string(),
                 "antenna-1".to_string(),
@@ -340,14 +337,12 @@ impl ScheduleOptimizer {
             .and_then(|s| self.hardware.sdr_devices.iter().position(|d| d == s))
             .unwrap_or(0);
         let new_idx = (current_idx + 1) % self.hardware.sdr_devices.len();
-        pass.hardware_allocation.sdr_devices =
-            vec![self.hardware.sdr_devices[new_idx].clone()];
+        pass.hardware_allocation.sdr_devices = vec![self.hardware.sdr_devices[new_idx].clone()];
 
         // Pick a random antenna from the live pool
         if !self.hardware.antenna_ids.is_empty() {
             let ant_idx = rand::random::<usize>() % self.hardware.antenna_ids.len();
-            pass.hardware_allocation.antenna_id =
-                self.hardware.antenna_ids[ant_idx].clone();
+            pass.hardware_allocation.antenna_id = self.hardware.antenna_ids[ant_idx].clone();
         }
     }
 

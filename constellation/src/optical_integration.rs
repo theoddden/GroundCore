@@ -3,7 +3,7 @@
 #[cfg(feature = "optical-integration")]
 use crate::satellite::OrbitalState;
 #[cfg(feature = "optical-integration")]
-use optical::geometry::{PointingVector, VisibilityWindow, VisibilityConstraints};
+use optical::geometry::PointingVector;
 
 #[cfg(feature = "optical-integration")]
 impl OrbitalState {
@@ -15,7 +15,8 @@ impl OrbitalState {
         station_alt_m: f64,
     ) -> PointingVector {
         // Convert station to ECI
-        let station_eci = self.geodetic_to_eci(station_lat_deg, station_lon_deg, station_alt_m, self.time);
+        let station_eci =
+            self.geodetic_to_eci(station_lat_deg, station_lon_deg, station_alt_m, self.time);
 
         // Compute range vector
         let range = [
@@ -33,23 +34,32 @@ impl OrbitalState {
         let cos_lon = lon.cos();
 
         let east = -sin_lon * range[0] + cos_lon * range[1];
-        let north = -sin_lat * cos_lon * range[0] - sin_lat * sin_lon * range[1] + cos_lat * range[2];
+        let north =
+            -sin_lat * cos_lon * range[0] - sin_lat * sin_lon * range[1] + cos_lat * range[2];
         let up = cos_lat * cos_lon * range[0] + cos_lat * sin_lon * range[1] + sin_lat * range[2];
 
         // Azimuth and elevation
         let azimuth = east.atan2(north).to_degrees();
-        let elevation = (up / (east * east + north * north + up * up).sqrt()).asin().to_degrees();
+        let elevation = (up / (east * east + north * north + up * up).sqrt())
+            .asin()
+            .to_degrees();
         let range_km = (range[0].powi(2) + range[1].powi(2) + range[2].powi(2)).sqrt();
 
         PointingVector {
-            azimuth_deg: azimuth,
-            elevation_deg: elevation,
+            azimuth_rad: azimuth.to_radians(),
+            elevation_rad: elevation.to_radians(),
             range_km,
         }
     }
 
     /// Convert geodetic to ECI (helper function)
-    fn geodetic_to_eci(&self, lat_deg: f64, lon_deg: f64, alt_m: f64, time: chrono::DateTime<chrono::Utc>) -> [f64; 3] {
+    fn geodetic_to_eci(
+        &self,
+        lat_deg: f64,
+        lon_deg: f64,
+        alt_m: f64,
+        time: chrono::DateTime<chrono::Utc>,
+    ) -> [f64; 3] {
         let lat = lat_deg.to_radians();
         let lon = lon_deg.to_radians();
         let alt_km = alt_m / 1000.0;

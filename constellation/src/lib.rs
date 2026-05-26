@@ -9,9 +9,9 @@
 //! - ISL geometry forecasting for OISL
 //! - Integration with sdr-sim, optical, and oisl crates
 
-pub mod satellite;
 pub mod manager;
 pub mod pass;
+pub mod satellite;
 
 #[cfg(feature = "oisl-integration")]
 pub mod oisl_integration;
@@ -19,6 +19,6 @@ pub mod oisl_integration;
 #[cfg(feature = "optical-integration")]
 pub mod optical_integration;
 
-pub use satellite::Satellite;
 pub use manager::{ConstellationManager, ConstellationSnapshot};
-pub use pass::{Pass, PassWindow, PassPredictor};
+pub use pass::{Pass, PassPredictor, PassWindow};
+pub use satellite::Satellite;

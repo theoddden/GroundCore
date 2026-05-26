@@ -88,8 +88,10 @@ impl GroundStation {
 
         // ECI to ENU rotation
         let east = -sin_lon * rel_pos[0] + cos_lon * rel_pos[1];
-        let north = -sin_lat * cos_lon * rel_pos[0] - sin_lat * sin_lon * rel_pos[1] + cos_lat * rel_pos[2];
-        let up = cos_lat * cos_lon * rel_pos[0] + cos_lat * sin_lon * rel_pos[1] + sin_lat * rel_pos[2];
+        let north =
+            -sin_lat * cos_lon * rel_pos[0] - sin_lat * sin_lon * rel_pos[1] + cos_lat * rel_pos[2];
+        let up =
+            cos_lat * cos_lon * rel_pos[0] + cos_lat * sin_lon * rel_pos[1] + sin_lat * rel_pos[2];
 
         // Elevation angle
         let range = (east * east + north * north + up * up).sqrt();
@@ -153,8 +155,9 @@ impl PassPredictor {
         orbital_states: &[OrbitalState],
         station_id: &StationId,
     ) -> Result<Vec<Pass>> {
-        let station = self.get_station(station_id)
-            .ok_or_else(|| ground_core::GroundStationError::Tracking(format!("Station {} not found", station_id)))?;
+        let station = self.get_station(station_id).ok_or_else(|| {
+            ground_core::GroundStationError::Tracking(format!("Station {} not found", station_id))
+        })?;
 
         let mut passes = Vec::new();
         let mut in_pass = false;
@@ -165,7 +168,9 @@ impl PassPredictor {
 
         for state in orbital_states {
             let elevation = station.elevation_from_position(state.position, state.time);
-            let range = (state.position[0].powi(2) + state.position[1].powi(2) + state.position[2].powi(2)).sqrt();
+            let range =
+                (state.position[0].powi(2) + state.position[1].powi(2) + state.position[2].powi(2))
+                    .sqrt();
 
             if elevation >= station.min_elevation_deg {
                 if !in_pass {
@@ -213,7 +218,10 @@ impl PassPredictor {
         // Handle case where pass ends at the end of the time window
         if in_pass {
             if let Some(mut window) = current_pass.take() {
-                window.set_time = orbital_states.last().map(|s| s.time).unwrap_or_else(Utc::now);
+                window.set_time = orbital_states
+                    .last()
+                    .map(|s| s.time)
+                    .unwrap_or_else(Utc::now);
                 window.max_elevation_deg = max_elevation;
                 window.max_elevation_time = max_elevation_time.unwrap_or_else(Utc::now);
 
@@ -254,7 +262,8 @@ impl PassPredictor {
             for station_id in self.stations.keys() {
                 let passes = self.predict_passes(satellite_id, &orbital_states, station_id)?;
                 if !passes.is_empty() {
-                    all_passes.entry(station_id.clone())
+                    all_passes
+                        .entry(station_id.clone())
                         .or_insert_with(Vec::new)
                         .extend(passes);
                 }

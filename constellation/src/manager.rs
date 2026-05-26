@@ -94,7 +94,8 @@ impl Constellation {
     where
         F: Fn(&SatelliteId) -> Result<(String, String, String)>,
     {
-        let satellites_to_refresh: Vec<SatelliteId> = self.satellites
+        let satellites_to_refresh: Vec<SatelliteId> = self
+            .satellites
             .iter()
             .filter(|(_, sat)| sat.needs_refresh(max_age_hours))
             .map(|(id, _)| id.clone())
@@ -129,7 +130,8 @@ impl ConstellationManager {
 
     /// Add a constellation
     pub fn add_constellation(&mut self, constellation: Constellation) {
-        self.constellations.insert(constellation.name.clone(), constellation);
+        self.constellations
+            .insert(constellation.name.clone(), constellation);
     }
 
     /// Get a constellation
@@ -156,7 +158,10 @@ impl ConstellationManager {
     }
 
     /// Propagate all constellations to a specific time
-    pub fn propagate_all(&self, time: DateTime<Utc>) -> Result<HashMap<String, ConstellationSnapshot>> {
+    pub fn propagate_all(
+        &self,
+        time: DateTime<Utc>,
+    ) -> Result<HashMap<String, ConstellationSnapshot>> {
         let mut snapshots = HashMap::new();
 
         for (name, constellation) in &self.constellations {
@@ -178,9 +183,17 @@ impl ConstellationManager {
     }
 
     /// Propagate a specific satellite
-    pub fn propagate_satellite(&self, satellite_id: &SatelliteId, time: DateTime<Utc>) -> Result<OrbitalState> {
-        let satellite = self.get_satellite(satellite_id)
-            .ok_or_else(|| ground_core::GroundStationError::Tracking(format!("Satellite {} not found", satellite_id)))?;
+    pub fn propagate_satellite(
+        &self,
+        satellite_id: &SatelliteId,
+        time: DateTime<Utc>,
+    ) -> Result<OrbitalState> {
+        let satellite = self.get_satellite(satellite_id).ok_or_else(|| {
+            ground_core::GroundStationError::Tracking(format!(
+                "Satellite {} not found",
+                satellite_id
+            ))
+        })?;
         satellite.propagate(time)
     }
 }
