@@ -81,13 +81,14 @@ impl TleBatcher {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use ground_core::SatelliteId;
 
     #[test]
     fn test_tle_batching() {
         let mut batcher = TleBatcher::new(3);
 
         batcher.add_tle(
-            "SAT1".to_string(),
+            SatelliteId::from("SAT1"),
             TleData {
                 line1: "1".to_string(),
                 line2: "2".to_string(),
@@ -98,7 +99,7 @@ mod tests {
         assert!(!batcher.is_ready());
 
         batcher.add_tle(
-            "SAT2".to_string(),
+            SatelliteId::from("SAT2"),
             TleData {
                 line1: "1".to_string(),
                 line2: "2".to_string(),
@@ -106,7 +107,7 @@ mod tests {
             },
         );
         batcher.add_tle(
-            "SAT3".to_string(),
+            SatelliteId::from("SAT3"),
             TleData {
                 line1: "1".to_string(),
                 line2: "2".to_string(),

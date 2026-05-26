@@ -249,8 +249,7 @@ async fn test_bi_temporal_divergence_logging() {
 
 #[tokio::test]
 async fn test_snapshot_manager_forensic_capability() {
-    use bevy_ecs::world::World;
-    use digital_twin::SnapshotManager;
+    use digital_twin::{SnapshotManager, WorldSummary};
 
     let mut manager = SnapshotManager::new(10);
     let base_time = Utc::now();
@@ -259,7 +258,7 @@ async fn test_snapshot_manager_forensic_capability() {
     for i in 0..5 {
         let snapshot = digital_twin::TwinSnapshot::new(
             base_time + Duration::seconds(i),
-            World::new(),
+            WorldSummary::default(),
             Vec::new(),
         );
         manager.store_snapshot(snapshot);

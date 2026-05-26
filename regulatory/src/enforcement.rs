@@ -192,7 +192,7 @@ mod tests {
     #[test]
     fn test_compliance_check_success() {
         let mut store = LicenseStore::new();
-        let holder: CustomerId = "test".to_string();
+        let holder = CustomerId::from("test");
 
         let license = License::<LBand>::new(
             holder.clone(),
@@ -214,7 +214,7 @@ mod tests {
     #[test]
     fn test_compliance_check_missing_license() {
         let store = LicenseStore::new();
-        let holder: CustomerId = "test".to_string();
+        let holder = CustomerId::from("test");
 
         let checker = ComplianceChecker::new(store);
         let result = checker.check_transmit_permission::<LBand>(&holder, 1_500_000_000, 20.0);

@@ -310,7 +310,7 @@ mod tests {
         // Same hex SHA-256 digest → 1.0 match rate
         let hash = "a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3";
         let verification = AttestationVerification::new(
-            "pass1".to_string(),
+            "pass1".into(),
             Some(hash.to_string()),
             hash.to_string(),
             None,
@@ -325,7 +325,7 @@ mod tests {
         let local = "a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3";
         let peer = "b665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3";
         let verification = AttestationVerification::new(
-            "pass1".to_string(),
+            "pass1".into(),
             Some(local.to_string()),
             peer.to_string(),
             None,

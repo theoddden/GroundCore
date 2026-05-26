@@ -16,6 +16,7 @@ tracing = { workspace = true }
 nalgebra = { workspace = true }
 rustfft = { workspace = true }
 sgp4 = { workspace = true }
+sha2 = { workspace = true }
 
 # No-alloc for real-time path
 bumpalo = { workspace = true, optional = true }

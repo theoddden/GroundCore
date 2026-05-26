@@ -145,11 +145,12 @@ impl BitemporalProof {
             return false;
         }
 
-        // Propagation delay should be reasonable (satellite to ground)
+        // Propagation delay should be reasonable for a single LEO pass.
+        // A typical LEO contact is 5–15 minutes; 900s is a generous ceiling that
+        // still catches tampered timestamps while accommodating slow ground links.
         let propagation_delay =
             (self.last_reception_time - self.first_reception_time).num_seconds();
-        if propagation_delay > 3600 {
-            // More than 1 hour seems wrong for a single pass
+        if propagation_delay > 900 {
             return false;
         }
 

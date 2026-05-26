@@ -21,6 +21,7 @@ members = [
     "acs",
     "rf-front-end",
     "digital-twin",
+    "constellation",
 ]
 resolver = "2"
 
@@ -44,7 +45,7 @@ serde_json = "1.0"
 bincode = "2.0"
 
 # Cryptography
-ed25519-dalek = "1.0"
+ed25519-dalek = { version = "2.2", features = ["rand_core"] }
 sha2 = "0.10"
 rand = "0.8"
 uuid = { version = "1.0", features = ["serde", "v4", "v5"] }

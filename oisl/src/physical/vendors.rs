@@ -253,14 +253,14 @@ impl OpticalTerminal for Scot80 {
     }
 
     fn oct_standard_versions(&self) -> Vec<OctStandardVersion> {
-        vec![OctStandardVersion::V3_1, OctStandardVersion::V3_2]
+        vec![OctStandardVersion::V3_1_0, OctStandardVersion::V3_2_0]
     }
 
     fn capabilities(&self) -> TerminalCapability {
         TerminalCapability {
             max_data_rate: DataRate(2_500_000_000), // 2.5 Gbps
             max_pointing_accuracy_rad: 15e-6,       // 15 microrad
-            supported_standards: vec![OctStandardVersion::V3_1, OctStandardVersion::V3_2],
+            supported_standards: vec![OctStandardVersion::V3_1_0, OctStandardVersion::V3_2_0],
             beam_divergence_mrad: 0.15,
             max_range_km: 3000.0,
         }

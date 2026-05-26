@@ -337,7 +337,7 @@ impl SpectrumCoordinator {
             );
             return CoordinationResponse {
                 request_id: request.request_id,
-                from_station: self.our_station_id.clone(),
+                from_station: self.our_station_id.clone().into(),
                 their_conflicting_entries: vec![],
                 conflicts: vec![],
                 accepted: false,
@@ -375,7 +375,7 @@ impl SpectrumCoordinator {
 
         CoordinationResponse {
             request_id: request.request_id,
-            from_station: self.our_station_id.clone(),
+            from_station: self.our_station_id.clone().into(),
             their_conflicting_entries: our_conflicting,
             conflicts,
             accepted: true,
@@ -440,6 +440,7 @@ impl SpectrumCoordinator {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::peer::PeerId;
 
     fn make_entry(center_hz: f64, start_offset_min: i64, duration_min: i64) -> PassScheduleEntry {
         let now = Utc::now();
@@ -462,8 +463,9 @@ mod tests {
     fn test_no_conflict_different_bands() {
         let ours = vec![make_entry(2.2e9, 0, 10)];
         let theirs = vec![make_entry(8.4e9, 0, 10)]; // X-band vs S-band — no overlap
-        let state = PeerCoordinationState::new("peer-1".to_string());
-        let conflicts = state.detect_conflicts(&ours, &theirs, &"peer-1".to_string());
+        let peer_id = PeerId::from("peer-1");
+        let state = PeerCoordinationState::new(peer_id.clone());
+        let conflicts = state.detect_conflicts(&ours, &theirs, &peer_id);
         assert!(conflicts.is_empty(), "Different bands should not conflict");
     }
 
@@ -471,8 +473,9 @@ mod tests {
     fn test_conflict_same_band_overlapping_time() {
         let ours = vec![make_entry(2.2e9, 0, 10)];
         let theirs = vec![make_entry(2.2e9, 5, 10)]; // 5-minute overlap
-        let state = PeerCoordinationState::new("peer-1".to_string());
-        let conflicts = state.detect_conflicts(&ours, &theirs, &"peer-1".to_string());
+        let peer_id = PeerId::from("peer-1");
+        let state = PeerCoordinationState::new(peer_id.clone());
+        let conflicts = state.detect_conflicts(&ours, &theirs, &peer_id);
         assert_eq!(conflicts.len(), 1);
         assert!(conflicts[0].frequency_overlap_hz > 0.0);
         assert!(conflicts[0].time_overlap_s > 0);
@@ -482,8 +485,9 @@ mod tests {
     fn test_no_conflict_sequential_time() {
         let ours = vec![make_entry(2.2e9, 0, 10)];
         let theirs = vec![make_entry(2.2e9, 10, 10)]; // back-to-back, no overlap
-        let state = PeerCoordinationState::new("peer-1".to_string());
-        let conflicts = state.detect_conflicts(&ours, &theirs, &"peer-1".to_string());
+        let peer_id = PeerId::from("peer-1");
+        let state = PeerCoordinationState::new(peer_id.clone());
+        let conflicts = state.detect_conflicts(&ours, &theirs, &peer_id);
         assert!(
             conflicts.is_empty(),
             "Sequential passes should not conflict"
@@ -497,8 +501,9 @@ mod tests {
         // Overlap: 2195–2210 = 15 MHz
         let ours = vec![make_entry(2200e6, 0, 10)];
         let theirs = vec![make_entry(2205e6, 0, 10)];
-        let state = PeerCoordinationState::new("peer-1".to_string());
-        let conflicts = state.detect_conflicts(&ours, &theirs, &"peer-1".to_string());
+        let peer_id = PeerId::from("peer-1");
+        let state = PeerCoordinationState::new(peer_id.clone());
+        let conflicts = state.detect_conflicts(&ours, &theirs, &peer_id);
         assert_eq!(conflicts.len(), 1);
         assert!(
             (conflicts[0].frequency_overlap_hz - 15e6).abs() < 1e3,
@@ -512,14 +517,16 @@ mod tests {
         let full_overlap = {
             let ours = vec![make_entry(2.2e9, 0, 10)];
             let theirs = vec![make_entry(2.2e9, 0, 10)]; // full time + freq overlap
-            let state = PeerCoordinationState::new("peer-1".to_string());
-            state.detect_conflicts(&ours, &theirs, &"peer-1".to_string())
+            let peer_id = PeerId::from("peer-1");
+            let state = PeerCoordinationState::new(peer_id.clone());
+            state.detect_conflicts(&ours, &theirs, &peer_id)
         };
         let partial_overlap = {
             let ours = vec![make_entry(2.2e9, 0, 10)];
             let theirs = vec![make_entry(2.2e9, 8, 10)]; // 2-minute time overlap
-            let state = PeerCoordinationState::new("peer-1".to_string());
-            state.detect_conflicts(&ours, &theirs, &"peer-1".to_string())
+            let peer_id = PeerId::from("peer-1");
+            let state = PeerCoordinationState::new(peer_id.clone());
+            state.detect_conflicts(&ours, &theirs, &peer_id)
         };
         assert!(
             full_overlap[0].severity > partial_overlap[0].severity,

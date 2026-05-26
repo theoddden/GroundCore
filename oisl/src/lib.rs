@@ -216,30 +216,11 @@ pub enum ResetLevel {
     Factory,
 }
 
-/// OCT standard version
-#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
-pub enum OctStandardVersion {
-    V3_0,
-    V3_1,
-    V3_2,
-    V4_0_0,
-}
-
-/// LDPC variant (5G NR)
-#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
-pub enum LdpcVariant {
-    BaseGraph1,
-    BaseGraph2,
-}
-
-/// Code rate for LDPC
-#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
-pub enum CodeRate {
-    R1_2,
-    R2_3,
-    R3_4,
-    R5_6,
-}
+/// Re-export OCT standard version, LDPC variant and code-rate from the
+/// canonical `optical` crate to eliminate the duplicate definitions that
+/// previously existed here. Keeping a single definition prevents silent
+/// divergence between oisl and optical when the spec changes.
+pub use optical::{CodeRate, LdpcVariant, OctStandardVersion};
 
 /// Baud rate
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
@@ -263,9 +244,13 @@ impl GeometryScore {
     }
 }
 
-/// ARQ configuration
+/// ARQ configuration for inter-satellite links.
+///
+/// This is intentionally distinct from `optical::ArqConfiguration` (which
+/// models OCT space-to-terrestrial ARQ). ISL ARQ has different window and
+/// retransmission semantics suited to symmetric, low-latency space links.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
-pub struct ArqConfiguration {
+pub struct IslArqConfiguration {
     pub enabled: bool,
     pub max_retransmissions: u8,
     pub timeout_ms: u64,

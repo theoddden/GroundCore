@@ -227,10 +227,11 @@ pub struct ReputationStats {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use ground_core::CustomerId;
 
     #[test]
     fn test_reputation_update() {
-        let mut reputation = TenantReputation::new("tenant1".to_string());
+        let mut reputation = TenantReputation::new("tenant1".into());
 
         assert_eq!(reputation.reputation, 1.0);
 
@@ -251,8 +252,8 @@ mod tests {
     fn test_reputation_tracker() {
         let mut tracker = ReputationTracker::new(0.1);
 
-        let tenant1 = "tenant1".to_string();
-        let tenant2 = "tenant2".to_string();
+        let tenant1 = CustomerId::from("tenant1");
+        let tenant2 = CustomerId::from("tenant2");
 
         tracker.record_fulfilled(&tenant1, 100.0, 90.0); // Good utilization
         tracker.record_fulfilled(&tenant2, 100.0, 30.0); // Poor utilization

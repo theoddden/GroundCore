@@ -98,7 +98,7 @@ mod tests {
 
     #[test]
     fn test_transmit_success() {
-        let holder: CustomerId = "test".to_string();
+        let holder = CustomerId::from("test");
         let license = License::<LBand>::new(
             holder,
             Utc::now(),
@@ -115,7 +115,7 @@ mod tests {
 
     #[test]
     fn test_transmit_power_limit() {
-        let holder: CustomerId = "test".to_string();
+        let holder = CustomerId::from("test");
         let license = License::<LBand>::new(
             holder,
             Utc::now(),
@@ -135,7 +135,7 @@ mod tests {
 
     #[test]
     fn test_transmit_expired_license() {
-        let holder: CustomerId = "test".to_string();
+        let holder = CustomerId::from("test");
         let license = License::<LBand>::new(
             holder,
             Utc::now() - chrono::Duration::hours(48),

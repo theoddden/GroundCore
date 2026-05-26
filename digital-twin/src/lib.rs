@@ -61,5 +61,5 @@ pub use runtime::{
     AnomalySignal, DigitalTwinRuntime, ObservedMetric, TwinConfig, TwinForecast, TwinTickSchedule,
     create_twin_channels,
 };
-pub use snapshot::{CounterfactualQuery, SnapshotManager, TwinSnapshot};
+pub use snapshot::{CounterfactualQuery, SnapshotManager, TwinSnapshot, WorldSummary};
 pub use systems::{compute_link_intervals, propagate_orbits, visibility_windows};

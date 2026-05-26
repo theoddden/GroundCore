@@ -24,8 +24,8 @@ pub mod terminal;
 
 // Re-export core types
 pub use oct::{
-    ArqConfiguration, FecCode, FecConfiguration, LinkType, Modulation, NegotiationError,
-    OctConfiguration, OctStandardVersion, TrackingTone, negotiate_version,
+    ArqConfiguration, CodeRate, FecCode, FecConfiguration, LdpcVariant, LinkType, Modulation,
+    NegotiationError, OctConfiguration, OctStandardVersion, TrackingTone, negotiate_version,
 };
 
 pub use pat::{

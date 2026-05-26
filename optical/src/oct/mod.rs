@@ -8,8 +8,8 @@ pub mod negotiation;
 pub mod standard;
 
 pub use config::{
-    ArqConfiguration, AtmosphericModel, FecCode, FecConfiguration, LinkType, Modulation,
-    OctConfiguration, TrackingTone,
+    ArqConfiguration, AtmosphericModel, CodeRate, FecCode, FecConfiguration, LdpcVariant,
+    LinkType, Modulation, OctConfiguration, TrackingTone,
 };
 pub use framing::{EthernetFrame, FramingError};
 pub use negotiation::{NegotiationError, negotiate_version};

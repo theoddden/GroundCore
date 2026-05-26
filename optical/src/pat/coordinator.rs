@@ -11,6 +11,7 @@ use crate::pat::{
     SearchState,
 };
 use chrono::{DateTime, Duration, Utc};
+use ground_core::PassId;
 use hardware::PassShard;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
@@ -157,7 +158,7 @@ pub struct PatCoordinator {
 impl PatCoordinator {
     pub fn new(clock: Box<dyn PrecisionClock>) -> Self {
         // Create per-acquisition shard with 8MB arena for no-heap allocations
-        let shard = PassShard::new("pat-coordinator".to_string(), 8 * 1024 * 1024);
+        let shard = PassShard::new(PassId::from("pat-coordinator"), 8 * 1024 * 1024);
 
         Self {
             clock_source: clock,

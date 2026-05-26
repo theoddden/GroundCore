@@ -278,8 +278,8 @@ mod tests {
         drf.set_capacity(ResourceType::LBandSdrTime, 100.0);
         drf.set_capacity(ResourceType::RotatorHours, 50.0);
 
-        let tenant1 = "tenant1".to_string();
-        let tenant2 = "tenant2".to_string();
+        let tenant1 = CustomerId::from("tenant1");
+        let tenant2 = CustomerId::from("tenant2");
 
         let alloc1 = drf.get_or_create_allocation(tenant1.clone());
         alloc1.add_share(ResourceShare::new(ResourceType::LBandSdrTime, 100.0));

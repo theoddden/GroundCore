@@ -96,11 +96,20 @@ pub struct GenericAntennaController {
     azimuth_rate_limit: f64, // degrees per second
     #[allow(dead_code)]
     elevation_rate_limit: f64, // degrees per second
+    /// Stow azimuth (degrees). Defaults to 0° (north).
+    stow_azimuth: f64,
+    /// Stow elevation (degrees). Defaults to 5° to minimise wind loading on
+    /// horizon-parked mounts. Use 90° only for specific dish designs that stow
+    /// at zenith.
+    stow_elevation: f64,
     enabled: bool,
 }
 
 impl GenericAntennaController {
-    /// Create a new generic antenna controller
+    /// Create a new generic antenna controller.
+    ///
+    /// Stow position defaults to azimuth=0°, elevation=5° (horizon park). Pass
+    /// explicit values via [`with_stow_position`] for mounts that park at zenith.
     pub fn new(
         azimuth_min: f64,
         azimuth_max: f64,
@@ -122,8 +131,18 @@ impl GenericAntennaController {
             elevation_max,
             azimuth_rate_limit,
             elevation_rate_limit,
+            stow_azimuth: 0.0,
+            stow_elevation: 5.0,
             enabled: false,
         }
+    }
+
+    /// Override the stow position. Use for dish mounts that park at zenith
+    /// (`azimuth=0.0, elevation=90.0`) or at a custom safe-zone position.
+    pub fn with_stow_position(mut self, azimuth: f64, elevation: f64) -> Self {
+        self.stow_azimuth = azimuth;
+        self.stow_elevation = elevation;
+        self
     }
 }
 
@@ -178,8 +197,7 @@ impl AntennaController for GenericAntennaController {
     }
 
     async fn stow(&mut self) -> Result<()> {
-        // Stow to zenith (elevation 90, azimuth 0)
-        self.point(0.0, 90.0).await?;
+        self.point(self.stow_azimuth, self.stow_elevation).await?;
         self.status = ControllerStatus::Stowed;
         Ok(())
     }

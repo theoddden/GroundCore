@@ -128,10 +128,11 @@ impl LicenseStore {
 mod tests {
     use super::*;
     use crate::types::LBand;
+    use ground_core::CustomerId;
 
     #[test]
     fn test_license_validity() {
-        let holder = "test-customer".to_string();
+        let holder = CustomerId::from("test-customer");
         let now = Utc::now();
         let future = now + chrono::Duration::hours(24);
 
@@ -150,7 +151,7 @@ mod tests {
     #[test]
     fn test_license_store() {
         let mut store = LicenseStore::new();
-        let holder = "test-customer".to_string();
+        let holder = CustomerId::from("test-customer");
 
         let license = License::<LBand>::new(
             holder.clone(),

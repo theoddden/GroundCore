@@ -8,25 +8,36 @@
 //! weaponized.
 
 use crate::divergence::MetricDivergence;
-use bevy_ecs::world::World;
 use chrono::{DateTime, Utc};
 use ground_core::types::LinkId;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+
+/// Serializable summary of the ECS world state at a single tick.
+///
+/// `bevy_ecs::World` is neither `Clone` nor `Serialize`, so we extract the
+/// observable quantities we care about into this plain struct. This is all that
+/// downstream forensic/replay tooling actually needs.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct WorldSummary {
+    /// Total entity count in the world at snapshot time
+    pub entity_count: usize,
+    /// Midpoint of the predicted SNR interval per link (link_id → dB value)
+    pub link_snr_mid_db: HashMap<LinkId, f64>,
+}
 
 /// Twin state snapshot at a specific point in time
 ///
 /// This captures the complete state of the digital twin at a given tick, including
-/// the ECS world state and the divergence log. Because every tick is bi-temporally
-/// stamped, you can replay exactly what the system believed at any moment.
-#[derive(Debug)]
+/// the ECS world state summary and the divergence log. Because every tick is
+/// bi-temporally stamped, you can replay exactly what the system believed at
+/// any moment.
+#[derive(Debug, Clone)]
 pub struct TwinSnapshot {
     /// When this snapshot was taken
     pub timestamp: DateTime<Utc>,
-    /// ECS world state (serialized)
-    ///
-    /// Note: In practice, World is not directly serializable. This would be a
-    /// serialized representation of the entity-component state.
-    pub world_state: World,
+    /// Serializable summary of the ECS world state
+    pub world_state: WorldSummary,
     /// Divergence log at this point in time
     pub divergence_log: Vec<MetricDivergence>,
 }
@@ -35,7 +46,7 @@ impl TwinSnapshot {
     /// Create a new twin snapshot
     pub fn new(
         timestamp: DateTime<Utc>,
-        world_state: World,
+        world_state: WorldSummary,
         divergence_log: Vec<MetricDivergence>,
     ) -> Self {
         Self {
@@ -178,14 +189,9 @@ impl SnapshotManager {
     /// diverge from reality?"
     pub fn counterfactual_query(&self, query_time: DateTime<Utc>) -> CounterfactualQuery {
         let actual_belief = if let Some(snapshot) = self.get_closest_snapshot(query_time) {
-            // Create a new snapshot with the same data (World is not Clone, so we use a placeholder)
-            TwinSnapshot::new(
-                snapshot.timestamp,
-                World::new(),
-                snapshot.divergence_log.clone(),
-            )
+            snapshot.clone()
         } else {
-            TwinSnapshot::new(query_time, World::new(), Vec::new())
+            TwinSnapshot::new(query_time, WorldSummary::default(), Vec::new())
         };
 
         // Find divergences that first appeared before or at the query time
@@ -242,8 +248,11 @@ mod tests {
 
         // Store some snapshots
         for i in 0..5 {
-            let snapshot =
-                TwinSnapshot::new(base_time + Duration::seconds(i), World::new(), Vec::new());
+            let snapshot = TwinSnapshot::new(
+                base_time + Duration::seconds(i),
+                WorldSummary::default(),
+                Vec::new(),
+            );
             manager.store_snapshot(snapshot);
         }
 
@@ -266,8 +275,11 @@ mod tests {
 
         // Store more snapshots than the limit
         for i in 0..5 {
-            let snapshot =
-                TwinSnapshot::new(base_time + Duration::seconds(i), World::new(), Vec::new());
+            let snapshot = TwinSnapshot::new(
+                base_time + Duration::seconds(i),
+                WorldSummary::default(),
+                Vec::new(),
+            );
             manager.store_snapshot(snapshot);
         }
 

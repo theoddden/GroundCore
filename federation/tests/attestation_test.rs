@@ -6,7 +6,7 @@ mod tests {
 
     #[test]
     fn test_peer_creation() {
-        let peer_id = PeerId::new();
+        let peer_id = PeerId::from("station-a");
         let peer = FederationPeer::new(peer_id.clone(), "public_key".to_string());
         assert_eq!(peer.station_id.to_string(), peer_id.to_string());
     }

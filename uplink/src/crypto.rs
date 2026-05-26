@@ -141,9 +141,7 @@ impl CryptoBackend for AesGcmBackend {
     }
 
     async fn generate_signing_key(&self) -> Result<SigningKeyPair> {
-        let mut keypair_bytes = [0u8; 64];
-        OsRng.fill_bytes(&mut keypair_bytes);
-        let signing_key = SigningKey::from_keypair_bytes(&keypair_bytes).unwrap();
+        let signing_key = SigningKey::generate(&mut OsRng);
         let verifying_key = signing_key.verifying_key();
 
         Ok(SigningKeyPair {
@@ -201,7 +199,9 @@ impl CryptoBackend for HmacSha256Backend {
         let mut key = [0u8; 32];
         OsRng.fill_bytes(&mut key);
         Ok(SigningKeyPair {
-            public_key: key.to_vec(), // For HMAC, public and private are same
+            // HMAC is symmetric: the secret lives only in private_key.
+            // public_key is empty — do NOT expose the HMAC secret as a "public" key.
+            public_key: Vec::new(),
             private_key: key.to_vec(),
         })
     }

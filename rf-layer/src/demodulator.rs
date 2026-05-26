@@ -8,6 +8,7 @@ use bitemporal::timestamp::{BiTemporal, EventTime, ReceptionTime};
 use chrono::{DateTime, Utc};
 use ground_core::Result;
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 use std::collections::VecDeque;
 
 use crate::sdr::{Sample, SampleId};
@@ -229,14 +230,23 @@ impl DemodulatorSnapshot {
         Self::compute_checksum(&self.state) == self.checksum
     }
 
-    /// Compute checksum of demodulator state
+    /// Compute a collision-resistant SHA-256 digest over serialized state.
+    ///
+    /// We truncate to 64 bits for the stored `u64` field; the prefix is still
+    /// overwhelmingly unlikely to collide for accidental corruption, which is
+    /// the threat model here (not adversarial pre-image attacks).
     fn compute_checksum(state: &DemodState) -> u64 {
-        let mut hash: u64 = 0;
-        hash = hash.wrapping_add(state.nco_phase.to_bits());
-        hash = hash.wrapping_add(state.frequency_offset as u64);
-        hash = hash.wrapping_add(state.carrier_locked as u64);
-        hash = hash.wrapping_add(state.last_sample_id.as_u64());
-        hash
+        let mut hasher = Sha256::new();
+        hasher.update(state.nco_phase.to_bits().to_le_bytes());
+        hasher.update(state.frequency_offset.to_le_bytes());
+        hasher.update([state.carrier_locked as u8]);
+        hasher.update(state.last_sample_id.as_u64().to_le_bytes());
+        hasher.update(state.carrier_phase_rad.to_bits().to_le_bytes());
+        hasher.update(state.carrier_freq_rad_per_sample.to_bits().to_le_bytes());
+        hasher.update(state.samples_per_symbol.to_bits().to_le_bytes());
+        hasher.update(state.symbol_phase.to_bits().to_le_bytes());
+        let digest = hasher.finalize();
+        u64::from_le_bytes(digest[..8].try_into().expect("sha256 output >= 8 bytes"))
     }
 
     /// Restore demodulator state from this snapshot

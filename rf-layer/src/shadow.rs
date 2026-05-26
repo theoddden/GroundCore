@@ -337,7 +337,7 @@ mod tests {
         };
 
         let mut acquisition = PassAcquisition::new(
-            "test-pass".to_string(),
+            "test-pass".into(),
             primary.clone(),
             Some(shadow.clone()),
             schedule,

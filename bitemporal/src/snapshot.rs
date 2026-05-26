@@ -51,7 +51,7 @@ impl LogSnapshot {
 
         let pass_ids: Vec<String> = entries
             .iter()
-            .map(|e| e.pass_id.clone())
+            .map(|e| e.pass_id.0.clone())
             .collect::<std::collections::HashSet<_>>()
             .into_iter()
             .collect();

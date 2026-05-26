@@ -124,20 +124,21 @@ pub struct ScheduleCacheStats {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use ground_core::PassId;
 
     #[test]
     fn test_fragment_creation() {
-        let pass_ids = vec!["pass1".to_string(), "pass2".to_string()];
+        let pass_ids = vec![PassId::from("pass1"), PassId::from("pass2")];
         let fragment = ScheduleFragment::new(pass_ids, 300);
 
         assert!(fragment.is_immutable());
-        assert!(fragment.contains(&"pass1".to_string()));
+        assert!(fragment.contains(&PassId::from("pass1")));
     }
 
     #[test]
     fn test_fragment_cache() {
         let mut cache = ScheduleFragmentCache::new(10);
-        let pass_ids = vec!["pass1".to_string()];
+        let pass_ids = vec![PassId::from("pass1")];
         let fragment = ScheduleFragment::new(pass_ids, 300);
 
         cache.add_fragment(fragment.clone());

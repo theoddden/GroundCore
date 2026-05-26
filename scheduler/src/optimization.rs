@@ -13,6 +13,45 @@ use ground_core::{PassId, Result};
 use snapshotting::ScheduleSnapshotter;
 use std::time::Duration;
 
+/// Available hardware device identifiers for the optimizer.
+///
+/// Inject the real pool from [`hardware::HardwarePool`] at startup. The
+/// defaults here are illustrative only and must be replaced before production.
+#[derive(Debug, Clone)]
+pub struct HardwareConfig {
+    /// Available SDR device IDs
+    pub sdr_devices: Vec<String>,
+    /// Shadow/hot-spare SDR device IDs (one per primary SDR)
+    pub shadow_sdr_devices: Vec<String>,
+    /// Available antenna IDs
+    pub antenna_ids: Vec<String>,
+    /// Available rotator IDs
+    pub rotator_ids: Vec<String>,
+}
+
+impl Default for HardwareConfig {
+    fn default() -> Self {
+        Self {
+            sdr_devices: vec![
+                "sdr-0".to_string(),
+                "sdr-1".to_string(),
+                "sdr-2".to_string(),
+                "sdr-3".to_string(),
+            ],
+            shadow_sdr_devices: vec![
+                "sdr-shadow-0".to_string(),
+                "sdr-shadow-1".to_string(),
+            ],
+            antenna_ids: vec![
+                "antenna-0".to_string(),
+                "antenna-1".to_string(),
+                "antenna-2".to_string(),
+            ],
+            rotator_ids: vec!["rotator-0".to_string(), "rotator-1".to_string()],
+        }
+    }
+}
+
 /// Optimization configuration
 #[derive(Debug, Clone)]
 pub struct OptimizationConfig {
@@ -42,6 +81,8 @@ pub struct ScheduleOptimizer {
     drf: DominantResourceFairness,
     reputation: ReputationTracker,
     config: OptimizationConfig,
+    /// Live hardware device identifiers used by the neighbor generator
+    hardware: HardwareConfig,
     /// Snapshotter for atomic rollback if optimization produces a worse schedule
     snapshotter: ScheduleSnapshotter,
     /// Fragment cache for stable schedule portions — avoids re-cloning committed passes
@@ -50,10 +91,16 @@ pub struct ScheduleOptimizer {
 
 impl ScheduleOptimizer {
     pub fn new(config: OptimizationConfig) -> Self {
+        Self::with_hardware(config, HardwareConfig::default())
+    }
+
+    /// Create an optimizer with an explicit hardware pool configuration.
+    pub fn with_hardware(config: OptimizationConfig, hardware: HardwareConfig) -> Self {
         Self {
             drf: DominantResourceFairness::new(),
             reputation: ReputationTracker::new(0.1),
             config,
+            hardware,
             snapshotter: ScheduleSnapshotter::new(5),
             fragment_cache: ScheduleFragmentCache::new(32),
         }
@@ -279,24 +326,29 @@ impl ScheduleOptimizer {
         }
     }
 
-    /// Reallocate hardware for a pass (try different SDR/antenna)
+    /// Reallocate hardware for a pass (try different SDR/antenna from the live pool)
     fn reallocate_hardware(&self, pass: &mut ScheduledPass) {
-        // Try a different SDR device
-        let sdr_options = ["sdr-0", "sdr-1", "sdr-2", "sdr-3"];
+        if self.hardware.sdr_devices.is_empty() {
+            return;
+        }
+
+        // Rotate to the next available SDR device
         let current_idx = pass
             .hardware_allocation
             .sdr_devices
-            .iter()
-            .position(|s| *s == "sdr-0")
+            .first()
+            .and_then(|s| self.hardware.sdr_devices.iter().position(|d| d == s))
             .unwrap_or(0);
+        let new_idx = (current_idx + 1) % self.hardware.sdr_devices.len();
+        pass.hardware_allocation.sdr_devices =
+            vec![self.hardware.sdr_devices[new_idx].clone()];
 
-        let new_idx = (current_idx + 1) % sdr_options.len();
-        pass.hardware_allocation.sdr_devices = vec![sdr_options[new_idx].to_string()];
-
-        // Try a different antenna
-        let antenna_options = ["antenna-0", "antenna-1", "antenna-2"];
-        let ant_idx = rand::random::<usize>() % antenna_options.len();
-        pass.hardware_allocation.antenna_id = antenna_options[ant_idx].to_string();
+        // Pick a random antenna from the live pool
+        if !self.hardware.antenna_ids.is_empty() {
+            let ant_idx = rand::random::<usize>() % self.hardware.antenna_ids.len();
+            pass.hardware_allocation.antenna_id =
+                self.hardware.antenna_ids[ant_idx].clone();
+        }
     }
 
     /// Try to preempt a lower-priority pass to make room
@@ -333,21 +385,41 @@ impl ScheduleOptimizer {
     fn create_pass_from_request(&self, request: &PassRequest) -> ScheduledPass {
         // In a real implementation, this would compute actual pass times
         // from satellite visibility and allocate hardware
+        let primary_sdr = self
+            .hardware
+            .sdr_devices
+            .first()
+            .cloned()
+            .unwrap_or_else(|| "sdr-0".to_string());
+        let shadow_sdr = if request.sla_tier.requires_shadow() {
+            self.hardware.shadow_sdr_devices.first().cloned()
+        } else {
+            None
+        };
+        let antenna_id = self
+            .hardware
+            .antenna_ids
+            .first()
+            .cloned()
+            .unwrap_or_else(|| "antenna-0".to_string());
+        let rotator_id = self
+            .hardware
+            .rotator_ids
+            .first()
+            .cloned()
+            .unwrap_or_else(|| "rotator-0".to_string());
+
         ScheduledPass {
-            pass_id: uuid::Uuid::new_v4().to_string(),
+            pass_id: uuid::Uuid::new_v4().to_string().into(),
             request_id: request.request_id.clone(),
             customer_id: request.customer_id.clone(),
             satellite_id: request.satellite_id.clone(),
             scheduled_window: request.window.clone(),
             hardware_allocation: crate::schedule::HardwareAllocation {
-                sdr_devices: vec!["sdr-0".to_string()],
-                shadow_sdr: if request.sla_tier.requires_shadow() {
-                    Some("sdr-shadow-0".to_string())
-                } else {
-                    None
-                },
-                antenna_id: "antenna-0".to_string(),
-                rotator_id: "rotator-0".to_string(),
+                sdr_devices: vec![primary_sdr],
+                shadow_sdr,
+                antenna_id,
+                rotator_id,
             },
             scheduled_at: Utc::now(),
             status: crate::schedule::PassStatus::Scheduled,
@@ -391,8 +463,10 @@ impl ScheduleOptimizer {
         let mut tail_schedule = Schedule::new(now, schedule.horizon.1);
         tail_schedule.passes = tail_passes;
 
-        // Quick annealing pass on the tail only (200 iterations vs full 10,000)
-        let mut _temperature = 100.0;
+        // Pure hill-climb on the mutable tail (200 iterations vs full 10,000 SA).
+        // Incremental mode accepts only improvements — no Boltzmann acceptance — because
+        // the stable prefix must not be disrupted and the tail window is small enough
+        // that a greedy pass converges fast.
         for _ in 0..200 {
             let neighbor = self.generate_neighbor(&tail_schedule, new_requests);
             let current_score = self.evaluate_schedule(&tail_schedule);
@@ -401,8 +475,6 @@ impl ScheduleOptimizer {
             if neighbor_score > current_score {
                 tail_schedule = neighbor;
             }
-
-            _temperature *= 0.95;
         }
 
         // Reconstruct: stable passes (unchanged) + optimised tail
@@ -426,8 +498,8 @@ mod tests {
 
         let request = PassRequest {
             request_id: "req1".to_string(),
-            customer_id: "customer1".to_string(),
-            satellite_id: "sat1".to_string(),
+            customer_id: "customer1".into(),
+            satellite_id: "sat1".into(),
             window: crate::schedule::PassWindow {
                 start: Utc::now(),
                 end: Utc::now() + chrono::Duration::hours(1),

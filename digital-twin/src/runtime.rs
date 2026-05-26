@@ -6,7 +6,7 @@
 
 use crate::components::*;
 use crate::divergence::{DivergenceDetector, MetricDivergence, MetricType};
-use crate::snapshot::TwinSnapshot;
+use crate::snapshot::{SnapshotManager, TwinSnapshot, WorldSummary};
 use crate::systems;
 use bevy_ecs::prelude::*;
 use bevy_ecs::schedule::ScheduleLabel;
@@ -81,9 +81,10 @@ pub struct DigitalTwinRuntime {
     anomaly_tx: mpsc::Sender<AnomalySignal>,
     /// Channel for sending twin forecasts
     forecast_tx: watch::Sender<TwinForecast>,
-    /// Snapshot manager
-    #[allow(dead_code)]
+    /// External snapshotting backend (schedule rollback, audit log)
     snapshot_manager: Arc<snapshotting::SnapshotManager>,
+    /// Local twin snapshot store for bi-temporal forensic replay
+    twin_snapshot_store: SnapshotManager,
 }
 
 impl DigitalTwinRuntime {
@@ -113,6 +114,7 @@ impl DigitalTwinRuntime {
             anomaly_tx,
             forecast_tx,
             snapshot_manager,
+            twin_snapshot_store: SnapshotManager::default(),
         }
     }
 
@@ -296,20 +298,30 @@ impl DigitalTwinRuntime {
         }
     }
 
-    /// Snapshot the twin state
+    /// Snapshot the twin state for bi-temporal forensic replay.
+    ///
+    /// Extracts observable quantities from the ECS world into a serializable
+    /// `WorldSummary`, then stores the snapshot in the local twin snapshot store.
     async fn snapshot_state(&mut self) -> Result<()> {
-        // Note: World is not Clone, so we can't snapshot it directly
-        // In a full implementation, we would serialize the entity-component state
-        // For now, we just snapshot the divergence log
-        let _snapshot = TwinSnapshot {
-            timestamp: Utc::now(),
-            world_state: World::new(), // Placeholder: actual world state serialization
-            divergence_log: self.divergence_detector.divergence_log().to_vec(),
+        let mut summary = WorldSummary {
+            entity_count: self.world.entities().len() as usize,
+            ..WorldSummary::default()
         };
 
-        // Store snapshot via snapshot manager
-        // self.snapshot_manager.store_snapshot(snapshot).await?;
+        // Harvest predicted SNR mid-points from ECS link budget components
+        let mut query = self.world.query::<&LinkBudget>();
+        for link_budget in query.iter(&self.world) {
+            let snr_mid = (link_budget.predicted_snr.lower + link_budget.predicted_snr.upper) / 2.0;
+            summary.link_snr_mid_db.insert(link_budget.link_id, snr_mid);
+        }
 
+        let snapshot = TwinSnapshot::new(
+            Utc::now(),
+            summary,
+            self.divergence_detector.divergence_log().to_vec(),
+        );
+
+        self.twin_snapshot_store.store_snapshot(snapshot);
         Ok(())
     }
 }
