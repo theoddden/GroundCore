@@ -5,8 +5,6 @@ use crate::manager::ConstellationSnapshot;
 #[cfg(feature = "oisl-integration")]
 use crate::satellite::OrbitalState;
 #[cfg(feature = "oisl-integration")]
-use ground_core::SatelliteId;
-#[cfg(feature = "oisl-integration")]
 use oisl::topology::{GraphSnapshot, NodeState, NodeType, Position3D, Velocity3D};
 
 #[cfg(feature = "oisl-integration")]

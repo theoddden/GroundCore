@@ -82,6 +82,7 @@ pub struct DigitalTwinRuntime {
     /// Channel for sending twin forecasts
     forecast_tx: watch::Sender<TwinForecast>,
     /// External snapshotting backend (schedule rollback, audit log)
+    #[allow(dead_code)]
     snapshot_manager: Arc<snapshotting::SnapshotManager>,
     /// Local twin snapshot store for bi-temporal forensic replay
     twin_snapshot_store: SnapshotManager,

@@ -216,22 +216,20 @@ impl PassPredictor {
         }
 
         // Handle case where pass ends at the end of the time window
-        if in_pass {
-            if let Some(mut window) = current_pass.take() {
-                window.set_time = orbital_states
-                    .last()
-                    .map(|s| s.time)
-                    .unwrap_or_else(Utc::now);
-                window.max_elevation_deg = max_elevation;
-                window.max_elevation_time = max_elevation_time.unwrap_or_else(Utc::now);
+        if in_pass && let Some(mut window) = current_pass.take() {
+            window.set_time = orbital_states
+                .last()
+                .map(|s| s.time)
+                .unwrap_or_else(Utc::now);
+            window.max_elevation_deg = max_elevation;
+            window.max_elevation_time = max_elevation_time.unwrap_or_else(Utc::now);
 
-                passes.push(Pass {
-                    satellite_id: satellite_id.to_string(),
-                    station_id: station_id.clone(),
-                    window,
-                    max_range_km: max_range,
-                });
-            }
+            passes.push(Pass {
+                satellite_id: satellite_id.to_string(),
+                station_id: station_id.clone(),
+                window,
+                max_range_km: max_range,
+            });
         }
 
         Ok(passes)
@@ -255,7 +253,7 @@ impl PassPredictor {
             while current_time <= end_time {
                 let state = satellite.propagate(current_time)?;
                 orbital_states.push(state);
-                current_time = current_time + Duration::seconds(step_sec as i64);
+                current_time += Duration::seconds(step_sec as i64);
             }
 
             // Predict passes for each station
